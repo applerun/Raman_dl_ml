@@ -1,0 +1,9 @@
+/bacteria/code_sjh/bin/cell/
+/bacteria/code_sjh/bin/plasma/
+/bacteria/data/
+#/data/..
+*.csv
+*.mdl
+/bacteria/code_sjh/checkpoints/
+/bacteria/code_sjh/GUI/dataManager/data/
+/bacteria/code_sjh/GUI/dataManager/work/

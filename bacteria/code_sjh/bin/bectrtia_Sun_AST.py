@@ -1,4 +1,5 @@
 import sys, os
+import time
 
 import numpy
 
@@ -148,10 +149,13 @@ if __name__ == '__main__':
 	bestaccs, testaccs, bepochs = [], [], []
 
 	# dataroot = os.path.join(projectroot, "data", "liver", "liver_all_samplewise")
-	dataroot = os.path.join(projectroot,"data","liver_cell")
+	dataroot = os.path.join(projectroot,"data","五种菌最原始数据")
 	backend = ".asc"
-	delimeter = "\t"
-	dataformat = {"Wavelength": 0, "Column": 2, "Intensity": 1}
+	# backend = ".csv"
+
+	delimeter = None
+
+	dataformat = {"Wavelength": 0, "Intensity": 1}
 	raman = Raman_dirwise
 
 	k_split = 10
@@ -180,8 +184,8 @@ if __name__ == '__main__':
 
 	transform = Process.process_series(
 		[
-			Process.baseline_als(),
-			Process.sg_filter(),
+			# Process.baseline_als(),
+			# Process.sg_filter(),
 			Process.norm_func(),
 		]
 	)
@@ -204,8 +208,12 @@ if __name__ == '__main__':
 	modellist = [AlexNet_Sun,ResNet18,ResNet34]
 	n_iter = 1
 	i = 0
+	recorddir = "ResNetRecord_" + time.strftime("%Y-%m-%d-%H_%M_%S")
+	if not os.path.isdir(recorddir):
+		os.makedirs(recorddir)
 	for model in modellist:
 		recordfile = "ResNetRecord" + time.asctime().replace(":", "-").replace(" ", "_") + ".csv"
+		recordfile = os.path.join(recorddir,recordfile)
 		f = open(recordfile, "w", newline = "")
 		writer = csv.writer(f)
 		f.write(db_cfg.__str__() + "\n")

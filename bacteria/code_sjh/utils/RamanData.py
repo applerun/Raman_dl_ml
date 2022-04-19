@@ -48,22 +48,38 @@ def LoadCombinedFile(filename: str,
 
 
 def getRamanFromFile(wavelengthstart = 400,
-                     wavelengthend = 1600,
+                     wavelengthend = 1800,
                      dataname2idx = None,
-                     delimeter = ","):
-	if dataname2idx is None:
-		dataname2idx = {"Wavelength": 0, "Column": 1, "Intensity": 2}
+                     delimeter = None):
+
 	if wavelengthend < wavelengthstart:
 		wavelengthstart, wavelengthend = wavelengthend, wavelengthstart
 
-	def func(filepath):
+	def func(filepath:str,
+	         delimeter = delimeter,
+	         dataname2idx = dataname2idx):
+		if dataname2idx is None:
+			dataname2idx = {}
 		Ramans = []
 		Wavelengths = []
+		if delimeter is None:
+			if filepath.endswith(".csv"):
+				delimeter = ","
+			elif filepath.endswith(".asc"):
+				delimeter = "\t"
+
 		with open(filepath, "r") as f:
 			lines = f.readlines()
+			header = None
 			for line in lines:
+				line = line.strip()
 				data = line.split(delimeter)
+
 				if data[0] in ["ROI", "Wavelength", "Column", "Intensity"]:
+					if header is None:
+						header = data
+						dataname2idx["Wavelength"] = header.index("Wavelength")
+						dataname2idx["Intensity"] = header.index("Intensity")
 					continue
 				try:
 					wavelength = float(data[dataname2idx["Wavelength"]])
@@ -193,9 +209,9 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		pass
 
 	def shuffle(self):
-		z = list(zip(self.Ramans, self.labels))
+		z = list(zip(self.Ramans, self.labels,self.RamanFiles))
 		random.shuffle(z)
-		self.Ramans[:], self.labels[:] = zip(*z)
+		self.Ramans[:], self.labels[:],self.RamanFiles = zip(*z)
 		return
 
 	def shufflecsv(self,
@@ -497,6 +513,10 @@ class Raman_dirwise(RamanDatasetCore):
 		:param noising: callable——input：1d spectrum output：noised 1d spectrum
 
 		"""
+		if "sfpath" in kwargs.keys():
+			kwargs["sfpath"] = kwargs["sfpath"][:-4]+"_dirwise"+kwargs["sfpath"][-4:]
+		else:
+			kwargs["sfpath"] = "Raman_dirwise.csv"
 		super(Raman_dirwise, self).__init__(*args, **kwargs)
 		self.spectrum_each_sample = None
 
@@ -722,8 +742,7 @@ if __name__ == '__main__':
 	visdom_utils.startVisdomServer()
 	raman = Raman
 	readdatafunc0 = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
-	                                 dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1},
-	                                 delimeter = "\t", )
+	                                 dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
 	from scipy import interpolate
 
 
@@ -748,15 +767,37 @@ if __name__ == '__main__':
 	# db = Raman_dirwise(**ascconfig)
 	# db.savedata(os.path.join(projectroot, "data", "liver_processed_mean"),mode = "dir_wise")
 
-	csvconfig_c = dict(dataroot = os.path.join(projectroot, "data", "liver_cell", "HepG2"),
+	dir = os.path.join(projectroot, "data", "liver_cell_dou")
+
+	csvconfig_c = dict(dataroot = os.path.join(dir, "HepG2"),
 	                   LoadCsvFile = readdatafunc,
-	                   backEnd = ".asc", )
-	csvconfig_h = dict(dataroot = os.path.join(projectroot, "data", "liver_cell", "MIHA"),
+	                   backEnd = ".csv", )
+	csvconfig_h = dict(dataroot = os.path.join(dir, "MIHA"),
 	                   LoadCsvFile = readdatafunc,
-	                   backEnd = ".asc", )
-	db = raman(**csvconfig_c,
-	           newfile = True, t_v_t = [1, 0, 0])
-	db.show_data()
-	db = raman(**csvconfig_h,
-	           newfile = True, t_v_t = [1, 0, 0])
-	db.show_data()
+	                   backEnd = ".csv", )
+	csvconfig_a = dict(dataroot = dir,
+	                   LoadCsvFile = readdatafunc,
+	                   backEnd = ".csv", )
+
+	# db = Raman(dataroot = os.path.join(projectroot, "data", "zwf"),
+	#                    LoadCsvFile = getRamanFromFile(wavelengthstart = 400, wavelengthend = 1800,
+	#                                  dataname2idx = {"Wavelength": 5, "Column": 3, "Intensity": 4},
+	#                                  delimeter = ",", ),
+	#                    backEnd = ".csv", t_v_t = [1,0,0],shuffle = False)
+	# header = "Wavenumber"
+	# data_in = numpy.expand_dims(db.xs,axis = 0)
+	# for i in range(len(db)):
+	# 	file,data = db.RamanFiles[i],db.Ramans[i]
+	# 	header+=","+file
+	# 	data = data.numpy()
+	# 	data_in = numpy.vstack((data_in,data))
+	# numpy.savetxt("combined.csv",data_in.T,delimiter = ",",header = header)
+
+	# db = raman(**csvconfig_c,
+	#            newfile = True, t_v_t = [1, 0, 0])
+	# db.show_data()
+	# db = raman(**csvconfig_h,
+	#            newfile = True, t_v_t = [1, 0, 0])
+	# db.show_data()
+	db = Raman_dirwise(**csvconfig_a,sfpath = "Raman_dirwise.csv",newfile = True,shuffle = False)
+	db.show_data(win = "all")

@@ -9,21 +9,17 @@ coderoot = os.path.split(os.path.split(__file__)[0])[0]
 projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", )
 sys.path.append(coderoot)
-
-try:
-	from .visdom_utils import data2mean_std
-except:
-	from visdom_utils import data2mean_std
+from visdom_utils import *
 
 
 def spectrum_vis_mpl(spectrums: torch.Tensor,
                      xs = None,
-                     win = 'spectrum_vis_win_default',
-                     update = None,
                      name = None,
                      opts: dict = None,
                      bias = 0,
-                     side = True):
+                     side = True,
+                     ax: plt.Axes = None,
+                     color = None):
 	"""
 
 	:param spectrums: a batch of spectrums[b,l] or [b,1,l]
@@ -40,48 +36,47 @@ def spectrum_vis_mpl(spectrums: torch.Tensor,
 	:param side: whether to show the mean + std and mean - std line
 	:returns spectrum_mean ,spectrum_up=spectrum_mean+std,spectrum_down=spectrum_mean-std
 	"""
-	if name == None:
-		name = ""
-	if opts is None:
-		opts = dict(main = dict(
-			xlabel = "cm-1",
-		),
-			side = dict(
-				xlabel = "cm-1",
-				dash = numpy.array(['dot']),
-				linecolor = numpy.array([[123, 104, 238]]),
-			))
-	if not "main" in opts.keys() or not "side" in opts.keys():
-		opts = dict(
-			main = opts,
-			side = opts
-		)
-	opts["main"].update(dict(title = win))
-	opts["side"].update(dict(title = win))
-	opts_down = copy.deepcopy(opts["side"])
+	if name is None:
+		name = "spectrum"
 	y_mean, y_up, y_down = data2mean_std(spectrums)
+	y_mean += bias
+	y_up += bias
+	y_down += bias
 	if xs is None:
 		xs = torch.arange(spectrums.shape[-1])
 
 	assert xs.shape[-1] == y_mean.shape[-1], r"lenth of xs and spectrums doesn't fit"
-	vis.line(X = xs, Y = y_mean + bias,
-	         win = win,
-	         name = name + "_mean",
-	         update = update,
 
-	         opts = opts["main"]
-	         )
+	fig: plt.Figure()
+	if ax is None:
+		fig, ax = plt.subplots(1, 1)
+	else:
+		fig = ax.figure
+
+	ax.set_title(name)
+	ax.set_xlabel("wavenumber cm^-^1")
+	ax.set_ylabel("intensity")
+
+	ax.plot(xs, y_mean, label = name)
 	if side:
-		vis.line(X = xs, Y = y_up + bias,
-		         win = win,
-		         update = "append",
-		         name = name + "_up",
-		         opts = opts["side"], )
+		ax.fill_between(xs, y_down, y_up,color= 'skyblue')
 
-		vis.line(X = xs, Y = y_down + bias,
-		         win = win,
-		         update = "append",
-		         name = name + "_down",
-		         opts = opts_down, )
+	return fig
 
-		return y_mean, y_up, y_down
+
+if __name__ == '__main__':
+	from bacteria.code_sjh.utils.RamanData import Raman_dirwise, getRamanFromFile
+
+	readdatafunc0 = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
+	                                 dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
+
+	fig, ax = plt.subplots(1,1,dpi = 200)
+	dir = os.path.join(projectroot, "data", "liver_cell_dou")
+	csvconfig_a = dict(dataroot = dir,
+	                   LoadCsvFile = readdatafunc0,
+	                   backEnd = ".csv", )
+	db = Raman_dirwise(**csvconfig_a, sfpath = "Raman_dirwise.csv", newfile = True, shuffle = False)
+	data = db.get_data_sorted_by_label()[0].numpy()
+	spectrum_vis_mpl(data,db.xs,ax = ax)
+	plt.show()
+

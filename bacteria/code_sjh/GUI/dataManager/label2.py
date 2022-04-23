@@ -176,6 +176,9 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
     def initdataBase(self, ):
         self.files = []
         self.Infos = []
+
+        if not os.path.isdir(self.datapath):
+            os.makedirs(self.datapath)
         for file in os.listdir(self.datapath):
             f = os.path.join(self.datapath, file)
             if not os.path.isfile(f) or not f.endswith(".csv"):
@@ -242,6 +245,8 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
         self.datapath = data_path
         self.input_data_path.setText("data_path: " + data_path)
         self.initdataBase()
+        self.load_label()
+        self.changeTo(0)
         return
 
     def set_work_path_clicked(self, ):
@@ -250,6 +255,8 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
         self.datapath = data_path
         self.input_work_path.setText("work_path: " + data_path)
         self.initWorkPlace()
+        self.load_label()
+        self.changeTo(0)
         return
 
     def mouseMoved(self, evt):
@@ -263,6 +270,8 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
                 self.hLine.setPos(mousePoint.y())
 
     def changeTo(self, idx):
+        if len(self.files) == 0:
+            return
         if self.labels[self._currentIdx] == "unclassified":
             self.data_list.item(self._currentIdx).setBackground(QColor('white'))
         elif self.labels[self._currentIdx] == "Abandoned":
@@ -388,6 +397,8 @@ class LabelWindow_colored(LabelWindow):
         super(LabelWindow_colored, self).__init__(parent, transform)
 
     def showdata(self):
+        if len(self.files) == 0:
+            return
         filepath = os.path.join(self.datapath, self._currentFile)
 
         self.data_plot.clear()

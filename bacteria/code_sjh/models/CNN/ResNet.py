@@ -76,8 +76,15 @@ class ResNet(BasicModule):
 		self.avg_pool = nn.AvgPool1d(kernel_size = 4)
 		self.flat = Flat()
 
+		self.features = nn.Sequential(
+			self.Conv1(x),
+			self.layer1(x),
+			self.layer2(x),
+			self.layer3(x),
+			self.layer4(x),
+		)
 		with torch.no_grad():
-			res = self.feature(sample_tensor)  # [b,planes[-1],l]
+			res = self.features(sample_tensor)  # [b,planes[-1],l]
 			res = self.avg_pool(res)  # [b,planes[-1],l//4]
 			res = self.flat(res)  # [b,planes[-1]*(l//4)]
 
@@ -103,21 +110,14 @@ class ResNet(BasicModule):
 		self.ch_in = planes
 		return nn.Sequential(*layers)
 
-	def feature(self,
-	            x):
-		x = self.Conv1(x)
-		x = self.layer1(x)
-		x = self.layer2(x)
-		x = self.layer3(x)
-		x = self.layer4(x)
-		return x
+
 
 	def forward(
 			self,
 			x
 	):
 
-		x = self.feature(x)
+		x = self.features(x)
 		x = self.avg_pool(x)
 		x = self.flat(x)
 		out = self.fc(x)

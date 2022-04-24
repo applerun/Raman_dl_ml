@@ -9,17 +9,15 @@ coderoot = os.path.split(os.path.split(__file__)[0])[0]
 projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", )
 sys.path.append(coderoot)
-from visdom_utils import *
+from bacteria.code_sjh.utils.Validation.visdom_utils import *
 
 
 def spectrum_vis_mpl(spectrums: torch.Tensor,
                      xs = None,
                      name = None,
-                     opts: dict = None,
                      bias = 0,
                      side = True,
-                     ax: plt.Axes = None,
-                     color = None):
+                     ax: plt.Axes = None,):
 	"""
 
 	:param spectrums: a batch of spectrums[b,l] or [b,1,l]

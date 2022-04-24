@@ -9,7 +9,7 @@ projectroot = os.path.split(coderoot)[0]
 import torch, csv
 import visdom
 from torch import nn, optim
-
+import matplotlib.pyplot as plt
 from bacteria.code_sjh.utils.RamanData import Raman, getRamanFromFile, Raman_dirwise
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
 from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
@@ -54,6 +54,7 @@ def AST_main(
 		criteon = nn.CrossEntropyLoss(),
 		# 选择criteon
 		verbose = False,
+		ax = None,
 ):
 	if vis == None:
 		vis = visdom.Visdom()
@@ -73,10 +74,15 @@ def AST_main(
 	# optimizer
 	best_acc, best_epoch = 0, 0
 	global_step = 0
+
+	steps = []
+	train_losses,val_losses,test_losses = [],[],[]
+	train_acces,val_acces,test_accses = [],[],[]
+
 	vis.line([0], [-1], win = "loss_" + str(k), opts = dict(title = "loss_" + str(k)))
 	vis.line([0], [-1], win = "val_acc_" + str(k), opts = dict(title = "val_acc_" + str(k)))
 	vis.line([0], [-1], win = "train_acc_" + str(k), opts = dict(title = "train_acc_" + str(k)))
-	vis.line([0], [-1], win = "test_acc_" + str(k), opts = dict(title = "test_acc_" + str(k)))
+	# vis.line([0], [-1], win = "test_acc_" + str(k), opts = dict(title = "test_acc_" + str(k)))
 	save_dir = os.path.join(save_dir, net.model_name + ".mdl")
 
 	if not os.path.exists(save_dir):
@@ -85,25 +91,38 @@ def AST_main(
 
 	print("start training")
 	for epoch in range(epochs):
+
 		loss = train(net, lr, device, train_loader, criteon, optimizer, epoch, mixed = False)
 		vis.line([loss.item()], [global_step], win = "loss_" + str(k), update = "append")
 		global_step += 1
-		if epoch % epo_interv == 0 or epoch == epochs - 1:
-			net.eval()
-			val_acc = evaluate(net, val_loader, device)
-			train_acc = evaluate(net, train_loader, device)
-			# test_acc = evaluate(net, test_loader, device)
-			# t0 = time.time()
-			sample2acc_train = evaluate_samplewise(net, val_db, device)
 
-			# t1 = time.time()
-			# print("acc_cal_time: ",t1-t0)
+		net.eval()
+		with torch.no_grad():
+			val_loss = evaluate_loss(net, val_loader, criteon, device)
+			# test_loss = evaluate_loss(net,test_loader,criteon,device)
+			train_acc = evaluate(net, train_loader, device)
+			val_acc = evaluate(net, val_loader, device)
+			# test_acc = evaluate(net, test_loader, device)
+
+			train_acces.append(train_acc)
+			val_acces.append(val_acc)
+			# test_accses.append(test_acc)
+			train_losses.append(loss)
+			val_losses.append(val_loss)
+			# test_losses.append(test_loss)
+			steps.append(global_step)
+
 			vis.line([val_acc], [global_step], win = "val_acc_" + str(k), update = "append")
 			vis.line([train_acc], [global_step], win = "train_acc_" + str(k), update = "append")
 			# vis.line([test_acc], [global_step], win = "test_acc_" + str(k), update = "append")
-			# t2 = time.time()
-			# print("acc draw_time: ",t2-t1)
+			if val_acc >= best_acc and epoch > 20:
+				best_epoch = epoch
+				best_acc = val_acc
+				net.save(save_dir)
+
+		if epoch % epo_interv == 0 or epoch == epochs - 1:
 			if verbose:
+				sample2acc_train = evaluate_samplewise(net, val_db, device)
 				sample2acc_val = evaluate_samplewise(net, val_db, device)
 				sample2acc_test = evaluate_samplewise(net, test_db, device)
 				batch_plt(
@@ -114,25 +133,32 @@ def AST_main(
 					sample2acc_test, global_step, win = "test_acc_each_sample" + str(k),
 					update = None if global_step <= epo_interv else "append", viz = vis
 				)
-			# t3 = time.time()
-			# print("batch draw time: ",t3-t2)
-			batch_plt(sample2acc_train, global_step, win = "val_acc_each_sample"+str(k),
-			          update = None if global_step <= epo_interv else "append", viz = vis)
-			if val_acc >= best_acc and epoch > 20:
-				best_epoch = epoch
-				best_acc = val_acc
-				net.save(save_dir)
+				batch_plt(sample2acc_train, global_step, win = "val_acc_each_sample"+str(k),
+				          update = None if global_step <= epo_interv else "append", viz = vis)
+
 
 	net.load(save_dir)
 
-	print("best_acc:", best_acc, "best epoch", best_epoch)
-	print("loaded from ckpt!")
-	test_acc = evaluate(net, test_loader, device) if len(test_db) else 0
+	# print("best_acc:", best_acc, "best epoch", best_epoch)
+	# print("loaded from ckpt!")
+	test_acc = evaluate(net, test_loader, device) if len(test_db) else -1
+	res = {}
+
+	res["train_acces"] = train_acces
+	res["val_acces"] = val_acces
+	res["train_losses"] = train_losses
+	res["val_losses"] = val_losses
+
+	# res["test_acces"] = test_accses
+	res["best_acc"] = best_acc
+	res["test_acc"] = test_acc
+	res["best_epoch"] = best_epoch
 
 	print("test_acc:", test_acc)
+
 	# sample2acc_test = evaluate_samplewise(alexnet, val_db + test_db, device)
 	# print(sample2acc_test)
-	return best_acc, test_acc, best_epoch
+	return res
 
 
 if __name__ == '__main__':
@@ -232,14 +258,14 @@ if __name__ == '__main__':
 				sample_tensor = torch.unsqueeze(sample_tensor, dim = 0)
 
 				net = model(sample_tensor, test_db.num_classes()).to(device)
-				b, t, be = AST_main(
+				res = AST_main(
 					net,
 					train_db,
 					val_db,
 					test_db,
-					**train_cfg
-
+					**train_cfg,
 				)
+				b, t, be = res["best_acc"],res["test_acc"],res["best_epoch"]
 				writer.writerow([n, k, b, t, be])
 				bestaccs.append(b)
 				testaccs.append(t)

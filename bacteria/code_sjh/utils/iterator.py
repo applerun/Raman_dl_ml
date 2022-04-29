@@ -104,6 +104,7 @@ def train_CVAE(model: BasicModule,
                criteon,
                optimizer,
                idx,
+               criteon_label = None,
                verbose = False,
                mixed = False,
                device: torch.device = None,
@@ -164,10 +165,11 @@ def train_CVAE(model: BasicModule,
 					x_hat,
 					spectrum
 				)
-				loss2 = criteon(y_c_hat, label)
+				loss2 = criteon(y_c_hat, label) if criteon_label is None else criteon_label(y_c_hat,label)
 				loss = loss1 + label_rate * loss2 + kld_rate * kld
-				with torch.no_grad():
-					print("cri:", loss, "\nkld:", kld)
+				if verbose:
+					with torch.no_grad():
+						print("cri:", loss, "\nkld:", kld)
 			scaler.scale(loss).backward()
 			scaler.step(optimizer)
 			scaler.update()
@@ -186,8 +188,9 @@ def train_CVAE(model: BasicModule,
 			optimizer.step()
 			optimizer.zero_grad()
 		loss_list.append(loss.item())
-		loader.set_postfix_str(
-			'lr:{:.8f}, loss: {:.4f}'.format(optimizer.param_groups[0]['lr'], np.mean(loss_list)))
+		if verbose:
+			loader.set_postfix_str(
+				'lr:{:.8f}, loss: {:.4f}'.format(optimizer.param_groups[0]['lr'], np.mean(loss_list)))
 
 	if torch.cuda.is_available():
 		torch.cuda.empty_cache()

@@ -17,12 +17,9 @@ dataroot = os.path.join(projectroot, "data", "data_ID")
 sys.path.append(coderoot)
 from sklearn.preprocessing import LabelBinarizer
 
-try:
-	from . import Process
-	from .Validation.validation import visdom_utils
-except:
-	from bacteria.code_sjh.utils import Process
-	from bacteria.code_sjh.utils.Validation import visdom_utils
+
+from bacteria.code_sjh.utils import Process
+from bacteria.code_sjh.utils.Validation import visdom_utils
 
 
 # 请将combined文件后缀前加上减号" - "
@@ -85,7 +82,7 @@ def getRamanFromFile(wavelengthstart = 400,
 					wavelength = float(data[dataname2idx["Wavelength"]])
 					intense = float(data[dataname2idx["Intensity"]])
 				except:
-					print(filepath, ":", data)
+					print(filepath, ":", data,",delimeter:",delimeter)
 					raise ValueError
 				if wavelengthstart < wavelength and wavelength < wavelengthend:
 					Ramans.append(intense)

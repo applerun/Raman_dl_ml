@@ -17,7 +17,10 @@ def spectrum_vis_mpl(spectrums: torch.Tensor,
                      name = None,
                      bias = 0,
                      side = True,
-                     ax: plt.Axes = None,):
+                     ax: plt.Axes = None,
+                     line_color:str = None,
+                     shadow_color:str = None,
+                     ):
 	"""
 
 	:param spectrums: a batch of spectrums[b,l] or [b,1,l]
@@ -34,8 +37,13 @@ def spectrum_vis_mpl(spectrums: torch.Tensor,
 	:param side: whether to show the mean + std and mean - std line
 	:returns spectrum_mean ,spectrum_up=spectrum_mean+std,spectrum_down=spectrum_mean-std
 	"""
+
 	if name is None:
 		name = "spectrum"
+	if shadow_color is None:
+		shadow_color = "skyblue"
+	if line_color is None:
+		line_color = "blue"
 	y_mean, y_up, y_down = data2mean_std(spectrums)
 	y_mean += bias
 	y_up += bias
@@ -54,27 +62,42 @@ def spectrum_vis_mpl(spectrums: torch.Tensor,
 	ax.set_title(name)
 	ax.set_xlabel("wavenumber cm^-^1")
 	ax.set_ylabel("intensity")
-
-	ax.plot(xs, y_mean, label = name)
+	ax.plot(xs, y_mean, label = name,color = line_color)
 	if side:
-		ax.fill_between(xs, y_down, y_up,color= 'skyblue')
+		ax.fill_between(xs, y_down, y_up,color= shadow_color)
 
 	return fig
 
 
 if __name__ == '__main__':
 	from bacteria.code_sjh.utils.RamanData import Raman_dirwise, getRamanFromFile
-
+	from scipy import interpolate
 	readdatafunc0 = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
 	                                 dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
+	def readdatafunc(  # 插值，将光谱长度统一为512
+			filepath
+	):
+		R, X = readdatafunc0(filepath)
+		R = numpy.squeeze(R)
+		f = interpolate.interp1d(X, R, kind = "cubic")
+		newX = numpy.linspace(400, 1800, 512)
+		newR = f(newX)
+		newR = numpy.expand_dims(newR, axis = 0)
+		return newR, newX
 
-	fig, ax = plt.subplots(1,1,dpi = 200)
-	dir = os.path.join(projectroot, "data", "liver_cell_dou")
+
+	dir = os.path.join(projectroot, "data", "liver_cell")
 	csvconfig_a = dict(dataroot = dir,
-	                   LoadCsvFile = readdatafunc0,
-	                   backEnd = ".csv", )
+	                   LoadCsvFile = readdatafunc,
+	                   backEnd = ".asc", )
 	db = Raman_dirwise(**csvconfig_a, sfpath = "Raman_dirwise.csv", newfile = True, shuffle = False)
-	data = db.get_data_sorted_by_label()[0].numpy()
-	spectrum_vis_mpl(data,db.xs,ax = ax)
+	label2data = db.get_data_sorted_by_label()
+	label2name = db.label2name()
+	fig, ax = plt.subplots(1, len(list(label2data.keys())), dpi = 200)
+	for label in label2data.keys():
+		data = label2data[label].numpy()
+		name = label2name[label]
+		spectrum_vis_mpl(data,db.xs,ax = ax[label],name = name)
+	plt.subplots_adjust(wspace = 0.25)
 	plt.show()
 

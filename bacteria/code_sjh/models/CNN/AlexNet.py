@@ -11,11 +11,9 @@ coderoot = os.path.split(coderoot)[0]
 projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_AST")
 
-from bacteria.code_sjh.utils.RamanData import *
-from bacteria.code_sjh.models.BasicModule import BasicModule, Flat
-from bacteria.code_sjh.utils.Validation.hooks import *
-from bacteria.code_sjh.utils.Validation.validation import comp_class_vec
 
+from bacteria.code_sjh.models.BasicModule import BasicModule, Flat
+from bacteria.code_sjh.utils.RamanData import pytorchlize
 
 __all__ = ["AlexNet_Sun"]
 
@@ -290,61 +288,11 @@ class AlexNet_Sun(BasicModule):
 			pred = logits.argmax(dim = 1)  # [b]
 		return pred
 
-	def grad_cam(self, input, label = None, savefilepath = None, ):
-		"""
 
-		:param input: [b , c = 1 ,l]
-		:param label:
-		:param savefilepath:
-		:param win:
-		:return:
-		"""
-		if not self.model_loaded:
-			save_dir = savefilepath if savefilepath else os.path.join(coderoot, "checkpoints", self.model_name + ".mdl")
-			self.load(save_dir)  # 加载训练模型
-		input = pytorchlize(input)
-		# hook
-		fh = forward_hook()
-		h1 = self.features.register_forward_hook(fh)
-		bh = backward_hook()
-		h2 = self.features.register_backward_hook(bh)
-
-		# forward
-		output = self(input)  # [b,n_c]
-
-		# backward
-		self.zero_grad()
-		if label == None:
-			label = torch.argmax(output)
-		# class_vec
-		class_loss = comp_class_vec(output, self.num_classes, label)
-		class_loss.backward()
-
-		fmap = fh.fmap_block[0].cpu().data.numpy().squeeze()
-		grad_val = bh.grad_block[0][0].cpu().data.numpy().squeeze()  # [b,c,feature_length]
-
-		# remove the hooks
-		h1.remove()
-		h2.remove()
-
-		# cam_map
-		cam = numpy.zeros(fmap.shape[::2], dtype = numpy.float)  # [b,f_l]
-		ws = numpy.mean(grad_val, axis = (2))  # [b,c]
-		bsz = ws.shape[0]
-		chs = ws.shape[1]
-		for b in range(bsz):
-			for c in range(chs):
-				w = ws[b, c]
-				cam[b] += w * fmap[b, c, :]  # [b] * [b,l]
-				cam[b] = numpy.where(cam[b] > 0, cam[b], 0)
-				cam[b] -= cam[b].min()
-				cam[b] /= cam[b].max()
-
-		return cam  # [b,l]
 
 
 if __name__ == '__main__':
-	from bacteria.code_sjh.utils.RamanData import Raman, getRamanFromFile, pytorchlize
+	from bacteria.code_sjh.utils.RamanData import Raman, getRamanFromFile
 	from bacteria.code_sjh.utils.Validation.visdom_utils import startVisdomServer
 	from bacteria.code_sjh.utils.Validation import visdom_utils
 	from scipy import interpolate

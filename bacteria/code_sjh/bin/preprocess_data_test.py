@@ -76,8 +76,8 @@ vis.line(y, x, win = "sgfilter", name = "s-g滤波前", opts = dict(title = "s-g
              ylabel = "intensity"))
 vis.line(sgf(y), x, win = "sgfilter", name = "s-g滤波后", update = "append")
 
-# brnp = Process.bg_removal_niter_piecewisefit(num_iter = 3)  # 使用分段多项式拟合
-# y2 = brnp(sample_tensor)
+# brnf = Process.bg_removal_niter_piecewisefit(num_iter = 3)  # 使用分段多项式拟合
+# y2 = brnf(sample_tensor)
 # x = numpy.linspace(400, 1800, len(y2))
 # print(len(y2))
 # vis.line(nf(sgf(y)), x, win = "piecewise_processed_n-5",
@@ -87,8 +87,8 @@ vis.line(sgf(y), x, win = "sgfilter", name = "s-g滤波后", update = "append")
 #          name = "brnp_baseline_n-5",
 #          )
 #
-# brnp = Process.bg_removal_niter_piecewisefit(n_segments = 10)  # 使用分段多项式拟合
-# y2 = brnp(sample_tensor)
+# brnf = Process.bg_removal_niter_piecewisefit(n_segments = 10)  # 使用分段多项式拟合
+# y2 = brnf(sample_tensor)
 # x = numpy.linspace(400, 1800, len(y2))
 # print(len(y2))
 # vis.line(nf(sgf(y)), x, win = "piecewise_processed_s-5",

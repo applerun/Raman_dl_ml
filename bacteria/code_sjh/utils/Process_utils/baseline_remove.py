@@ -114,17 +114,17 @@ def bg_removal_niter_piecewisefit(num_iter = 10,
 		res = y - p
 		if vis:
 			viz = visdom.Visdom()
-			viz.line(o, x, win = "brnp:start",
+			viz.line(o, x, win = "brnf:start",
 			         name = "input_tensor",
-			         opts = dict(title = "brnp:start",
+			         opts = dict(title = "brnf:start",
 			                     showlegend = True,
 			                     xlabel = "cm$-$1",
 			                     ytick = False,
 			                     ))
-			viz.line(p, x, win = "brnp:start",
+			viz.line(p, x, win = "brnf:start",
 			         name = "predict",
 			         update = "append",
-			         opts = dict(title = "brnp:start",
+			         opts = dict(title = "brnf:start",
 			                     dash = numpy.array(['dot']),
 			                     showlegend = True,
 			                     xlabel = "cm$-$1",
@@ -139,17 +139,17 @@ def bg_removal_niter_piecewisefit(num_iter = 10,
 
 			if vis:
 				viz = visdom.Visdom()
-				viz.line(o, x, win = "brnp:step-" + str(step),
+				viz.line(o, x, win = "brnf:step-" + str(step),
 				         name = "input_tensor",
-				         opts = dict(title = "brnp:step-" + str(step),
+				         opts = dict(title = "brnf:step-" + str(step),
 				                     showlegend = True,
 				                     xlabel = "cm$-$1",
 				                     ytick = False,
 				                     ))
-				viz.line(p, x, win = "brnp:step-" + str(step),
+				viz.line(p, x, win = "brnf:step-" + str(step),
 				         name = "predict",
 				         update = "append",
-				         opts = dict(title = "brnp:step-" + str(step),
+				         opts = dict(title = "brnf:step-" + str(step),
 				                     dash = numpy.array(['dot']),
 				                     showlegend = True,
 				                     xlabel = "cm$-$1",

@@ -315,7 +315,7 @@ class CVAE2_Dlabel_Dclassifier(CVAE):
         self.model_name = "CVAE"
         self.dense_label = nn.Sequential(
             nn.Linear(self.num_classes, self.neck_axis),
-            nn.Sigmoid()
+            # nn.Sigmoid()
         )
         self.Encoder = _CVAE_CNN_encoder2(sample_tensor = sample_tensor, num_classes = num_classes,
                                           neck_axis = neck_axis * 2, dropout = dropout,

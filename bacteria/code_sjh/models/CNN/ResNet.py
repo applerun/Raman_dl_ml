@@ -77,11 +77,11 @@ class ResNet(BasicModule):
 		self.flat = Flat()
 
 		self.features = nn.Sequential(
-			self.Conv1(x),
-			self.layer1(x),
-			self.layer2(x),
-			self.layer3(x),
-			self.layer4(x),
+			self.Conv1,
+			self.layer1,
+			self.layer2,
+			self.layer3,
+			self.layer4,
 		)
 		with torch.no_grad():
 			res = self.features(sample_tensor)  # [b,planes[-1],l]

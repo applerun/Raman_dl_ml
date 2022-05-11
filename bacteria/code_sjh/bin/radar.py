@@ -1,7 +1,7 @@
 from bacteria.code_sjh.utils.RamanData import Raman, projectroot
 from bacteria.code_sjh.models import AlexNet_Sun
 from bacteria.code_sjh.models.CNN.ResNet import ResNet18,ResNet34,ResNet50,ResNet101,ResNet152
-from bacteria.code_sjh.utils.Validation import evaluate, evaluate_labelwise,startVisdomServer
+from bacteria.code_sjh.utils.Validation.validation import evaluate, evaluate_labelwise,startVisdomServer
 from bacteria.code_sjh.utils.iterator import train
 from bacteria.code_sjh.utils.Validation.visdom_utils import batch_plt
 from bacteria.code_sjh.utils.Classifier import copy_filewise_classify

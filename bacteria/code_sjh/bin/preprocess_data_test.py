@@ -11,7 +11,7 @@ dataroot = os.path.join(projectroot, "data", "liver", "liver_all_samplewise")
 sys.path.append(coderoot)
 
 from bacteria.code_sjh.utils.RamanData import Raman, Raman_dirwise
-from bacteria.code_sjh.utils.Validation import startVisdomServer
+from bacteria.code_sjh.utils.Validation.visdom_utils import startVisdomServer
 from bacteria.code_sjh.utils import Process
 
 test_db = Raman_dirwise(dataroot, mode = "train", transform = None)

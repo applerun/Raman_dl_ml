@@ -28,7 +28,7 @@ def plt_h(pltdir,
 		if type(h) == torch.Tensor:
 			h = h.detach_().cpu().numpy()
 		name = label2name[label]
-		ax.scatter(h[0], h[1], label = name)
+		ax.scatter(h[:,0], h[:,1], label = name)
 		if not os.path.isdir(os.path.join(pltdir, informations + "_record")):
 			os.makedirs(os.path.join(pltdir, informations + "_record"))
 		np.savetxt(os.path.join(pltdir, informations + "_record", name + "_VAE_neck.csv"), h, delimiter = ",")
@@ -80,6 +80,8 @@ def evaluate_CVAE_all(model: CVAE,
                       label_rate = 50.,
                       kld_rate = 200.0,
                       ):
+	if criteon_label is None:
+		criteon_label = nn.CrossEntropyLoss()
 	model.eval()
 	correct = 0
 	total = len(loader.dataset)
@@ -103,7 +105,7 @@ def evaluate_CVAE_all(model: CVAE,
 					x_hat,
 					x
 				)
-				loss2 = criteon(y_c_hat, y) if criteon_label is None else criteon_label(y_c_hat, y)
+				loss2 = criteon_label(y_c_hat, y)
 				loss = loss1 + label_rate * loss2 + kld_rate * kld
 				loss_list.append(loss.item())
 				correct += c_t
@@ -120,13 +122,15 @@ def evaluate_CVAE_all(model: CVAE,
 		label2roc = {}
 		label2auc = {}
 		label2h = {}
+
 		for i in range(num_clases):
 			x = label2data[i]
-			h = model.encode(x, rand = 0.5)  # scatter
+			input = x.to(device)
+			h = model.encode(input, rand = 0.5)  # scatter
 			frp, tpr, thresholds = roc_curve(y_true_all[i], y_score_all[i])
 			label2roc[i] = (frp, tpr, thresholds)
 			label2auc[i] = auc(frp, tpr)
-			label2h[i] = h
+			label2h[i] = h.cpu().numpy()
 		acc = correct / total
 		loss = np.mean(loss_list)
 		res = dict(acc = acc, loss = loss, label2roc = label2roc, label2auc = label2auc, label2h = label2h,
@@ -139,9 +143,11 @@ def evaluate_CVAE_loss(model,
                        val_loader,
                        criteon,
                        device,
-                       criteon_label,
+                       criteon_label = None,
                        label_rate = 50.,
                        kld_rate = 200.0, ):
+	if criteon_label is None:
+		criteon_label = nn.CrossEntropyLoss()
 	model.eval()
 	loss_list = []
 	with torch.no_grad():
@@ -152,7 +158,7 @@ def evaluate_CVAE_loss(model,
 				x_hat,
 				spectrum
 			)
-			loss2 = criteon(y_c_hat, label) if criteon_label is None else criteon_label(y_c_hat, label)
+			loss2 = criteon_label(y_c_hat, label)
 			loss = loss1 + label_rate * loss2 + kld_rate * kld
 			loss_list.append(loss.item())
 	return np.mean(loss_list)
@@ -168,7 +174,7 @@ def main(model,
          lr = 0.0001,
          viz = None,
          save_dir = os.path.join(coderoot, "checkpoints", ),
-         epochs = 100,
+         epochs = 200,
          device = None,
          epo_interv = 30,
          rates = None,
@@ -248,7 +254,7 @@ def main(model,
 						model.neck_vis(spectrum, samplename,
 						               win = "VAE_val_neck_vis_samplewise_epoch:" + str(epoch + 1),
 						               vis = viz,
-						               update = None if newwin == 0 else "append", rand = 0.3)
+						               update = None if newwin == 0 else "append", rand = 0.5)
 						newwin = 1
 				for idx in range(len(label2name.keys())):
 
@@ -282,7 +288,7 @@ def main(model,
 	res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
 	           train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
 	           best_acc = best_acc, test_acc = test_acc, best_epoch = best_epoch,
-	           res_val = res_val, test_val = res_test
+	           res_val = res_val, res_test = res_test
 	           )
 	return res
 
@@ -302,22 +308,22 @@ if __name__ == '__main__':
 	def readdatafunc(filepath):
 		R, X = readdatafunc0(filepath)
 		f = interpolate.interp1d(X, R, kind = "cubic")
-		newX = np.linspace(600, 1800, 512)
+		newX = np.linspace(600, 1800, 517)
 		newR = f(newX)
 		return newR, newX
 
 
-	bestaccs, testaccs, bepochs, vaucs, taucs = [], [], [], [], []
 
+	k_split = 6
 	db_cfg = dict(
 		# dataroot = os.path.join(projectroot, "data", "data_AST")
 		# dataroot = os.path.join(projectroot, "data", "liver", "liver_all_samplewise")
 		dataroot = os.path.join(projectroot, "data", "liver_cell_dou"), backEnd = ".csv", t_v_t = [0.8, 0.2, 0.0],
-		LoadCsvFile = readdatafunc)
-	k_split = 6
+		LoadCsvFile = readdatafunc,k_split = k_split)
+
 	train_cfg = dict(
 		criteon = nn.BCELoss(),
-		epochs = 500,
+		epochs = 5000,
 		batchsz = 256,
 		lr = 0.0001, rates = dict(
 			label_rate = 50.,
@@ -331,64 +337,72 @@ if __name__ == '__main__':
 	recorddir = os.path.join(projectroot, "results", "liver_CVAE", recorddir)  # 实验结果保存位置
 	if not os.path.isdir(recorddir):
 		os.makedirs(recorddir)
+	label_rates = [10,20,50,100]
+	kld_rates = [20,50,100,200]
+	rate2acc = np.zeros((len(label_rates),len(kld_rates)))
+	for i_l in range(len(label_rates)):
+		label_rate = label_rates[i_l]
+		for i_k in range(len(kld_rates)):
+			kld_rate = kld_rates[i_k]
+			bestaccs, testaccs, bepochs, vaucs, taucs = [], [], [], [], []
+			train_cfg["rates"] = dict(label_rate= label_rate,kld_rate = kld_rate)
+			for Model in [CVAE2_Dlabel_Dclassifier]:
+				recordsubdir = os.path.join(recorddir,
+				                            "CVAERecord" + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
+				if not os.path.isdir(recordsubdir):
+					os.makedirs(recordsubdir)
+				recordfile = recordsubdir + ".csv"
+				f = open(recordfile, "w", newline = "")
+				writer = csv.writer(f)
+				f.write(db_cfg.__str__() + "\n")
+				f.write(train_cfg.__str__() + "\n")
+				writer.writerow(["n", "k", "bestaccs", "testaccs", "best_epoch", "val_AUC", "test_AUC"])
+				conf_m_v = None
+				conf_m_t = None
+				for n in range(n_iter):
+					sfpath = "Raman_" + str(n) + ".csv"
+					for k in range(k_split):
 
-	for Model in [CVAE2_Dlabel_Dclassifier]:
-		recordsubdir = os.path.join(recorddir,
-		                            "CVAERecord" + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
-		if not os.path.isdir(recordsubdir):
-			os.makedirs(recordsubdir)
-		recordfile = recordsubdir + ".csv"
-		f = open(recordfile, "w", newline = "")
-		writer = csv.writer(f)
-		f.write(db_cfg.__str__() + "\n")
-		f.write(train_cfg.__str__() + "\n")
-		writer.writerow(["n", "k", "bestaccs", "testaccs", "best_epoch", "val_AUC", "test_AUC"])
-		conf_m_v = None
-		conf_m_t = None
-		for n in range(n_iter):
-			sfpath = "Raman_" + str(n) + ".csv"
-			for k in range(k_split):
+						train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath)
+						val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
+						# test_db = raman(**db_cfg, mode = "test", k = k)
+						if conf_m_t is None:
+							conf_m_t = np.zeros((train_db.numclasses, train_db.numclasses))
+							conf_m_v = np.zeros((train_db.numclasses, train_db.numclasses))
+						s_t, s_l = train_db[0]
+						s_t = torch.unsqueeze(s_t, dim = 0)
+						n_c = train_db.numclasses
 
-				train_db = raman(**db_cfg, mode = "train", k = k)
-				val_db = raman(**db_cfg, mode = "val", k = k)
-				# test_db = raman(**db_cfg, mode = "test", k = k)
-				if conf_m_t is None:
-					conf_m_t = np.zeros((train_db.numclasses, train_db.numclasses))
-					conf_m_v = np.zeros((train_db.numclasses, train_db.numclasses))
-				s_t, s_l = train_db[0]
-				s_t = torch.unsqueeze(s_t, dim = 0)
-				n_c = train_db.numclasses
+						model = Model(s_t, n_c).to(device)
 
-				model = Model(s_t, n_c).to(device)
+						res = main(model, train_db = train_db, val_db = val_db, test_db = val_db, **train_cfg)
 
-				res = main(model, train_db, val_db, val_db, **train_cfg)
+						pltdir = os.path.join(recordsubdir, "n-{}-k-{}".format(n, k))
+						if not os.path.isdir(pltdir):
+							os.makedirs(pltdir)
+						b, t, be, auc_val, auc_test = res["best_acc"], res["res_test"]["acc"], res["best_epoch"], \
+						                              np.mean(list(res["res_val"]["label2auc"].values())), \
+						                              np.mean(list(res["res_test"]["label2auc"].values()))
+						bestaccs.append(b)
+						testaccs.append(t)
+						bepochs.append(be)
+						vaucs.append(auc_val)
+						taucs.append(auc_test)
+						conf_m_v += res["res_val"]["confusion_matrix"]
+						conf_m_t += res["res_test"]["confusion_matrix"]
+						writer.writerow([n, k, b, t, be, auc_val, auc_test])
+						plt_res(pltdir, res, val_db, informations = None)
+			np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_v, delimiter = ",")
+			np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_t, delimiter = ",")
+			heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"))
+			heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
+			ba = np.mean(np.array(bestaccs)).__str__() + " +- " + np.std(np.array(bestaccs)).__str__()
+			ta = np.mean(np.array(testaccs)).__str__() + " +- " + np.std(np.array(testaccs)).__str__()
+			bea = np.mean(np.array(bepochs)).__str__() + "+-" + np.std(np.array(bepochs)).__str__()
+			auc_av = np.mean(np.array(vaucs)).__str__() + "+-" + np.std(np.array(vaucs)).__str__()
+			auc_at = np.mean(np.array(taucs)).__str__() + "+-" + np.std(np.array(taucs)).__str__()
+			writer.writerow(["mean", "std", ba, ta, bea, auc_av, auc_at])
+			f.close()
 
-				pltdir = os.path.join(recordsubdir, "n-{}-k-{}".format(n, k))
-				if not os.path.isdir(pltdir):
-					os.makedirs(pltdir)
-				b, t, be, auc_val, auc_test = res["best_acc"], res["res_test"]["acc"], res["best_epoch"], \
-				                              np.mean(list(res["res_val"]["label2auc"].values())), \
-				                              np.mean(list(res["res_test"]["label2auc"].values()))
-				bestaccs.append(b)
-				testaccs.append(t)
-				bepochs.append(be)
-				vaucs.append(auc_val)
-				taucs.append(auc_test)
-				conf_m_v += res["res_val"]["confusion_matrix"]
-				conf_m_t += res["res_test"]["confusion_matrix"]
-				writer.writerow([b, t, be, auc_val, auc_test])
-				plt_res(pltdir, res, val_db, informations = None)
-	np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_v, delimiter = ",")
-	np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_t, delimiter = ",")
-	heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"))
-	heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
-	ba = sum([np.mean(np.array(bestaccs)), " +- ", np.std(np.array(bestaccs))])
-	ta = sum([np.mean(np.array(testaccs)), " +- ", np.std(np.array(testaccs))])
-	bea = np.mean(np.array(bepochs)).__str__() + "+-" + np.std(np.array(bepochs)).__str__()
-	auc_av = np.mean(np.array(vaucs)).__str__() + "+-" + np.std(np.array(vaucs)).__str__()
-	auc_at = np.mean(np.array(taucs)).__str__() + "+-" + np.std(np.array(taucs)).__str__()
-	writer.writerow([ba, ta])
-	f.close()
-
-	print("best acc:", ba)
-	print("test acc", ta)
+			print("best acc:", ba)
+			print("test acc", ta)

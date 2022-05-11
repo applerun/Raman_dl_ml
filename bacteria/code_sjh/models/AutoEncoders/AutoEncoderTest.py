@@ -17,7 +17,7 @@ sys.path.append(coderoot)
 
 from bacteria.code_sjh.models.Criteons.CrossEntropy import BCE
 from bacteria.code_sjh.utils import RamanData, iterator, Process
-from bacteria.code_sjh.utils import Validation as validation
+from bacteria.code_sjh.utils.Validation import visdom_utils
 from bacteria.code_sjh.utils.Process import noising_func_generator
 from bacteria.code_sjh.models.BasicModule import BasicModule, Flat
 from AutoEncoder import *
@@ -111,8 +111,8 @@ def main_test(batchsz = 16,
 					spectrum = spectrum.to(device)
 					spectrum_hat = model(spectrum)
 					win = "spectrum_AE_val_" + label2name_val[idx] + "_epoch:" + str(epoch + 1)
-					validation.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
-					validation.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
+					visdom_utils.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
+					visdom_utils.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
 					if neck_axis < 4:
 						model.neck_vis(spectrum, label2name_val[idx], vis = vis,
 						               update = None if idx == 0 else "append",
@@ -122,8 +122,8 @@ def main_test(batchsz = 16,
 					spectrum = spectrum.to(device)
 					spectrum_hat = model(spectrum)
 					win = "spectrum_AE_train_" + label2name_train[idx] + "_epoch:" + str(epoch + 1)
-					validation.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
-					validation.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
+					visdom_utils.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
+					visdom_utils.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
 					if neck_axis < 4:
 						model.neck_vis(spectrum, label2name_train[idx], vis = vis,
 						               update = None if idx == 0 else "append",
@@ -141,8 +141,8 @@ def main_test(batchsz = 16,
 
 		win = "spectrum_AE" + label2name_train[idx]
 
-		validation.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
-		validation.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
+		visdom_utils.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
+		visdom_utils.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
 		if neck_axis < 4:
 			model.neck_vis(spectrum, label2name_train[idx], vis = vis, update = None if idx == 0 else "append")
 
@@ -236,8 +236,8 @@ def VAE_test(batchsz = 16, numworkers = 0, epochs = 1000, lr = 0.0005, modelname
 					spectrum = spectrum.to(device)
 					spectrum_hat = model(spectrum)[0]
 					win = "spectrum_VAE_val_" + label2name[idx] + "epoch:" + str(epoch + 1)
-					validation.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
-					validation.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
+					visdom_utils.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
+					visdom_utils.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
 					if neck_axis < 4:
 						model.neck_vis(spectrum, label2name[idx], vis = vis, update = None if idx == 0 else "append",
 						               win = "VAE_val_neck_vis_epoch:" + str(epoch + 1))
@@ -246,8 +246,8 @@ def VAE_test(batchsz = 16, numworkers = 0, epochs = 1000, lr = 0.0005, modelname
 					spectrum = spectrum.to(device)
 					spectrum_hat = model(spectrum)[0]
 					win = "spectrum_VAE_train_" + label2name[idx] + "epoch:" + str(epoch + 1)
-					validation.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
-					validation.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
+					visdom_utils.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
+					visdom_utils.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
 					if neck_axis < 4:
 						model.neck_vis(spectrum, label2name[idx], vis = vis, update = None if idx == 0 else "append",
 						               win = "VAE_train_neck_vis_epoch:" + str(epoch + 1))
@@ -261,8 +261,8 @@ def VAE_test(batchsz = 16, numworkers = 0, epochs = 1000, lr = 0.0005, modelname
 		win_main = "spectrum_VAE"
 		win = win_main + label2name[idx]
 
-		validation.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
-		validation.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
+		visdom_utils.spectrum_vis(spectrum, xs, win, name = "x", vis = vis)
+		visdom_utils.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = vis)
 		if neck_axis < 4:
 			model.neck_vis(spectrum, label2name[idx], win = win_main, vis = vis,
 			               update = None if idx == 0 else "append")
@@ -340,7 +340,7 @@ def mae_test(savefilemode = "combined",
 
 
 if __name__ == '__main__':
-	validation.startVisdomServer()
+	visdom_utils.startVisdomServer()
 	# train_accs = []
 	# test_accs = []
 	# necks = []

@@ -136,7 +136,8 @@ def train_CVAE(model: BasicModule,
 	if device == None:
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	model.train()
-	criteon_label = nn.CrossEntropyLoss()
+	if criteon_label is None:
+		criteon_label = nn.CrossEntropyLoss()
 	# lr decay
 	not_decay_flag = idx // lr_decay_period
 	if 0 < lr_decay_rate < 1 and idx % lr_decay_period == 0:
@@ -165,7 +166,7 @@ def train_CVAE(model: BasicModule,
 					x_hat,
 					spectrum
 				)
-				loss2 = criteon(y_c_hat, label) if criteon_label is None else criteon_label(y_c_hat,label)
+				loss2 = criteon_label(y_c_hat,label)
 				loss = loss1 + label_rate * loss2 + kld_rate * kld
 				if verbose:
 					with torch.no_grad():

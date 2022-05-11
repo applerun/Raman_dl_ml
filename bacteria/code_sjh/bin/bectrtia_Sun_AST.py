@@ -241,6 +241,17 @@ def plt_res_val(pltdir,
 	cm_fig.savefig(os.path.join(pltdir, informations + "_confusion_matrix.png"))
 	plt.close(cm_fig)
 
+# def replt_cam(pltdir,db: RamanDatasetCore):
+# 	camdir = os.path.join(pltdir,"cam")
+# 	name2label = db.name2label()
+# 	label2data = db.get_data_sorted_by_label()
+# 	for file in os.listdir(camdir):
+# 		if not file.endswith(".csv"):
+# 			continue
+# 		file_p = os.path.join(camdir,file)
+# 		file_n = file[:-4]
+# 		information,_,name = file.split("_")[0:3]
+# 		label =name2label[name]
 
 def plt_cam(pltdir,
             cams,

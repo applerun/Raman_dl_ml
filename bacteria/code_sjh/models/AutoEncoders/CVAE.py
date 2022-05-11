@@ -259,7 +259,7 @@ class CVAE(VAE):
     def onehot(self, y, device = None):  # y：[b]
         if device == None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        y_n = y.numpy()
+        y_n = y.cpu().numpy()
         if self.num_classes > 2:
             y_one_hot = self.lb.transform(y_n)
         else:

@@ -99,7 +99,7 @@ def getRamanFromFile(wavelengthstart = 400,
 class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 	def __init__(self,
 	             dataroot: str,
-	             resize = None,
+
 	             mode = "train",
 	             t_v_t = None,
 	             sfpath = "Ramans.csv",
@@ -150,7 +150,7 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 
 		self.LoadCsvFile = LoadCsvFile
 		self.root = dataroot
-		self.resize = resize
+
 		self.name2label = {}  # 为每个分类创建一个label
 		self.sfpath = sfpath
 		self.shuff = shuffle
@@ -693,19 +693,26 @@ class Raman_dirwise(RamanDatasetCore):
 	             simplyfied = True):
 		if not os.path.isdir(dir):
 			os.makedirs(dir)
-		sample2data = self.get_data_sorted_by_sample()
+
 		label2name = self.label2name()
 		sample2label = self.sample2label()
 		name2data = {}
+		if simplyfied:
+			sample2data = self.get_data_sorted_by_sample()
+			for sample in sample2data.keys():
+				data = sample2data[sample]
+				label = sample2label[sample].item()
+				name = label2name[label]
+				data = data.numpy()
+				data = numpy.squeeze(data).mean(axis = 0)
+				data = numpy.expand_dims(data, axis = 0)
+				name2data[name] = data if not name in name2data.keys() else numpy.vstack((name2data[name], data))
+		else:
+			label2data = self.get_data_sorted_by_label()
+			for label in label2name.keys():
+				name = label2name[label]
+				name2data[name] = numpy.squeeze(label2data[label].numpy())
 
-		for sample in sample2data.keys():
-			data = sample2data[sample]
-			label = sample2label[sample].item()
-			name = label2name[label]
-			data = data.numpy()
-			data = numpy.squeeze(data).mean(axis = 0)
-			data = numpy.expand_dims(data, axis = 0)
-			name2data[name] = data if not name in name2data.keys() else numpy.vstack((name2data[name], data))
 		X = self.xs
 		for name in name2data.keys():
 			data = name2data[name]
@@ -774,7 +781,7 @@ if __name__ == '__main__':
 	                   backEnd = ".csv", )
 	csvconfig_a = dict(dataroot = dir,
 	                   LoadCsvFile = readdatafunc,
-	                   backEnd = ".csv", )
+	                   backEnd = ".csv", t_v_t = [1.0,0,0])
 
 	# db = Raman(dataroot = os.path.join(projectroot, "data", "zwf"),
 	#                    LoadCsvFile = getRamanFromFile(wavelengthstart = 400, wavelengthend = 1800,
@@ -797,4 +804,5 @@ if __name__ == '__main__':
 	#            newfile = True, t_v_t = [1, 0, 0])
 	# db.show_data()
 	db = Raman_dirwise(**csvconfig_a,sfpath = "Raman_dirwise.csv",newfile = True,shuffle = False)
-	db.show_data(win = "all")
+	# db.show_data(win = "all")
+	db.savedata(os.path.join(os.path.dirname(dir),"liver_cell_filewise"),simplyfied = False)

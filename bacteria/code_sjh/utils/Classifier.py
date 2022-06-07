@@ -1,4 +1,4 @@
-from RamanData import RamanDatasetCore
+from bacteria.code_sjh.utils.RamanData import RamanDatasetCore
 from bacteria.code_sjh.models import BasicModule
 import os
 import torch

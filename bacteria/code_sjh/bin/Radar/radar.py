@@ -236,7 +236,7 @@ def AST_main(
 if __name__ == '__main__':
 	startVisdomServer()
 	dataroot = os.path.join(os.path.dirname(coderoot), "data", "radar","breath_ver1")
-	k_split = 4
+	k_split = 10
 	datasetcfg = dict(
 		dataroot = dataroot,
 		LoadCsvFile = radarfile2data,

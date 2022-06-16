@@ -11,7 +11,7 @@ from bacteria.code_sjh.models import CVAE, CVAE2_Dlabel_Dclassifier, RamanData, 
 # eval
 import torch.nn.functional as F
 from sklearn.metrics import roc_curve, auc, confusion_matrix
-from bectrtia_Sun_AST import plt_res_val, plt_loss_acc, heatmap
+from conv_net_classify import plt_res_val, plt_loss_acc, heatmap
 import matplotlib.pyplot as plt
 
 

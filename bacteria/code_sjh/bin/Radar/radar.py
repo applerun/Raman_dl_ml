@@ -102,13 +102,6 @@ class radarData(Raman):
 			reader = csv.reader(f)
 			if not filename == "labels.txt":
 				for row in reader:
-					if row == header:
-						continue
-					try:
-						label = int(row[0])
-						spectrum = row[1]
-						self.labels.append(torch.tensor(label))
-						self.RamanFiles.append(spectrum)
 					except:  # 数据格式有误
 						print("wrong csv,remaking...")
 						f.close()
@@ -132,7 +125,7 @@ class radarData(Raman):
 		assert len(self.RamanFiles) == len(self.labels)
 		return self.RamanFiles, self.labels
 def AST_main(
-		sample_tensor,
+		net,
 		# TODO:自动收集sample tensor
 		train_db,
 		val_db,
@@ -152,81 +145,146 @@ def AST_main(
 		vis = None,
 		save_dir = os.path.join(coderoot, "checkpoints", ),
 		# 选择保存目录
-		model = AlexNet_Sun,
-		# 选择分类模型
 		epo_interv = 2,
 		# 每隔epo_interv 验证一次
 		# prog_bar = False,  # 实现进度条功能
 		criteon = nn.CrossEntropyLoss(),
 		# 选择criteon
+		verbose = False,
+		ax = None,
 		lr_decay_rate = 0.5,
 		lr_decay_period = 60,
 ):
-	alexnet = model(sample_tensor = sample_tensor, num_classes = test_db.num_classes()).to(device)  # 生成模型
+	if vis == None:
+		vis = visdom.Visdom()
 
 	if not modelname is None:
-		alexnet.set_model_name(modelname)
+		net.set_model_name(modelname)
 
-	optimizer = optim.Adam(alexnet.parameters(), lr = lr)
+	optimizer = optim.Adam(net.parameters(), lr = lr)
 
 	# create loaders\
-	train_loader = DataLoader(train_db, batch_size = batchsz, shuffle = True, num_workers = numworkers,
-	                          )
+	train_loader = DataLoader(
+		train_db, batch_size = batchsz, shuffle = True, num_workers = numworkers,
+	)
 	val_loader = DataLoader(val_db, batch_size = batchsz, num_workers = numworkers)
 	test_loader = DataLoader(test_db, batch_size = batchsz, num_workers = numworkers)
 	print("data loaded")
 	# optimizer
 	best_acc, best_epoch = 0, 0
 	global_step = 0
+
+	steps = []
+	train_losses, val_losses, test_losses = [], [], []
+	train_acces, val_acces, test_accses = [], [], []
+
 	vis.line([0], [-1], win = "loss_" + str(k), opts = dict(title = "loss_" + str(k)))
 	vis.line([0], [-1], win = "val_acc_" + str(k), opts = dict(title = "val_acc_" + str(k)))
 	vis.line([0], [-1], win = "train_acc_" + str(k), opts = dict(title = "train_acc_" + str(k)))
 	vis.line([0], [-1], win = "test_acc_" + str(k), opts = dict(title = "test_acc_" + str(k)))
-	if not os.path.isdir(save_dir):
-		os.makedirs(save_dir)
-	save_dir = os.path.join(save_dir, alexnet.model_name + ".mdl")
+	save_dir = os.path.join(save_dir, net.model_name + ".mdl")
 
 	if not os.path.exists(save_dir):
 		with open(save_dir, "w", newline = ""):
 			pass
 
 	print("start training")
-
 	for epoch in range(epochs):
-		loss = train(alexnet, lr, device, train_loader, criteon, optimizer, epoch, mixed = False,
-		             lr_decay_rate = lr_decay_rate,
-		             lr_decay_period = lr_decay_period)
 
+		loss = train(net, lr, device, train_loader, criteon, optimizer, epoch, mixed = False)
 		vis.line([loss.item()], [global_step], win = "loss_" + str(k), update = "append")
 		global_step += 1
 		if epoch % epo_interv == 0 or epoch == epochs - 1:
-			alexnet.eval()
-			val_acc = evaluate(alexnet, val_loader, device)
-			train_acc = evaluate(alexnet, train_loader, device)
-			test_acc = evaluate(alexnet, test_loader, device)
+			net.eval()
+		with torch.no_grad():
+			val_loss = evaluate_loss(net, val_loader, criteon, device)
+			# test_loss = evaluate_loss(net,test_loader,criteon,device)
+			train_acc = evaluate(net, train_loader, device)
+			val_acc = evaluate(net, val_loader, device)
+			test_acc = evaluate(net, test_loader, device)
+
+			train_acces.append(train_acc)
+			val_acces.append(val_acc)
+			# test_accses.append(test_acc)
+			train_losses.append(loss)
+			val_losses.append(val_loss)
+			# test_losses.append(test_loss)
+			steps.append(global_step)
 
 			vis.line([val_acc], [global_step], win = "val_acc_" + str(k), update = "append")
 			vis.line([train_acc], [global_step], win = "train_acc_" + str(k), update = "append")
 			vis.line([test_acc], [global_step], win = "test_acc_" + str(k), update = "append")
 
-			batch_plt(evaluate_labelwise(alexnet, val_db, device), global_step, win = "val_acc_each_sample" + str(k),
+			batch_plt(evaluate_labelwise(net, val_db, device), global_step, win = "val_acc_each_sample" + str(k),
 			          update = None if global_step <= epo_interv else "append", viz = vis)
 
-			if val_acc >= best_acc:
+			if val_acc >= best_acc and epoch > 20:
 				best_epoch = epoch
 				best_acc = val_acc
-				alexnet.save(save_dir)
+				net.save(save_dir)
 
-	alexnet.load(save_dir)
+		if epoch % epo_interv == 0 or epoch == epochs - 1:
+			if verbose:
+				sample2acc_train = evaluate_samplewise(net, val_db, device)
+				sample2acc_val = evaluate_samplewise(net, val_db, device)
+				sample2acc_test = evaluate_samplewise(net, test_db, device)
+				batch_plt(
+					sample2acc_val, global_step, win = "val_acc_each_sample" + str(k),
+					update = None if global_step <= epo_interv else "append", viz = vis
+				)
+				batch_plt(
+					sample2acc_test, global_step, win = "test_acc_each_sample" + str(k),
+					update = None if global_step <= epo_interv else "append", viz = vis
+				)
+				batch_plt(sample2acc_train, global_step, win = "val_acc_each_sample" + str(k),
+				          update = None if global_step <= epo_interv else "append", viz = vis)
+
+	net.load(save_dir)
+
+	# print("best_acc:", best_acc, "best epoch", best_epoch)
+	# print("loaded from ckpt!")
+	res_test = evaluate_all(net, test_loader, criteon, device)
+	res_val = evaluate_all(net, val_loader, criteon, device)
+	res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
+	           train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
+	           best_acc = best_acc, best_epoch = best_epoch,  # early-stopping位置
+	           res_test = res_test,  # 测试集所有指标：
+	           # acc：float正确率, loss:float,
+	           # label2roc:dict 各个label的ROC, label2auc:dict 各个label的AUC, confusion_matrix:np.ndarray 混淆矩阵
+	           res_val = res_val,  # 验证集所有指标
+
+	           )
+
+	label2data = val_db.get_data_sorted_by_label()
+	cams = {}
+	for l in label2data.keys():
+		data = label2data[l]
+		if data is None:
+			continue
+		data = data.to(device)
+		test_cam = grad_cam(net, data, l, device)
+		cams[l] = test_cam
+	res["val_cam"] = cams
+	label2data = test_db.get_data_sorted_by_label()
+	cams = {}
+	for l in label2data.keys():
+		data = label2data[l]
+		if data is None:
+			cams[l] = None
+			continue
+		data = data.to(device)
+		test_cam = grad_cam(net, data, l, device)
+		cams[l] = test_cam
+	res["test_cam"] = cams
 
 	print("best_acc:", best_acc, "best epoch", best_epoch)
 	print("loaded from ckpt!")
-	test_acc = evaluate(alexnet, test_loader, device)
-	copy_filewise_classify(test_db, alexnet,
-	                       os.path.join(projectroot, "results", "", "test", alexnet.model_name + str(k)),
+	test_acc = evaluate(net, test_loader, device)
+	copy_filewise_classify(test_db, net,
+	                       os.path.join(projectroot, "results", "", "test", net.model_name + str(k)),
 	                       device = device)
-	copy_filewise_classify(val_db, alexnet,
-	                       os.path.join(projectroot, "results", "", "val", alexnet.model_name + str(k)),
+	copy_filewise_classify(val_db, net,
+	                       os.path.join(projectroot, "results", "", "val", net.model_name + str(k)),
 	                       device = device)
 	print("test_acc:", test_acc)
 
@@ -234,7 +292,7 @@ def AST_main(
 
 
 if __name__ == '__main__':
-	startVisdomServer()
+
 	dataroot = os.path.join(os.path.dirname(coderoot), "data", "radar","breath_ver1")
 	k_split = 10
 	datasetcfg = dict(

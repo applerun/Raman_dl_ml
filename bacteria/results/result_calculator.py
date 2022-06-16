@@ -206,8 +206,9 @@ def main_CVAE_rates():
 	dst = os.path.join("liver_CVAE", "Record_2022-05-01-08_58_35.csv")
 	get_res_matrix(dir_r,dst)
 if __name__ == '__main__':
-	rdir = os.path.join("liver", "CVAE")
-	rdir = os.path.join("liver_CVAE","Record_2022-05-01-08_58_35")
+	# rdir = os.path.join("liver", "CVAE")
+	# rdir = os.path.join("liver_CVAE","Record_2022-05-01-08_58_35")
+	rdir = "radar/Record_2022-06-16-12_11_53"
 	for dir in os.listdir(rdir):
 		dir = os.path.join(rdir, dir)
 		if not os.path.isdir(dir):

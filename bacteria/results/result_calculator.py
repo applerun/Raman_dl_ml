@@ -208,12 +208,12 @@ def main_CVAE_rates():
 if __name__ == '__main__':
 	# rdir = os.path.join("liver", "CVAE")
 	# rdir = os.path.join("liver_CVAE","Record_2022-05-01-08_58_35")
-	rdir = "radar/Record_2022-06-16-12_11_53"
+	rdir = os.path.join("radar/Record_2022-06-17-16_41_42/RecordFri_Jun_17_16-41-42_2022")
 	for dir in os.listdir(rdir):
 		dir = os.path.join(rdir, dir)
 		if not os.path.isdir(dir):
 			continue
-		acc, sens, spec = cal_conf_matrix(os.path.join(dir, "test_confusion_matrix.csv"))
+		acc, sens, spec = cal_conf_matrix(os.path.join(dir, "conf_matrix","test_confusion_matrix.csv"))
 		print("{}:accuracy-{},sensitivity-{},specificity-{}".format(dir, acc, sens, spec), )
 
 	# main_CVAE_rates()

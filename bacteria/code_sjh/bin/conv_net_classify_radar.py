@@ -4,16 +4,17 @@ import time
 import numpy
 import numpy as np
 import random, warnings, glob
+
 coderoot = os.path.split(os.path.split(__file__)[0])[0]
 projectroot = os.path.split(coderoot)[0]
 import torch, csv, seaborn
 from torch import nn, optim
-from bacteria.code_sjh.utils.Classifier import copy_filewise_classify
+from bacteria.code_sjh.utils.Classifier import copy_filewise_classify, cam_output_filewise
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
 from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34
 from bacteria.code_sjh.utils.Validation.validation import *
 from bacteria.code_sjh.utils.Validation.mpl_utils import *
-
+from bacteria.code_sjh.utils.Process_utils.errhandler import all_eval_err_handle
 from bacteria.code_sjh.utils.iterator import train
 
 from torch.utils.data import DataLoader
@@ -34,7 +35,7 @@ def AST_main(
 		# TODO:选择分配比例和数据文件夹
 		device,
 		# 选择训练键
-		lr = 0.002,
+		lr = 0.0002,
 		# 选择learning rate
 		epochs = 100,
 		# 选择epoch
@@ -73,6 +74,7 @@ def AST_main(
 	print("data loaded")
 	# optimizer
 	best_acc, best_epoch = 0, 0
+	best_loss = -1
 	global_step = 0
 
 	steps = []
@@ -115,7 +117,8 @@ def AST_main(
 			vis.line([val_acc], [global_step], win = "val_acc_" + str(k), update = "append")
 			vis.line([train_acc], [global_step], win = "train_acc_" + str(k), update = "append")
 			# vis.line([test_acc], [global_step], win = "test_acc_" + str(k), update = "append")
-			if val_acc >= best_acc and epoch > 20:
+			# if val_acc >= best_acc and epoch > 20:
+			if best_loss < 0 or val_loss < best_loss:
 				best_epoch = epoch
 				best_acc = val_acc
 				net.save(save_dir)
@@ -176,12 +179,7 @@ def AST_main(
 
 	# sample2acc_test = evaluate_samplewise(alexnet, val_db + test_db, device)
 	# print(sample2acc_test)
-	copy_filewise_classify(test_db, net,
-	                       os.path.join(projectroot, "results", "radar", "test", net.model_name + str(k)),
-	                       device = device)
-	copy_filewise_classify(val_db, net,
-	                       os.path.join(projectroot, "results", "radar", "val", net.model_name + str(k)),
-	                       device = device)
+
 	return res
 
 
@@ -219,6 +217,9 @@ def plt_res_val(pltdir,
                 label2name,
                 informations = None,
                 ticks = None):
+	for s_dirs in ["roc", "conf_matrix"]:
+		if not os.path.isdir(os.path.join(pltdir, s_dirs)):
+			os.makedirs(os.path.join(pltdir, s_dirs))
 	if ticks is None:
 		ticks = "auto"
 	if informations is None:
@@ -235,7 +236,7 @@ def plt_res_val(pltdir,
 		roc_ax.set_xlabel("fpr")
 		roc_ax.set_ylabel("tpr")
 
-		roc_fig.savefig(os.path.join(pltdir,"roc", informations + "_" + label2name[label] + "_roc.png"))
+		roc_fig.savefig(os.path.join(pltdir, "roc", informations + "_" + label2name[label] + "_roc.png"))
 		plt.close(roc_fig)
 	confusion_matrix = res["confusion_matrix"]
 	cm_fig, cm_ax = plt.subplots()
@@ -244,8 +245,9 @@ def plt_res_val(pltdir,
 	cm_ax.set_title('confusion matrix')
 	cm_ax.set_xlabel('predict')
 	cm_ax.set_ylabel('true')
-	cm_fig.savefig(os.path.join(pltdir,"conf_matrix" ,informations + "_confusion_matrix.png"))
-	np.savetxt(os.path.join(pltdir, "conf_matrix",informations + "_confusion_matrix.png"),confusion_matrix,delimiter = ",")
+	cm_fig.savefig(os.path.join(pltdir, "conf_matrix", informations + "_confusion_matrix.png"))
+	np.savetxt(os.path.join(pltdir, "conf_matrix", informations + "_confusion_matrix.csv"), confusion_matrix,
+	           delimiter = ",")
 	plt.close(cm_fig)
 
 
@@ -265,6 +267,8 @@ def plt_cam(pltdir,
             cams,
             db: RamanDatasetCore,
             informations = None):
+	if not os.path.isdir(os.path.join(pltdir, "cam")):
+		os.makedirs(os.path.join(pltdir, "cam"))
 	if informations is None:
 		informations = ""
 	label2name = db.label2name()
@@ -280,7 +284,7 @@ def plt_cam(pltdir,
 		                 line_color = "red", shadow_color = "pink")
 		cam_ax.legend()
 	plt.subplots_adjust(wspace = 0.25)
-	fig.savefig(os.path.join(pltdir, informations + "_grad_cam"))
+	fig.savefig(os.path.join(pltdir, "cam", informations + "_grad_cam"))
 	plt.close(fig)
 
 
@@ -295,7 +299,7 @@ def plt_res(pltdir,
 
 	plt_loss_acc(pltdir, res, informations)
 	plt_res_val(pltdir, res["res_val"], label2name, informations = "val", ticks = val_db.label2name().values())
-	plt_res_val(pltdir, res["res_test"], label2name, informations = "test",ticks = test_db.label2name().values())
+	plt_res_val(pltdir, res["res_test"], label2name, informations = "test", ticks = test_db.label2name().values())
 	plt_cam(pltdir, res["val_cam"], val_db, "val")
 	plt_cam(pltdir, res["test_cam"], test_db, "val")
 
@@ -310,11 +314,12 @@ def plt_res(pltdir,
 #            cams = cams,  # 梯度加权类激活映射图谱
 #            )
 def heatmap(matrix,
-            path,ticks = None):
+            path,
+            ticks = None):
 	if ticks is None:
 		ticks = "auto"
 	cm_fig, cm_ax = plt.subplots()
-	seaborn.heatmap(matrix, annot = True, cmap = "Blues", ax = cm_ax,xticklabels = ticks,yticklabels = ticks)
+	seaborn.heatmap(matrix, annot = True, cmap = "Blues", ax = cm_ax, xticklabels = ticks, yticklabels = ticks)
 	cm_ax.set_title('confusion matrix')
 	cm_ax.set_xlabel('predict')
 	cm_ax.set_ylabel('true')
@@ -330,7 +335,8 @@ def npsv(pltdir,
 	process = np.array([res["train_acces"], res["val_acces"], res["train_losses"], res["val_losses"]]).T
 	np.savetxt(os.path.join(pltdir, "train_process.csv"), process,
 	           header = "train_acces,val_acces,train_losses,val_losses", delimiter = ",")
-	os.makedirs(os.path.join(pltdir, "cam"))
+	if not os.path.isdir(os.path.join(pltdir, "cam")):
+		os.makedirs(os.path.join(pltdir, "cam"))
 	for label in test_db.label2name().keys():
 		name = test_db.label2name()[label]
 		val_cam = res["val_cam"][label]
@@ -474,22 +480,33 @@ if __name__ == '__main__':
 
 	raman = radarData  # 设置读取数据集的DataSet
 
-	dataroot = os.path.join(os.path.dirname(coderoot), "data", "radar", "breath_ver1")
-	k_split = 10
+	dataroot = os.path.join(os.path.dirname(coderoot), "data", "radar", "class3ver3")
+	k_split = 8
+
+
+	def readdata(filename):
+		data, x = radarfile2data(filename)
+		data = data[1, 900:1260]
+		data = np.expand_dims(data, axis = 0)
+		return data, x[900:1260]
+
+
 	datasetcfg = dict(
 		dataroot = dataroot,
-		LoadCsvFile = radarfile2data,
+		LoadCsvFile = readdata,
 		backEnd = ".csv",
-		transform = None,
+		transform = all_eval_err_handle,
+
 		t_v_t = [0.7, 0.2, 0.1],
 		# t_v_t = [1.,0.,0.],
 		k_split = k_split,
 		# ratio = {"Norm":0.5}
+		# sfpath = "labels_shuffled.csv"
 	)
 	traincfg = dict(
-		lr = 0.001,  # 选择learning rate
+		lr = 0.0001,  # 选择learning rate
 		epochs = 100,  # 选择epoch
-		batchsz = 8,  # 选择batch size
+		batchsz = 16,  # 选择batch size
 		numworkers = 0,
 		lr_decay_rate = 0.5,
 		lr_decay_period = 60,
@@ -540,7 +557,7 @@ if __name__ == '__main__':
 					net,
 					train_db,
 					val_db,
-					val_db,
+					test_db,
 					**traincfg,
 				)
 
@@ -566,10 +583,22 @@ if __name__ == '__main__':
 				npsv(pltdir, res, val_db, val_db, )
 				conf_m_v += res["res_val"]["confusion_matrix"]
 				conf_m_t += res["res_test"]["confusion_matrix"]
+				cam_output_filewise(val_db, net,
+				                    os.path.join(projectroot, "results", "radar", recordsubdir, "val", "cam", ))
+				copy_filewise_classify(test_db, net,
+				                       os.path.join(projectroot, "results", "radar", recordsubdir, "test",
+				                                    net.model_name + str(k)),
+				                       device = device)
+				copy_filewise_classify(val_db, net,
+				                       os.path.join(projectroot, "results", "radar", recordsubdir, "val",
+				                                    net.model_name + str(k)),
+				                       device = device)
+				net.save(
+					os.path.join(projectroot, "results", "radar", recordsubdir, "n-{}-k-{}".format(n, k), "net.mdl"))
 		np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_v, delimiter = ",")
 		np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_t, delimiter = ",")
-		heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"),ticks = test_db.label2name().keys())
-		heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"),ticks = test_db.label2name().keys())
+		heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"), ticks = test_db.label2name().keys())
+		heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"), ticks = test_db.label2name().keys())
 		# train_db.shufflecsv()
 		ba = np.mean(numpy.array(bestaccs)).__str__() + "+-" + numpy.std(numpy.array(bestaccs)).__str__()
 		ta = np.mean(numpy.array(testaccs)).__str__() + "+-" + numpy.std(numpy.array(testaccs)).__str__()

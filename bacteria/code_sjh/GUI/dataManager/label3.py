@@ -119,7 +119,7 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.vLine = pg.InfiniteLine(angle = 90, movable = False)
 		self.hLine = pg.InfiniteLine(angle = 0, movable = False)
 		self.showcrosshair = True
-		self.cam_show = False
+
 		self.proxy = pg.SignalProxy(self.data_plot.scene().sigMouseMoved, rateLimit = 60, slot = self.mouseMoved)
 		# self.data_plot.scene().sigMouseMoved.connect(self.mouseMoved)
 		self.data_sequence = ["breath", "heart", "idx"]
@@ -153,7 +153,6 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.class_abn_b.clicked.connect(self.abnorm_c)
 		self.pushButton.clicked.connect(self.abandon)
 		self.name_list.currentRowChanged.connect(self.changeData)
-		self.cam_b.clicked.connect(self.cam_button_clicked)
 
 	def keyPressEvent(self,
 	                  event: QtGui.QKeyEvent) -> None:
@@ -276,18 +275,6 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.initWorkPlace()
 		self.load_label()
 		self.changeTo(0)
-		return
-
-	def cam_button_clicked(self):
-		if self.cam_show:
-			self.cam_show = False
-			self.refresh()
-			return
-		else:
-			self.cam_show = True
-			self.cam_path = QtWidgets.QFileDialog.getExistingDirectory(self, "浏览",
-		                                                           os.path.join(os.path.dirname(__file__), "data"))
-
 		return
 
 	def mouseMoved(self,
@@ -448,14 +435,7 @@ class LabelWindow_colored(LabelWindow):
 		                    symbolPen = self.get_pens(),
 		                    symbol = "s",
 		                    symbolSize = 3)
-		if self.cam_show:
-			camfile = os.path.join(self.cam_path,self._currentFile[:-4]+".cam.csv")
-			cam_data = numpy.loadtxt(camfile,delimiter = ",")
-			self.data_plot.plot(
-				numpy.linspace(0, round(len(self.data) / 60), len(cam_data)),
-				cam_data*self.data.max(),
-				pen = pg.mkPen("r")
-			)
+
 		# self.data_plot.plot(xs, self.data, clear = True, pen = pg.mkPen(color = "363be1", width = 4, dash = (1, 2)))
 		self.show_support_line()
 

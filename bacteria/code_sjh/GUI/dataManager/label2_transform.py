@@ -10,7 +10,7 @@ import pyqtgraph
 
 coderoot = os.path.split(os.path.split(os.path.split(__file__)[0])[0])[0]
 projectroot = os.path.split(coderoot)[0]
-
+from bacteria.code_sjh.utils.Process_utils.errhandler import all_eval_err_handle
 try:
 	from .QGraphicsView_2 import *
 except:
@@ -90,7 +90,7 @@ def mean_func_nozero(data):
 
 def norm_transform(data):
 	data = night(data)  # 取晚上的数据
-	res = data
+	res = all_eval_err_handle(data)
 	# res = [mean_func_nozero(data[max(i - 5, 0):min(i + 5, len(data))]) for i in range(len(data))]  # 均值
 	# res = [mean_func_nozero(data[max(i - 3, 0):min(i + 3, len(data))]) for i in range(len(data))]  # 均值
 	return res
@@ -429,7 +429,7 @@ class LabelWindow_colored(LabelWindow):
 	             parent = None,
 	             transform = None):
 		self.sup_1 = [8., 50., 0.15]
-		self.sup_2 = [26, 90, 1.]
+		self.sup_2 = [26, 85, 1.]
 		super(LabelWindow_colored, self).__init__(parent, transform)
 
 	def showdata(self):
@@ -450,12 +450,13 @@ class LabelWindow_colored(LabelWindow):
 		                    symbolSize = 3)
 		if self.cam_show:
 			camfile = os.path.join(self.cam_path,self._currentFile[:-4]+".cam.csv")
-			cam_data = numpy.loadtxt(camfile,delimiter = ",")
-			self.data_plot.plot(
-				numpy.linspace(0, round(len(self.data) / 60), len(cam_data)),
-				cam_data*self.data.max(),
-				pen = pg.mkPen("r")
-			)
+			if os.path.exists(camfile):
+				cam_data = numpy.loadtxt(camfile,delimiter = ",")
+				self.data_plot.plot(
+					numpy.linspace(0, round(len(self.data) / 60), len(cam_data)),
+					cam_data*self.data.max(),
+					pen = pg.mkPen("r")
+				)
 		# self.data_plot.plot(xs, self.data, clear = True, pen = pg.mkPen(color = "363be1", width = 4, dash = (1, 2)))
 		self.show_support_line()
 
@@ -487,8 +488,9 @@ class LabelWindow_colored(LabelWindow):
 		return pens
 
 	def set_ranges(self):
-		ranges = [35., 150., 1.2]
-		self.data_plot.setYRange(0, ranges[self._currentData])
+		ranges = [35., 120., 1.2]
+		zeros = [0.,40.,0.]
+		self.data_plot.setYRange(zeros[self._currentData], ranges[self._currentData])
 
 	def set_time_axis(self):
 		timeaxis = pg.AxisItem(orientation = 'bottom')

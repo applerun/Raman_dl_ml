@@ -55,7 +55,7 @@ def evaluate_all(model,
 				y_score = score[:, i].float().cpu().numpy()  # [b]
 				y_true_all[i] = np.append(y_true_all[i], y_true)
 				y_score_all[i] = np.append(y_score_all[i], y_score)
-			cm = confusion_matrix(y.cpu().numpy(), pred.cpu().numpy(),labels = list(range(num_clases)))
+			cm = confusion_matrix(y.cpu().numpy(), pred.cpu().numpy(), labels = list(range(num_clases)))
 			conf_m += cm
 
 	label2roc = {}
@@ -70,6 +70,7 @@ def evaluate_all(model,
 
 	res = dict(acc = acc, loss = loss, label2roc = label2roc, label2auc = label2auc, confusion_matrix = conf_m)
 	return res
+
 
 def grad_cam(convnet,
              input,
@@ -108,8 +109,8 @@ def grad_cam(convnet,
 	class_loss = comp_class_vec(output, convnet.num_classes, label, device)
 	class_loss.backward()
 
-	fmap = fh.fmap_block[0].cpu().data.numpy().squeeze()
-	grad_val = bh.grad_block[0][0].cpu().data.numpy().squeeze()  # [b,c,feature_length]
+	fmap = fh.fmap_block[0].cpu().data.numpy()#.squeeze()
+	grad_val = bh.grad_block[0][0].cpu().data.numpy()#.squeeze()  # [b,c,feature_length]
 
 	# remove the hooks
 	h1.remove()
@@ -233,7 +234,7 @@ def comp_class_vec(output: torch.Tensor,
 	"""
 
 	:param output:[b,n_c]
-	:param index: [b] or int
+	:param index: [b] or int or []
 	:return: class_vec
 	"""
 	batchsize = output.shape[0]
@@ -243,7 +244,8 @@ def comp_class_vec(output: torch.Tensor,
 		index = torch.argmax(output)  # [b]
 	elif type(index) is int:
 		index = torch.ones(batchsize) * index
-		index = index
+	if len(index.shape) == 0:
+		index = torch.ones(batchsize) * index.to(torch.device("cpu"))
 
 	index = torch.unsqueeze(index, 1).to(torch.int64)
 	one_hot = torch.zeros(batchsize, num_classes).scatter_(1, index, 1).to(device)
@@ -269,8 +271,8 @@ class encode():
 
 
 if __name__ == '__main__':
-	import matplotlib.pyplot as plt
-	y = np.array([1,1,1,1])
-	y_pred = np.array([1,1,1,1])
-	c_m = confusion_matrix(y,y_pred)
+	# import matplotlib.pyplot as plt
+	y = np.array([1, 1, 1, 1])
+	y_pred = np.array([1, 1, 1, 1])
+	c_m = confusion_matrix(y, y_pred)
 	print(c_m)

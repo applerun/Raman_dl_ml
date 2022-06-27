@@ -1,10 +1,7 @@
 import csv
-import glob
 import os
-import random
 import sys
 
-import PyQt5.QtGui
 import numpy
 import pyqtgraph
 
@@ -12,11 +9,10 @@ coderoot = os.path.split(os.path.split(os.path.split(__file__)[0])[0])[0]
 projectroot = os.path.split(coderoot)[0]
 from bacteria.code_sjh.utils.Process_utils.errhandler import all_eval_err_handle
 try:
-	from .QGraphicsView_2 import *
+	from bacteria.code_sjh.GUI.dataManager.Windows.QGraphicsView_2 import *
 except:
-	from QGraphicsView_2 import *
+	from bacteria.code_sjh.GUI.dataManager.Windows.QGraphicsView_2 import *
 
-from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.Qt import *
 
 from shutil import copyfile
@@ -219,7 +215,8 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		for l in range(self.class_num):
 			if not os.path.exists(os.path.join(self.workpath, self.label2name[l])):
 				os.makedirs(os.path.join(self.workpath, self.label2name[l]))
-
+		if not os.path.isdir(os.path.join(os.path.dirname(__file__),"cache")):
+			os.makedirs(os.path.join(os.path.dirname(__file__),"cache"))
 		return
 
 	def load_label(self,
@@ -270,7 +267,7 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 
 	def set_work_path_clicked(self, ):
 		data_path = QtWidgets.QFileDialog.getExistingDirectory(self, "浏览",
-		                                                       os.path.join(os.path.dirname(__file__), "work"))
+		                                                       os.path.join(os.path.dirname(__file__),"cache", "work"))
 		self.datapath = data_path
 		self.input_work_path.setText("work_path: " + data_path)
 		self.initWorkPlace()

@@ -1,10 +1,7 @@
 import csv
-import glob
 import os
-import random
 import sys
 
-import PyQt5.QtGui
 import numpy
 import pyqtgraph
 
@@ -12,11 +9,10 @@ coderoot = os.path.split(os.path.split(os.path.split(__file__)[0])[0])[0]
 projectroot = os.path.split(coderoot)[0]
 
 try:
-	from .QGraphicsView_2 import *
+	from bacteria.code_sjh.GUI.dataManager.Windows.QGraphicsView_2 import *
 except:
-	from QGraphicsView_2 import *
+	from bacteria.code_sjh.GUI.dataManager.Windows.QGraphicsView_2 import *
 
-from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.Qt import *
 
 from shutil import copyfile

@@ -64,7 +64,9 @@ class LabelBlock():
 		self.start = float(self.start)
 		self.end = float(self.end)
 		return self
-
+	def changeRegion(self,start,end):
+		self.start = start
+		self.end = end
 	def cut(self,
 	        mid = None,
 	        cut_prev = False):

@@ -14,6 +14,8 @@ except:
 class Mask_Block_Item(pg.LinearRegionItem):
 	sigRegionChangeFinished = QtCore.pyqtSignal(object)
 	sigRegionChanged = QtCore.pyqtSignal(object)
+	sigRegionChangeFinished_output = QtCore.pyqtSignal(float, float)
+	sigCheckContainer = QtCore.pyqtSignal(object)
 
 	def __init__(self,
 	             block: LabelBlock = None,
@@ -22,13 +24,23 @@ class Mask_Block_Item(pg.LinearRegionItem):
 		if block is None:
 			self.start, self.end = self.getRegion()
 			self.label = None
+			self.register_block(None)
 		else:
 			self.start, self.end, self.label = block[0], block[1], block[2]
 			self.setRegion([self.start, self.end])
+			self.register_block(block)
 		self.sigRegionChanged.connect(self.ref_par)
+		self.sigRegionChangeFinished.connect(self.regionChangeFinished)
+	def regionChangeFinished(self):
+		self.sigRegionChangeFinished_output.emit(self.start, self.end)
+		self.sigCheckContainer.emit(self)
 
 	def ref_par(self, ):
 		self.start, self.end = self.getRegion()
+
+	def register_block(self,
+	                   block: LabelBlock):
+		self.registered_block = block
 
 
 class Item_Container(LabelMask):
@@ -46,6 +58,13 @@ class Item_Container(LabelMask):
 		self.create_floatRegionItem()  # 如果为添加模式，则创建一个用于添加label的region
 		self.regions_update()
 		self.label2brush = {"Norm": None}
+
+	def changeBrush(self,
+	                input):
+		if type(input) == dict:  # 直接更新label2brush
+			self.label2brush.update(input)
+		self.regions_update()
+		return
 
 	def create_floatRegionItem(self):
 		self.floatRegionItem = Mask_Block_Item(movable = True, )
@@ -84,12 +103,20 @@ class Item_Container(LabelMask):
 			assert block.end == region.end
 			assert block.label == region.label
 
-	def clear_Regions(self):
+	def checkMovedRegionItem(self,
+	                         item: Mask_Block_Item):
 
-		self.regionItems = []
+		item.registered_block.label = self.normlabel
+		self.update(item.registered_block) # 抹去原本的block
+		self.update(LabelBlock((item.start,item.end),item.label)) # 更新新的block
+		self.sort()
+		self.regions_update()
+		return
 
-	def mask_update(self):
-		self.blocks = [LabelBlock(self.bl)]
+	def blocks_update(self):
+		self.blocks = [LabelBlock((self.blocks[0][0], self.blocks[-1][1]), label = self.normlabel)]
+		for regionItem in self.regionItems:
+			self.update(LabelBlock((regionItem.start, regionItem.end), regionItem.label))
 		return
 
 	def regions_update(self):
@@ -101,7 +128,8 @@ class Item_Container(LabelMask):
 		for b in self.blocks:
 			if b.label == self.normlabel:
 				continue
-			self.createRegion(b, self.label2brush[b.label])
+			self.createRegion(b, self.label2brush[b.label]) # .sigRegionChangeFinished_output.connect(b.changeRegion)
+
 		return
 
 	def createRegion(self,
@@ -112,6 +140,8 @@ class Item_Container(LabelMask):
 		self.regionItems.append(new_item)
 		self.PlotWidget.addItem(new_item)
 		new_item.setClipItem(self.clipItem)
+		new_item.sigCheckContainer.connect(self.checkMovedRegionItem)
+		return new_item
 
 	def loadmask(self,
 	             file):
@@ -121,7 +151,6 @@ class Item_Container(LabelMask):
 				warnings.warn("brush of label {} lost,use default color".format(b.label))
 				self.label2brush[b.label] = pg.mkBrush(0, 0, 255, 55)
 		self.regions_update()
-
 
 	def changeMode(self,
 	               mode = None):
@@ -142,6 +171,7 @@ class Item_Container(LabelMask):
 
 	def setMovable(self,
 	               m = True):
+		self.mode = 1 if m else 0
 		for items in self.regionItems:
 			items.setMovable(m)
 
@@ -197,10 +227,25 @@ if __name__ == '__main__':
 	win.addItem(label)
 
 	p2 = win.addPlot(row = 1, col = 0)
+	vb = p2.vb
+
 	p2d = p2.plot(data1, pen = "w")
-	c = Item_Container(p2, (0, 8000), clipItem = p2d)
-	# c.changeMode()
+	c = Item_Container(p2, (0, 120000), clipItem = p2d)
+
+	c.changeMode()
+
+
+	def mouseMoved(evt):
+		pos = evt[0]  ## using signal proxy turns original arguments into a tuple
+		if p2.sceneBoundingRect().contains(pos):
+			mousePoint = vb.mapSceneToView(pos)
+			index = int(mousePoint.x())
+			if index > 0 and index < len(data1):
+				label.setText(c.label(index))
+
+
+	proxy = pg.SignalProxy(p2.scene().sigMouseMoved, rateLimit = 60, slot = mouseMoved)
 	c.addMask(LabelBlock((2000, 6000), label = "A", ), brush = pg.mkBrush(155, 120, 50, 50))
 	c.addMask(LabelBlock((500, 1500), label = "B"))
-
+	c.addMask(LabelBlock((10000,10000),label = "ts"))
 	pg.exec()

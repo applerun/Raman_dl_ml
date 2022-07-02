@@ -1,3 +1,4 @@
+import copy
 import csv
 import os
 import sys
@@ -95,6 +96,7 @@ def norm_transform(data):
 
 
 class LabelWindow(QMainWindow, Ui_MainWindow):
+	sigLabelAdded = QtCore.pyqtSignal(object)
 	def __init__(self,
 	             parent = None,
 	             transform = None,
@@ -118,6 +120,13 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.hLine_idx.setPos(0.65)
 		self.vLine = pg.InfiniteLine(angle = 90, movable = False)
 		self.hLine = pg.InfiniteLine(angle = 0, movable = False)
+
+		# 数据显示范围
+		self.region = pg.LinearRegionItem()
+
+		self.region.sigRegionChanged.connect(self.update_p1range)
+		self.data_plot.sigRangeChanged.connect(self.update_region)
+
 		self.showcrosshair = True
 		self.cam_show = False
 		self.proxy = pg.SignalProxy(self.data_plot.scene().sigMouseMoved, rateLimit = 60, slot = self.mouseMoved)
@@ -127,6 +136,7 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.datapath = os.path.join(os.path.dirname(__file__), "cache", "data")
 		self.label_conf_file = os.path.join(os.path.dirname(__file__), "cache", "labelfile.csv")
 		self.data = numpy.zeros((3, 1553))
+		self.data_show_region = None
 		self.label2color = {"Norm": "#ffffff"}
 		self.timeaxis = False
 		self._currentFile = None
@@ -134,8 +144,6 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self._currentData = 1
 		self.files = []
 		self.Infos = []
-		self.data_list.itemClicked.connect(self.itemClicked)
-		self.refresh_b.clicked.connect(self.refresh)
 		self.initdataBase()
 		self.initWorkPlace()
 		self.load_label()
@@ -143,6 +151,7 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.changeData(0)
 		self.input_data_path.setText(self.datapath)
 		self.input_work_path.setText(self.workpath)
+
 
 	def initButton(self):
 		self.set_data_path.clicked.connect(self.set_data_path_clicked)
@@ -155,6 +164,8 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.fu_b.clicked.connect(self.first_unclassified_data)
 		self.name_list.currentRowChanged.connect(self.changeData)
 		self.cam_b.clicked.connect(self.cam_button_clicked)
+		self.data_list.itemClicked.connect(self.itemClicked)
+		self.refresh_b.clicked.connect(self.refresh)
 
 	def keyPressEvent(self,
 	                  event: QtGui.QKeyEvent) -> None:
@@ -223,34 +234,9 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		# 创建缓存空间
 		if not os.path.isdir(os.path.join(os.path.dirname(__file__), "cache")):
 			os.makedirs(os.path.join(os.path.dirname(__file__), "cache"))
-		# 读取labelfile：
-		if os.path.isfile(self.label_conf_file):
-			with open(self.label_conf_file, "r") as f:
-				reader = csv.reader(f)
-				for label, color in reader:
-					self.label2color[label] = color
-		for label in self.label2color.keys():
-			color = self.label2color[label]
-			self.addlabel(label, color)
 		return
 
-	def addlabel(self,
-	             label,
-	             color):
-		item = QListWidgetItem(label)
-		item.setSizeHint(QSize(165, 22))
 
-		self.label_list.addItem(item)
-		# widget = labelize_wigdets.Ui_Form()
-		widget = Label_Widget(None, label, color)
-		self.label_list.setItemWidget(item, widget)
-		self.label2color[label] = color
-		widget.reset_color_b.sigColorChanged.connect(lambda x: item.setBackground(x.color()))
-
-		item.setBackground(QColor(color))
-		# widget.rename_label_b.setText(label)
-		# widget.reset_color_b.setColor(color)
-		return
 
 	def savelabel(self,
 	              file):
@@ -478,18 +464,28 @@ class LabelWindow_colored(LabelWindow):
 		if len(self.files) == 0:
 			return
 		filepath = os.path.join(self.datapath, self._currentFile)
-
+		self.timeSelectPlot.clear()
 		self.data_plot.clear()
 		self.readdatafile(filepath)
 		self.set_ranges()
 		xs = numpy.linspace(0, round(len(self.data) / 60), len(self.data))
+		if self.data_show_region is None:
+			self.data_show_region = [0,xs[-1]]
 		# timeaxis = timeStringAxis(xs=xs,strs=(22+xs)%24,orientation = "bottom")
-		self.data_plot.plot(xs, self.data,
+		p1d = self.data_plot.plot(xs, self.data,
 		                    pen = pg.mkPen(width = 4, dash = (1, 2)),
 		                    symbolBrush = self.get_brushes(),
 		                    symbolPen = self.get_pens(),
 		                    symbol = "s",
 		                    symbolSize = 3)
+		p2d = self.timeSelectPlot.plot(xs,self.data)
+
+		# 创建选取Item
+		if self.region is None:
+			self.region = pyqtgraph.LinearRegionItem()
+		self.timeSelectPlot.addItem(self.region, ignoreBounds = True)
+		self.region.setClipItem(p2d)
+		self.region.setRegion(self.data_show_region)
 		if self.cam_show:
 			camfile = os.path.join(self.cam_path, self._currentFile[:-4] + ".cam.csv")
 			if os.path.exists(camfile):
@@ -503,9 +499,17 @@ class LabelWindow_colored(LabelWindow):
 		self.show_support_line()
 		if not self.timeaxis:
 			self.set_time_axis()
+			self.set_time_axis(self.timeSelectPlot)
 			self.timeaxis = True
 		return
-
+	def update_region(self,window,viewRange):
+		rgn = viewRange[0]
+		self.region.setRegion(rgn)
+	def update_p1range(self):
+		self.region.setZValue(10)
+		minx,maxx = self.region.getRegion()
+		self.data_plot.setXRange(minx,maxx,padding = 0)
+		self.data_show_region = [minx,maxx]
 	def its2col(self,
 	            intensity):
 		sup1 = self.sup_1[self._currentData]
@@ -536,7 +540,9 @@ class LabelWindow_colored(LabelWindow):
 		zeros = [0., 40., 0.]
 		self.data_plot.setYRange(zeros[self._currentData], ranges[self._currentData])
 
-	def set_time_axis(self):
+	def set_time_axis(self,plot = None):
+		if plot is None:
+			plot = self.data_plot
 		s = self.starttime
 		timeaxis = pg.AxisItem(orientation = 'bottom')
 		x = numpy.linspace(0, round(len(self.data) / 60), round(len(self.data) / 60) + 1)
@@ -544,7 +550,7 @@ class LabelWindow_colored(LabelWindow):
 		ticks = [str(int(x)) + ":00" for x in ticks]
 		xdict = dict(zip(x.tolist(), ticks))
 		timeaxis.setTicks([xdict.items()])
-		self.data_plot.centralWidget.setAxisItems({"bottom": timeaxis})
+		plot.centralWidget.setAxisItems({"bottom": timeaxis})
 
 	def show_support_line(self):
 

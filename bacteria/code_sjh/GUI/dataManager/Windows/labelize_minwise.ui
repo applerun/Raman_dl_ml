@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1019</width>
-    <height>612</height>
+    <height>740</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -382,6 +382,25 @@ p, li { white-space: pre-wrap; }
     </property>
     <property name="text">
      <string>poslabel</string>
+    </property>
+    <property name="x_pos" stdset="0">
+     <double>0.000000000000000</double>
+    </property>
+    <property name="Label" stdset="0">
+     <string notr="true">Norm</string>
+    </property>
+    <property name="y_pos" stdset="0">
+     <double>0.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="PlotWidget" name="timeSelectPlot">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>560</y>
+      <width>661</width>
+      <height>81</height>
+     </rect>
     </property>
    </widget>
   </widget>

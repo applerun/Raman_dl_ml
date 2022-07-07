@@ -97,6 +97,8 @@ def norm_transform(data):
 
 class LabelWindow(QMainWindow, Ui_MainWindow):
 	sigLabelAdded = QtCore.pyqtSignal(object)
+	sigDataChanged = QtCore.pyqtSignal(object)
+
 	def __init__(self,
 	             parent = None,
 	             transform = None,
@@ -151,7 +153,6 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.changeData(0)
 		self.input_data_path.setText(self.datapath)
 		self.input_work_path.setText(self.workpath)
-
 
 	def initButton(self):
 		self.set_data_path.clicked.connect(self.set_data_path_clicked)
@@ -223,6 +224,7 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self._currentData = idx
 		self.data_label.setText(self.data_sequence[self._currentData])
 		self.showdata()
+		self.sigDataChanged.emit(self)
 
 	def initWorkPlace(self, ):
 		self.label2name = ["Norm", "Abnorm", "Abandoned"]
@@ -235,8 +237,6 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		if not os.path.isdir(os.path.join(os.path.dirname(__file__), "cache")):
 			os.makedirs(os.path.join(os.path.dirname(__file__), "cache"))
 		return
-
-
 
 	def savelabel(self,
 	              file):
@@ -321,12 +321,12 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 			vb = self.data_plot.centralWidget.vb
 			mousePoint = vb.mapSceneToView(pos)
 			index = int(mousePoint.x())
-			if index > -2 and index < len(self.data)//60+10:
-				time = float(mousePoint.x())+self.starttime
-				time = time%24
+			if index > -2 and index < len(self.data) // 60 + 10:
+				time = float(mousePoint.x()) + self.starttime
+				time = time % 24
 				h = int(time)
-				m = (time-h)*60
-				time = "{}:{:0>2}".format(h,int(m))
+				m = (time - h) * 60
+				time = "{}:{:0>2}".format(h, int(m))
 				self.poslabel.setText(str(time))
 				self.vLine.setPos(mousePoint.x())
 				self.hLine.setPos(mousePoint.y())
@@ -345,6 +345,7 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self._currentFile = self.files[self._currentIdx]
 		self.data_list.item(self._currentIdx).setBackground(QColor('blue'))
 		self.refresh()
+		self.sigDataChanged.emit(self)
 
 	def readdatafile(self,
 	                 filepath):
@@ -470,15 +471,15 @@ class LabelWindow_colored(LabelWindow):
 		self.set_ranges()
 		xs = numpy.linspace(0, round(len(self.data) / 60), len(self.data))
 		if self.data_show_region is None:
-			self.data_show_region = [0,xs[-1]]
+			self.data_show_region = [0, xs[-1]]
 		# timeaxis = timeStringAxis(xs=xs,strs=(22+xs)%24,orientation = "bottom")
 		p1d = self.data_plot.plot(xs, self.data,
-		                    pen = pg.mkPen(width = 4, dash = (1, 2)),
-		                    symbolBrush = self.get_brushes(),
-		                    symbolPen = self.get_pens(),
-		                    symbol = "s",
-		                    symbolSize = 3)
-		p2d = self.timeSelectPlot.plot(xs,self.data)
+		                          pen = pg.mkPen(width = 4, dash = (1, 2)),
+		                          symbolBrush = self.get_brushes(),
+		                          symbolPen = self.get_pens(),
+		                          symbol = "s",
+		                          symbolSize = 3)
+		p2d = self.timeSelectPlot.plot(xs, self.data)
 
 		# 创建选取Item
 		if self.region is None:
@@ -502,14 +503,19 @@ class LabelWindow_colored(LabelWindow):
 			self.set_time_axis(self.timeSelectPlot)
 			self.timeaxis = True
 		return
-	def update_region(self,window,viewRange):
+
+	def update_region(self,
+	                  window,
+	                  viewRange):
 		rgn = viewRange[0]
 		self.region.setRegion(rgn)
+
 	def update_p1range(self):
 		self.region.setZValue(10)
-		minx,maxx = self.region.getRegion()
-		self.data_plot.setXRange(minx,maxx,padding = 0)
-		self.data_show_region = [minx,maxx]
+		minx, maxx = self.region.getRegion()
+		self.data_plot.setXRange(minx, maxx, padding = 0)
+		self.data_show_region = [minx, maxx]
+
 	def its2col(self,
 	            intensity):
 		sup1 = self.sup_1[self._currentData]
@@ -540,7 +546,8 @@ class LabelWindow_colored(LabelWindow):
 		zeros = [0., 40., 0.]
 		self.data_plot.setYRange(zeros[self._currentData], ranges[self._currentData])
 
-	def set_time_axis(self,plot = None):
+	def set_time_axis(self,
+	                  plot = None):
 		if plot is None:
 			plot = self.data_plot
 		s = self.starttime

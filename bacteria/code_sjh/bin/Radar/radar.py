@@ -102,6 +102,11 @@ class radarData(Raman):
 			reader = csv.reader(f)
 			if not filename == "labels.txt":
 				for row in reader:
+					try: #尝试读取数据
+						label = int(row[0])
+						spectrum = row[1]
+						self.labels.append(torch.tensor(label))
+						self.RamanFiles.append(spectrum)
 					except:  # 数据格式有误
 						print("wrong csv,remaking...")
 						f.close()

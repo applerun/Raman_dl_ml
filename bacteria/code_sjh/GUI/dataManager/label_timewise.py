@@ -98,7 +98,7 @@ def norm_transform(data):
 class LabelWindow(QMainWindow, Ui_MainWindow):
 	sigLabelAdded = QtCore.pyqtSignal(object)
 	sigDataChanged = QtCore.pyqtSignal(object)
-
+	sigDataChanging = QtCore.pyqtSignal(object)
 	def __init__(self,
 	             parent = None,
 	             transform = None,
@@ -139,7 +139,7 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 		self.label_conf_file = os.path.join(os.path.dirname(__file__), "cache", "labelfile.csv")
 		self.data = numpy.zeros((3, 1553))
 		self.data_show_region = None
-		self.label2color = {"Norm": "#ffffff"}
+		self.label2color = {"Norm": QtGui.QColor(255,255,255,255)}
 		self.timeaxis = False
 		self._currentFile = None
 		self._currentIdx = 0
@@ -333,6 +333,7 @@ class LabelWindow(QMainWindow, Ui_MainWindow):
 
 	def changeTo(self,
 	             idx):
+		self.sigDataChanging.emit(self)
 		if len(self.files) == 0:
 			return
 		if self.labels[self._currentIdx] == "unclassified":
@@ -473,7 +474,7 @@ class LabelWindow_colored(LabelWindow):
 		if self.data_show_region is None:
 			self.data_show_region = [0, xs[-1]]
 		# timeaxis = timeStringAxis(xs=xs,strs=(22+xs)%24,orientation = "bottom")
-		p1d = self.data_plot.plot(xs, self.data,
+		self.data_plot_item = self.data_plot.plot(xs, self.data,
 		                          pen = pg.mkPen(width = 4, dash = (1, 2)),
 		                          symbolBrush = self.get_brushes(),
 		                          symbolPen = self.get_pens(),

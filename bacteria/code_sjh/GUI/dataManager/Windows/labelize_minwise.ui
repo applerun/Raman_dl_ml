@@ -325,8 +325,8 @@ p, li { white-space: pre-wrap; }
    <widget class="QPushButton" name="cam_b">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>520</y>
+      <x>760</x>
+      <y>580</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -335,24 +335,11 @@ p, li { white-space: pre-wrap; }
      <string>CAM</string>
     </property>
    </widget>
-   <widget class="ColorButton" name="pushButton">
+   <widget class="QPushButton" name="createlabel_b">
     <property name="geometry">
      <rect>
-      <x>890</x>
-      <y>270</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>ColorButton</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="createlabel">
-    <property name="geometry">
-     <rect>
-      <x>890</x>
-      <y>310</y>
+      <x>710</x>
+      <y>410</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -366,7 +353,7 @@ p, li { white-space: pre-wrap; }
      <rect>
       <x>710</x>
       <y>320</y>
-      <width>171</width>
+      <width>191</width>
       <height>80</height>
      </rect>
     </property>
@@ -376,8 +363,8 @@ p, li { white-space: pre-wrap; }
      <rect>
       <x>30</x>
       <y>400</y>
-      <width>54</width>
-      <height>12</height>
+      <width>291</width>
+      <height>16</height>
      </rect>
     </property>
     <property name="text">
@@ -401,6 +388,32 @@ p, li { white-space: pre-wrap; }
       <width>661</width>
       <height>81</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="labelModeChanege_btn">
+    <property name="geometry">
+     <rect>
+      <x>794</x>
+      <y>410</y>
+      <width>91</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>切换标记模式</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="addmask_b">
+    <property name="geometry">
+     <rect>
+      <x>760</x>
+      <y>530</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>AddMask</string>
     </property>
    </widget>
   </widget>
@@ -470,11 +483,6 @@ p, li { white-space: pre-wrap; }
   <customwidget>
    <class>PlotWidget</class>
    <extends>QGraphicsView</extends>
-   <header>pyqtgraph</header>
-  </customwidget>
-  <customwidget>
-   <class>ColorButton</class>
-   <extends>QPushButton</extends>
    <header>pyqtgraph</header>
   </customwidget>
  </customwidgets>

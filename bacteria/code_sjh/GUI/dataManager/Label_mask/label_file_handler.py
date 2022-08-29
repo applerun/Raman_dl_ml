@@ -25,9 +25,9 @@ class LabelBlock():
 	def __contains__(self,
 	                 item):
 		if type(item) == LabelBlock:
-			return self.start < item.start < item.end < self.end
+			return self.start <= item.start < item.end <= self.end
 		else:
-			return self.start < item < self.end
+			return self.start <= item < self.end
 
 	def __add__(self,
 	            other):
@@ -64,9 +64,13 @@ class LabelBlock():
 		self.start = float(self.start)
 		self.end = float(self.end)
 		return self
-	def changeRegion(self,start,end):
+
+	def changeRegion(self,
+	                 start,
+	                 end):
 		self.start = start
 		self.end = end
+
 	def cut(self,
 	        mid = None,
 	        cut_prev = False):
@@ -147,15 +151,17 @@ class LabelMask():
 			if self[i].label == self[i + 1].label:
 				self.blocks[i] += self.blocks[i + 1]
 				del self[i + 1]
+				continue
 			i += 1
+		return
 
 	def save(self,
 	         file):
 		dir = os.path.dirname(file)
 		if not os.path.isdir(dir):
 			os.makedirs(dir)
-		with open(file, "w", ) as f:
-			f.writelines([str(self[i]) for i in range(self.__len__())])
+		with open(file, "w") as f:
+			f.writelines([str(self[i]) + "\n" for i in range(self.__len__())])
 
 	def load(self,
 	         file,
@@ -169,7 +175,7 @@ class LabelMask():
 			self.blocks = []
 
 			for lines in f.readlines():
-				start, end, label = lines.split(",")
+				start, end, label = lines.strip().split(",")
 				start = self.precision(start)
 				end = self.precision(end)
 
@@ -201,7 +207,7 @@ class LabelMask():
 		while len(self) > i:
 			b = self[i]
 			if not flag0:  # 未找到新的block的位置
-				if new_s == b.start:
+				if new_s <= b.start:
 					flag0 = True
 					continue
 				if new_s in b:
@@ -215,7 +221,7 @@ class LabelMask():
 					self.blocks.insert(i + 1, b_)
 					break
 				elif new_e == b.start:
-					continue
+					raise AssertionError
 				elif new_e == b.end:
 					b.label = new_l
 					break
@@ -229,7 +235,7 @@ class LabelMask():
 
 	def label(self,
 	          x):
-		assert self[0][0] < x < self[-1][1], "x({}) out of range:{} to {}".format(x, self[0][0], self[-1][1])
+		assert self[0][0] <= x < self[-1][1], "x({}) out of range:{} to {}".format(x, self[0][0], self[-1][1])
 		for b in self.blocks:
 			if x in b:
 				return b.label

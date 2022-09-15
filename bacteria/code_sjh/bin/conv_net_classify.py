@@ -375,8 +375,9 @@ if __name__ == '__main__':
 
 	from bacteria.code_sjh.utils import Process
 
-	dataroot = os.path.join(projectroot, "data", "liver", "liver_all_samplewise")
+	# dataroot = os.path.join(projectroot, "data", "liver", "liver_all_samplewise")
 	# dataroot = os.path.join(projectroot, "data", "liver_cell_dou")  # 设置数据集路径
+	dataroot = os.path.join(projectroot,"data","tissue")
 	# dataroot = os.path.join(projectroot, "data", "liver_cell")
 	db_cfg = dict(  # 数据集设置
 		dataroot = dataroot,
@@ -386,9 +387,9 @@ if __name__ == '__main__':
 		LoadCsvFile = readdatafunc,
 		k_split = k_split,
 		transform = Process.process_series([  # 设置预处理流程
-			Process.baseline_als(),
+			# Process.baseline_als(),
 			# Process.bg_removal_niter_fit(),
-			# Process.bg_removal_niter_piecewisefit(),
+			Process.bg_removal_niter_piecewisefit(),
 			Process.sg_filter(),
 			Process.norm_func(), ]
 		)

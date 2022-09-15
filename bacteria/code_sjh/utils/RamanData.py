@@ -451,8 +451,8 @@ class Raman(RamanDatasetCore):
 		if self.k_split is not None:
 			self.RamanFiles = self.RamanFiles[:val_split_int]
 			self.labels = self.labels[:val_split_int]
-			val_start = int(self.k / self.k_split * len(self.RamanFiles))
-			val_end = int((self.k + 1) / self.k_split * len(self.RamanFiles))
+			val_start = int(round(self.k  * len(self.RamanFiles)/ self.k_split))
+			val_end = int(round((self.k + 1) * len(self.RamanFiles)/ self.k_split ))
 			# l1 = self.RamanFiles[:val_start] + self.RamanFiles[val_end:]
 			# l2 = self.RamanFiles = self.RamanFiles[val_start:val_end]
 			# l = list(set(l1) & set(l2))

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1019</width>
+    <width>963</width>
     <height>740</height>
    </rect>
   </property>
@@ -91,7 +91,7 @@ p, li { white-space: pre-wrap; }
         </size>
        </property>
        <property name="text">
-        <string>pre(上一份)</string>
+        <string>上一份</string>
        </property>
       </widget>
      </item>
@@ -104,7 +104,7 @@ p, li { white-space: pre-wrap; }
         </size>
        </property>
        <property name="text">
-        <string>next(下一份)</string>
+        <string>下一份</string>
        </property>
       </widget>
      </item>
@@ -117,7 +117,7 @@ p, li { white-space: pre-wrap; }
         </size>
        </property>
        <property name="text">
-        <string>undo(撤销)</string>
+        <string>撤销*</string>
        </property>
       </widget>
      </item>
@@ -130,7 +130,7 @@ p, li { white-space: pre-wrap; }
         </size>
        </property>
        <property name="text">
-        <string>redo(重做)</string>
+        <string>重做*</string>
        </property>
       </widget>
      </item>
@@ -146,7 +146,7 @@ p, li { white-space: pre-wrap; }
         <string>To next unclassified Data(前进至下一张未分类数据)</string>
        </property>
        <property name="text">
-        <string>Next Unclassified</string>
+        <string>下一个未分类数据</string>
        </property>
       </widget>
      </item>
@@ -162,7 +162,7 @@ p, li { white-space: pre-wrap; }
         <string>To next unclassified Data(前进至下一张未分类数据)</string>
        </property>
        <property name="text">
-        <string>First Unclassified</string>
+        <string>第一个未分类数据</string>
        </property>
       </widget>
      </item>
@@ -175,7 +175,7 @@ p, li { white-space: pre-wrap; }
         </size>
        </property>
        <property name="text">
-        <string>Refresh</string>
+        <string>刷新*</string>
        </property>
       </widget>
      </item>
@@ -325,14 +325,14 @@ p, li { white-space: pre-wrap; }
    <widget class="QPushButton" name="cam_b">
     <property name="geometry">
      <rect>
-      <x>760</x>
-      <y>580</y>
-      <width>75</width>
-      <height>23</height>
+      <x>750</x>
+      <y>590</y>
+      <width>101</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>CAM</string>
+     <string>显示注意力图谱</string>
     </property>
    </widget>
    <widget class="QPushButton" name="createlabel_b">
@@ -413,7 +413,20 @@ p, li { white-space: pre-wrap; }
      </rect>
     </property>
     <property name="text">
-     <string>AddMask</string>
+     <string>添加Mask</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="mask_label_display">
+    <property name="geometry">
+     <rect>
+      <x>720</x>
+      <y>300</y>
+      <width>161</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>当前masklabel：</string>
     </property>
    </widget>
   </widget>
@@ -423,7 +436,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1019</width>
+     <width>963</width>
      <height>23</height>
     </rect>
    </property>

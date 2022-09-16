@@ -9,7 +9,7 @@ from scipy.signal import savgol_filter
 try:
 	from .Process_utils.baseline_remove import *
 except:
-	from Process_utils.baseline_remove import *
+	from bacteria.code_sjh.utils.Process_utils.baseline_remove import *
 coderoot = os.path.split(os.path.split(__file__)[0])[0]
 projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_ID")

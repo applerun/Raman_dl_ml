@@ -162,7 +162,8 @@ def main(
 				"accuracy,{}\nsensitivity,{}\nspecificity,{}".format(acc, sens, spec)
 			)
 
-def main_1(#留一交叉验证
+
+def main_1(  # 留一交叉验证
 		raman = Raman_dirwise,
 		readdatafunc = readdatafuncDefualt,
 		transform = Process.process_series([  # 设置预处理流程
@@ -200,69 +201,80 @@ def main_1(#留一交叉验证
 		testaccs = []
 		c = 0
 		# aucs = []
-		loo=LeaveOneOut()
-		db = raman(**db_cfg, mode="train", sfpath=sfpath)
+		loo = LeaveOneOut()
+		db = raman(**db_cfg, mode = "train", sfpath = sfpath)
 		labels = np.array([x.detach_().cpu().numpy().__int__() for x in db.labels])
 		datas = np.array([x.detach_().cpu().numpy().squeeze() for x in db.Ramans])
 		files = db.RamanFiles
 		num_classes = db.num_classes()
-		conf_m = np.zeros((num_classes,num_classes))
-		for train_idx,test_idx in loo.split(labels,datas):
-			train_data,train_label = datas[train_idx],labels[train_idx]
-			test_data,test_label = datas[test_idx],labels[test_idx]
+		conf_m = np.zeros((num_classes, num_classes))
+
+		for train_idx, test_idx in loo.split(labels, datas):
+			train_data, train_label = datas[train_idx], labels[train_idx]
+			test_data, test_label = datas[test_idx], labels[test_idx]
 			testfile = files[test_idx[0]]
 			# print(len(l) / len(val_db))
 			if model is not None:
 				train_data, train_label, test_data, test_label = \
 					model(train_data, train_label, test_data, test_label)
-			classifier = svm.SVC(C = 2, kernel = 'rbf', gamma = 10, decision_function_shape = 'ovr',
-								 probability = True)  # ovr:一对多策略
+			classifier = svm.SVC(
+				# C = 2,
+				# kernel = 'rbf', gamma = 10, decision_function_shape = 'ovr',
+				probability = True
+			)  # ovr:一对多策略
 			classifier.fit(train_data, train_label)
 
 			pred = classifier.predict_proba(test_data)[0]
-			pred_ = int(pred[0]<pred[1])
-			test_acc = classifier.score(test_data, test_label)
+			pred_ = int(pred[0] <= pred[1])
+			# test_acc = classifier.score(test_data, test_label)
+
 			test_ = test_label[0]
-			print(db.RamanFiles[0],":",test_acc)
+			test_acc = float(pred_ == test_)
+			print(testfile, ":", test_acc)
 			testaccs.append(test_acc)
-			conf_m[test_,pred_]+=1
+			conf_m[test_, pred_] += 1
 			# label2auc = {}
 			# for i in range(num_classes):
 			# 	l_t = np.equal(test_label, i).astype(int)
 			# 	score = pred[:, i]
 			# 	frp, tpr, thresholds = roc_curve(l_t, score)
 			# 	plt.plot(frp, tpr)
-				# label2auc[i] = auc(frp, tpr)
-				# label2auc[i] = roc_auc_score(l_t, score)
+			# label2auc[i] = auc(frp, tpr)
+			# label2auc[i] = roc_auc_score(l_t, score)
 			# auc_m = np.mean(list(label2auc.values()))
 			# aucs.append(auc_m)
 			# writer.writerow([n, k, test_acc, auc_m])
 			c += 1
 			print(c, "/", len(db))
-
+			if not conf_m[0, 0] + conf_m[1, 1] == np.sum(np.array(testaccs)):
+				ttt = confusion_matrix(test_label, classifier.predict(test_data))
+				print("test_{}, pred_{},acc_{},pred{}".format(test_, pred_, test_acc, pred))
+				del ttt
+			assert conf_m.sum() == len(testaccs)
 		np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m, delimiter = ",")
 		heatmap(conf_m, os.path.join(recordsubdir, "test_confusion_matrix.png"))
 		ta = np.mean(np.array(testaccs)).__str__() + "+-" + np.std(np.array(testaccs)).__str__()
 		# auca = np.mean(np.array(testaccs)).__str__() + "+-" + np.std(np.array(testaccs)).__str__()
 		writer.writerow(["mean", "std", ta])
 		if num_classes == 2:
-			A, B, C, D = conf_m[0,0] ,conf_m[0,1],conf_m[1,0],conf_m[1,1]
+			A, B, C, D = conf_m[0, 0], conf_m[0, 1], conf_m[1, 0], conf_m[1, 1]
 			acc = (A + D) / (A + B + C + D)
 			sens = A / (A + B)
 			spec = D / (C + D)
 			f.write(
 				"accuracy,{}\nsensitivity,{}\nspecificity,{}".format(acc, sens, spec)
 			)
+			assert acc == np.mean(np.array(testaccs))
 
 
 if __name__ == '__main__':
 	for baselineRemoveFunc in [Process.baseline_als(),
-	                           Process.bg_removal_niter_fit(),
+	                           Process.bg_removal_niter_fit(num_iter = 30, degree = 5),
 	                           Process.bg_removal_niter_piecewisefit(), ]:
 		transform = Process.process_series([  # 设置预处理流程
 			baselineRemoveFunc,
-			Process.sg_filter(),
-			Process.norm_func(), ]
+			Process.sg_filter(window_length = 5, polyorder = 1),
+			Process.area_norm_func(), ]
 		)
 		# main(transform = transform,raman = Raman)
 		main_1(transform = transform, raman = Raman)

@@ -6,6 +6,7 @@ import sys
 import numpy as np
 import pandas as pd
 from scipy.signal import savgol_filter
+
 try:
 	from .Process_utils.baseline_remove import *
 except:
@@ -15,10 +16,9 @@ projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_ID")
 sys.path.append(coderoot)
 
+__all__ = ["sg_filter", "norm_func", "process_series", "noising_func_generator", "area_norm_func"]
 
 
-
-__all__ = ["sg_filter","norm_func","process_series", "noising_func_generator"]
 # S-G filter
 def noising_func_generator(t = 0.01):
 	def func(x):
@@ -27,23 +27,35 @@ def noising_func_generator(t = 0.01):
 
 	return func
 
-def sg_filter(window_length = 11, polyorder = 3):
+
+def sg_filter(window_length = 11,
+              polyorder = 3):
 	def func(x):
 		x = savgol_filter(x, window_length, polyorder)
 		return x
 
 	return func
 
+
 # spectral normalization
-def norm_func(a = 0, b = 1):
+def norm_func(a = 0,
+              b = 1):
 	def func(x):
 		return ((b - a) * (x - min(x))) / (max(x) - min(x)) + a
 
 	return func
 
 
+def area_norm_func(a = 1):
+	def func(x):
+		return a * x / sum(x)
+
+	return func
+
+
 # combined preprocessing function
-def preprocess_default(x, y = None):
+def preprocess_default(x,
+                       y = None):
 	x = baseline_als(lam = 100000, p = 0.01, niter = 10)(x)
 	# x = bg_removal_niter_piecewisefit()(x)
 	# x = bg_removal_niter_fit()(x)
@@ -52,7 +64,8 @@ def preprocess_default(x, y = None):
 	return x
 
 
-def process_series(sequence, copytype = "deepcopy"):
+def process_series(sequence,
+                   copytype = "deepcopy"):
 	ctype2cfunc = {"copy": copy.copy, "deepcopy": copy.deepcopy}
 
 	# 将所有处理函数结合在一起
@@ -120,7 +133,8 @@ def dir_process_walk(dirname = dataroot,
 				np.savetxt(savefilepath, matrix, delimiter = ',')  # save the matrix into a new csv file
 
 
-def delete_processed_walk(dirname = dataroot, savefilename = "combined-p.csv"):
+def delete_processed_walk(dirname = dataroot,
+                          savefilename = "combined-p.csv"):
 	for dirpath, _, filenames in os.walk(dirname):
 		for filename in filenames:
 			if filename == savefilename:  # 被处理过

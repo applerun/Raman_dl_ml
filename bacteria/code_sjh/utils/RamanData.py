@@ -266,6 +266,8 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 					dim = 0
 				)
 		for k in spectrum_each_label.keys():
+			if spectrum_each_label[k] is None:
+				continue
 			if len(spectrum_each_label[k].shape) == 3:
 				return spectrum_each_label
 			else:

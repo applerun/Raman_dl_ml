@@ -75,10 +75,14 @@ def main(
 			Process.sg_filter(),
 			Process.norm_func(), ]
 		),
-		recorddir = None
-):
-	db_cfg = dict(
+		recorddir = None,
 		dataroot = os.path.join(projectroot, "data", "tissue"),
+		model_list = None
+):
+	if model_list is None:
+		model_list = [None, preprocess_PCA, preprocess_LDA]
+	db_cfg = dict(
+		dataroot = dataroot,
 
 		LoadCsvFile = readdatafunc,
 		backEnd = ".csv", t_v_t = [1., 0., 0.], newfile = False, k_split = k_split,
@@ -87,11 +91,11 @@ def main(
 	# transform = None, )
 	if recorddir is None:
 		recorddir = "Record_" + time.strftime("%Y-%m-%d-%H_%M_%S")
-	if not os.path.isabs(recorddir):
 		recorddir = os.path.join(projectroot, "results", "tissue_ml", recorddir)  # 实验结果保存位置
-	for model in [None, preprocess_PCA, preprocess_LDA]:
+	for model in model_list:
+		modelname = model.__name__+"-SVM" if model is not None else "SVM"
 		recordsubdir = os.path.join(recorddir,
-		                            "Record" + time.asctime().replace(":", "-").replace(" ", "_"))
+		                            modelname+"_" + time.asctime().replace(":", "-").replace(" ", "_"))
 		if not os.path.isdir(recordsubdir):
 			os.makedirs(recordsubdir)
 		recordfile = recordsubdir + ".csv"
@@ -174,22 +178,26 @@ def main_1(  # 留一交叉验证
 			Process.norm_func(), ]
 		),
 		recorddir = None,
-		sfpath = "Raman_0_filewise.csv"
+		sfpath = "Raman_0_filewise.csv",
+		dataroot = os.path.join(projectroot, "data", "tissue"),
+		model_list = None
 ):
+	if model_list is None:
+		model_list = [None, preprocess_PCA, preprocess_LDA]
 	all_acc = []
 	db_cfg = dict(
-		dataroot = os.path.join(projectroot, "data", "tissue"),
+		dataroot = dataroot,
 		LoadCsvFile = readdatafunc,
 		backEnd = ".csv", t_v_t = [1., 0., 0.], newfile = False,
-		transform = transform
+		transform = transform,
 	)
 	if recorddir is None:
 		recorddir = "Record_" + time.strftime("%Y-%m-%d-%H_%M_%S")
-	if not os.path.isabs(recorddir):
 		recorddir = os.path.join(projectroot, "results", "tissue_ml", recorddir)  # 实验结果保存位置
-	for model in [None, preprocess_PCA, preprocess_LDA]:
+	for model in model_list:
+		modelname = model.__name__ + "-SVM" if model is not None else "SVM"
 		recordsubdir = os.path.join(recorddir,
-		                            "Record" + time.asctime().replace(":", "-").replace(" ", "_"))
+		                            modelname + "_" + time.asctime().replace(":", "-").replace(" ", "_"))
 		if not os.path.isdir(recordsubdir):
 			os.makedirs(recordsubdir)
 		recordfile = recordsubdir + ".csv"
@@ -233,23 +241,12 @@ def main_1(  # 留一交叉验证
 			print(testfile, ":", test_acc)
 			testaccs.append(test_acc)
 			conf_m[test_, pred_] += 1
-			# label2auc = {}
-			# for i in range(num_classes):
-			# 	l_t = np.equal(test_label, i).astype(int)
-			# 	score = pred[:, i]
-			# 	frp, tpr, thresholds = roc_curve(l_t, score)
-			# 	plt.plot(frp, tpr)
-			# label2auc[i] = auc(frp, tpr)
-			# label2auc[i] = roc_auc_score(l_t, score)
-			# auc_m = np.mean(list(label2auc.values()))
-			# aucs.append(auc_m)
-			# writer.writerow([n, k, test_acc, auc_m])
 			c += 1
 			print(c, "/", len(db))
-			if not conf_m[0, 0] + conf_m[1, 1] == np.sum(np.array(testaccs)):
-				ttt = confusion_matrix(test_label, classifier.predict(test_data))
-				print("test_{}, pred_{},acc_{},pred{}".format(test_, pred_, test_acc, pred))
-				del ttt
+			# if not conf_m[0, 0] + conf_m[1, 1] == np.sum(np.array(testaccs)):
+			# 	ttt = confusion_matrix(test_label, classifier.predict(test_data))
+			# 	print("test_{}, pred_{},acc_{},pred{}".format(test_, pred_, test_acc, pred))
+			# 	del ttt
 			assert conf_m.sum() == len(testaccs)
 		np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m, delimiter = ",")
 		heatmap(conf_m, os.path.join(recordsubdir, "test_confusion_matrix.png"))
@@ -268,13 +265,19 @@ def main_1(  # 留一交叉验证
 
 
 if __name__ == '__main__':
-	for baselineRemoveFunc in [Process.baseline_als(),
-	                           Process.bg_removal_niter_fit(num_iter = 30, degree = 5),
-	                           Process.bg_removal_niter_piecewisefit(), ]:
-		transform = Process.process_series([  # 设置预处理流程
-			baselineRemoveFunc,
-			Process.sg_filter(window_length = 5, polyorder = 1),
-			Process.area_norm_func(), ]
-		)
-		# main(transform = transform,raman = Raman)
-		main_1(transform = transform, raman = Raman)
+	for database in ["all_data", "all_data_down_sampling", "old_data"]:
+		dataroot = os.path.join(projectroot, "data", "tissue",database)
+		for baselineRemoveFunc in [Process.baseline_als(),
+		                           Process.bg_removal_niter_fit(num_iter = 30, degree = 5),
+		                           Process.bg_removal_niter_piecewisefit(), ]:
+			transform = Process.process_series([  # 设置预处理流程
+				baselineRemoveFunc,
+				Process.sg_filter(window_length = 5, polyorder = 1),
+				Process.area_norm_func(), ]
+			)
+			recorddir = database + "_" + time.strftime("%Y-%m-%d-%H_%M_%S")
+			recorddir = os.path.join(projectroot, "results", "tissue_ml", recorddir)
+			main(transform = transform, raman = Raman,dataroot = dataroot,recorddir = recorddir)
+			recorddir = database + "_" + time.strftime("%Y-%m-%d-%H_%M_%S")
+			recorddir = os.path.join(projectroot, "results", "tissue_ml", recorddir)
+			main_1(transform = transform, raman = Raman,dataroot = dataroot,recorddir = recorddir)

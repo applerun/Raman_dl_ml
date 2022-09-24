@@ -1,5 +1,6 @@
 import sys, os
 import time
+import warnings
 
 import numpy
 import numpy as np
@@ -60,6 +61,7 @@ def AST_main(
 		# 选择criteon
 		verbose = False,
 		ax = None,
+		k = 0
 ):
 	if vis == None:
 		vis = visdom.Visdom()
@@ -241,6 +243,7 @@ def plt_res_val(pltdir,
 	cm_fig.savefig(os.path.join(pltdir, informations + "_confusion_matrix.png"))
 	plt.close(cm_fig)
 
+
 # def replt_cam(pltdir,db: RamanDatasetCore):
 # 	camdir = os.path.join(pltdir,"cam")
 # 	name2label = db.name2label()
@@ -261,7 +264,7 @@ def plt_cam(pltdir,
 		informations = ""
 	label2name = db.label2name()
 	label2data = db.get_data_sorted_by_label()
-	fig, ax = plt.subplots(1, db.numclasses)
+	fig, ax = plt.subplots(db.numclasses,1)
 	fig.suptitle(informations + "_grad_cam")
 	for label in cams.keys():
 		cam_ax = ax[label]
@@ -293,8 +296,7 @@ def plt_res(pltdir,
 	plt_res_val(pltdir, res["res_val"], label2name, informations = "val")
 	plt_res_val(pltdir, res["res_test"], label2name, informations = "test")
 	plt_cam(pltdir, res["val_cam"], val_db, "val")
-	plt_cam(pltdir, res["test_cam"], test_db, "val")
-
+	plt_cam(pltdir, res["test_cam"], test_db, "val")                                                        
 
 # res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
 #            train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
@@ -320,102 +322,103 @@ def npsv(pltdir,
          res,
          val_db,
          test_db,
-	):
+         ):
 	process = np.array([res["train_acces"], res["val_acces"], res["train_losses"], res["val_losses"]]).T
-	np.savetxt( os.path.join(pltdir, "train_process.csv"),process,
+	np.savetxt(os.path.join(pltdir, "train_process.csv"), process,
 	           header = "train_acces,val_acces,train_losses,val_losses", delimiter = ",")
 	os.makedirs(os.path.join(pltdir, "cam"))
 	for label in test_db.label2name().keys():
 		name = test_db.label2name()[label]
-		val_cam = res["val_cam"][label]
-		test_cam = res["test_cam"][label]
-		xs = np.linspace(val_db.xs[0], val_db.xs[-1], val_cam.shape[-1])
-		xs = np.expand_dims(xs, axis = 0)
+		try:
+			val_cam = res["val_cam"][label]
+			test_cam = res["test_cam"][label]
+			xs = np.linspace(val_db.xs[0], val_db.xs[-1], val_cam.shape[-1])
+			xs = np.expand_dims(xs, axis = 0)
 
-		np.savetxt( os.path.join(pltdir, "cam", "val_cam_" + name + "_activated.csv"),np.vstack((xs, val_cam)),
-		           delimiter = ",")
-		np.savetxt( os.path.join(pltdir, "cam", "test_cam_" + name + "_activated.csv"),np.vstack((xs, test_cam)),
-		           delimiter = ",")
+			np.savetxt(os.path.join(pltdir, "cam", "val_cam_" + name + "_activated.csv"), np.vstack((xs, val_cam)),
+			           delimiter = ",")
+			np.savetxt(os.path.join(pltdir, "cam", "test_cam_" + name + "_activated.csv"), np.vstack((xs, test_cam)),
+			           delimiter = ",")
+		except:
+			warnings.warn("cam output failed")
 	return
 
 
-if __name__ == '__main__':
-	startVisdomServer()  # python -m visdom.server    启动visdom本地服务器
-	vis = visdom.Visdom()  # visdom对象
+readdatafunc0 = getRamanFromFile(  # 定义读取数据的函数
+	wavelengthstart = 39, wavelengthend = 1810, delimeter = None,
+	dataname2idx = {"Wavelength": 0, "Intensity": 1}
+)
 
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 设置运算设备
-	print("using device:", device.__str__())
 
-	# 设置数据集分割
+def readdatafunc(  # 插值，将光谱长度统一为512
+		filepath
+):
+	R, X = readdatafunc0(filepath)
+	R = numpy.squeeze(R)
+	f = interpolate.interp1d(X, R, kind = "cubic")
+	newX = numpy.linspace(400, 1800, 512)
+	newR = f(newX)
+	newR = numpy.expand_dims(newR, axis = 0)
+	return newR, newX
 
+
+def main(
+		dataroot,
+		db_cfg = None,
+		raman = Raman_dirwise,
+		# 设置读取数据集的DataSet
+		# 设置k叠交叉验证的k值
+		modellist = None,
+		recorddir = None,
+):
+	if recorddir is None:
+		recorddir = "Record_" + time.strftime("%Y-%m-%d-%H_%M_%S")
+		recorddir = os.path.join(projectroot, "results", "tissue_dl", recorddir)
+	if modellist is None:
+		modellist = [AlexNet_Sun, ResNet18, ResNet34]
+	if db_cfg is None:
+		db_cfg = dict(  # 数据集设置
+			dataroot = dataroot,
+			backEnd = ".csv",
+			# backEnd = ".asc",
+			t_v_t = [0.8, 0.2, 0.0],
+			LoadCsvFile = readdatafunc,
+			k_split = 6,
+			transform = Process.process_series([  # 设置预处理流程
+				# Process.baseline_als(),
+				# Process.bg_removal_niter_fit(),
+				Process.bg_removal_niter_piecewisefit(),
+				Process.sg_filter(),
+				Process.norm_func(), ]
+			)
+		)
+	k_split = db_cfg["k_split"]
 	bestaccs, testaccs, bepochs, vaucs, taucs = [], [], [], [], []
 
-	raman = Raman_dirwise  # 设置读取数据集的DataSet
-
-	k_split = 6  # 设置k叠交叉验证的k值
-
 	# readdatafunc = getRamanFromFile(wavelengthstart = 400,wavelengthend = 1800,delimeter = delimeter,dataname2idx = dataformat)
-	readdatafunc0 = getRamanFromFile(  # 定义读取数据的函数
-		wavelengthstart = 39, wavelengthend = 1810, delimeter = None,
-		dataname2idx = {"Wavelength": 0, "Intensity": 1}
-	)
 
-
-	def readdatafunc(  # 插值，将光谱长度统一为512
-			filepath
-	):
-		R, X = readdatafunc0(filepath)
-		R = numpy.squeeze(R)
-		f = interpolate.interp1d(X, R, kind = "cubic")
-		newX = numpy.linspace(400, 1800, 512)
-		newR = f(newX)
-		newR = numpy.expand_dims(newR, axis = 0)
-		return newR, newX
-
-
-	from bacteria.code_sjh.utils import Process
-
-	# dataroot = os.path.join(projectroot, "data", "liver", "liver_all_samplewise")
-	# dataroot = os.path.join(projectroot, "data", "liver_cell_dou")  # 设置数据集路径
-	dataroot = os.path.join(projectroot,"data","tissue")
-	# dataroot = os.path.join(projectroot, "data", "liver_cell")
-	db_cfg = dict(  # 数据集设置
-		dataroot = dataroot,
-		backEnd = ".csv",
-		# backEnd = ".asc",
-		t_v_t = [0.8, 0.2, 0.0],
-		LoadCsvFile = readdatafunc,
-		k_split = k_split,
-		transform = Process.process_series([  # 设置预处理流程
-			# Process.baseline_als(),
-			# Process.bg_removal_niter_fit(),
-			Process.bg_removal_niter_piecewisefit(),
-			Process.sg_filter(),
-			Process.norm_func(), ]
-		)
-	)
 	train_cfg = dict(  # 训练参数
 		device = device,
 		batchsz = 32,
 		vis = vis,
 		lr = 0.0001,
 		epochs = 60,
-		verbose = False, )
+		verbose = False,
+	)
 	# config = dict(dataroot = os.path.join(projectroot, "data", "data_AST"), backEnd = backend, t_v_t = tvt, LoadCsvFile = getRamanFromFile(wavelengthstart = 0, wavelengthend = 1800, delimeter = delimeter,
 	#                                  dataname2idx = dataformat), k_split = k_split)
 
-	modellist = [AlexNet_Sun, ResNet18, ResNet34]  # 需要验证的模型
+	# 需要验证的模型
 	n_iter = 1  # 交叉验证重复次数
 	i = 0  # 实验进度计数
 
-	recorddir = "Record_" + time.strftime("%Y-%m-%d-%H_%M_%S")
-	recorddir = os.path.join(projectroot, "results", "liver", recorddir)  # 实验结果保存位置
+	# recorddir = os.path.join(projectroot, "results", "liver", recorddir)  # 实验结果保存位置
 
 	if not os.path.isdir(recorddir):
 		os.makedirs(recorddir)
 	for model in modellist:
 		recordsubdir = os.path.join(recorddir,
-		                            "Record" + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
+		                            "Record" + model.__name__)  # + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
 		if not os.path.isdir(recordsubdir):
 			os.makedirs(recordsubdir)
 		recordfile = recordsubdir + ".csv"  # 记录训练的配置和结果
@@ -430,7 +433,7 @@ if __name__ == '__main__':
 		for n in range(n_iter):
 			for k in range(k_split):
 				sfpath = "Raman_" + str(n) + ".csv"
-				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath)
+				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True)
 				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
 				if conf_m_v is None:
 					conf_m_v = np.zeros((train_db.numclasses, train_db.numclasses))
@@ -450,6 +453,7 @@ if __name__ == '__main__':
 					val_db,
 					val_db,
 					**train_cfg,
+					k = k
 				)
 
 				pltdir = os.path.join(recordsubdir, "n-{}-k-{}".format(n, k))
@@ -464,24 +468,24 @@ if __name__ == '__main__':
 				bepochs.append(be)
 				vaucs.append(auc_val)
 				taucs.append(auc_test)
-				i+=1
+				i += 1
 				print(i, "/", len(modellist) * n_iter * k_split)
 				plt_res(pltdir,
 				        res,
 				        val_db,
 				        val_db,
 				        informations = None)
-				npsv(pltdir, res, val_db, val_db,)
+				npsv(pltdir, res, val_db, val_db, )
 				conf_m_v += res["res_val"]["confusion_matrix"]
 				conf_m_t += res["res_test"]["confusion_matrix"]
-		np.savetxt(os.path.join(recordsubdir,"test_confusion_matrix.csv"),conf_m_v,delimiter = ",")
-		np.savetxt(os.path.join(recordsubdir,"val_confusion_matrix.csv"),conf_m_t,delimiter = ",")
+		np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_v, delimiter = ",")
+		np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_t, delimiter = ",")
 		heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"))
 		heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
 		# train_db.shufflecsv()
 		ba = np.mean(numpy.array(bestaccs)).__str__() + "+-" + numpy.std(numpy.array(bestaccs)).__str__()
 		ta = np.mean(numpy.array(testaccs)).__str__() + "+-" + numpy.std(numpy.array(testaccs)).__str__()
-		bea =np.mean(numpy.array(bepochs)).__str__() + "+-" + numpy.std(numpy.array(bepochs)).__str__()
+		bea = np.mean(numpy.array(bepochs)).__str__() + "+-" + numpy.std(numpy.array(bepochs)).__str__()
 		auc_av = np.mean(numpy.array(vaucs)).__str__() + "+-" + numpy.std(numpy.array(vaucs)).__str__()
 		auc_at = np.mean(numpy.array(taucs)).__str__() + "+-" + numpy.std(numpy.array(taucs)).__str__()
 
@@ -491,3 +495,39 @@ if __name__ == '__main__':
 		print("best acc:", ba)
 		print("test acc", ta)
 		print("best epochs", bea)
+
+
+if __name__ == '__main__':
+	startVisdomServer()  # python -m visdom.server    启动visdom本地服务器
+	vis = visdom.Visdom()  # visdom对象
+	from bacteria.code_sjh.utils import Process
+
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 设置运算设备
+	print("using device:", device.__str__())
+	# dataroot = os.path.join(projectroot, "data", "liver", "liver_all_samplewise")
+	# dataroot = os.path.join(projectroot, "data", "liver_cell_dou")  # 设置数据集路径
+	for database in ["all_data","all_data_down_sampling","old_data"]:
+		dataroot = os.path.join(projectroot, "data", "tissue", database)
+		modellist = [AlexNet_Sun, ResNet18, ResNet34]
+		for preprocess in [
+			Process.baseline_als(),
+			Process.bg_removal_niter_fit(),
+			Process.bg_removal_niter_piecewisefit(), ]:
+			db_cfg = dict(  # 数据集设置
+				dataroot = dataroot,
+				backEnd = ".csv",
+				# backEnd = ".asc",
+				t_v_t = [0.8, 0.2, 0.0],
+				LoadCsvFile = readdatafunc,
+				k_split = 6,
+				transform = Process.process_series([  # 设置预处理流程
+
+					Process.sg_filter(),
+					Process.norm_func(), ]
+				))
+			# dataroot = os.path.join(projectroot, "data", "liver_cell")
+			recorddir = database + "_" + time.strftime("%Y-%m-%d-%H_%M_%S")
+			recorddir = os.path.join(projectroot, "results", "tissue_dl", recorddir)
+
+			main(dataroot, modellist = modellist, recorddir = recorddir)
+# 设置数据集分割

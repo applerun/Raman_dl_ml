@@ -296,7 +296,7 @@ def plt_res(pltdir,
 	plt_res_val(pltdir, res["res_val"], label2name, informations = "val")
 	plt_res_val(pltdir, res["res_test"], label2name, informations = "test")
 	plt_cam(pltdir, res["val_cam"], val_db, "val")
-	plt_cam(pltdir, res["test_cam"], test_db, "val")                                                        
+	plt_cam(pltdir, res["test_cam"], test_db, "val")
 
 # res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
 #            train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
@@ -408,7 +408,7 @@ def main(
 	# config = dict(dataroot = os.path.join(projectroot, "data", "data_AST"), backEnd = backend, t_v_t = tvt, LoadCsvFile = getRamanFromFile(wavelengthstart = 0, wavelengthend = 1800, delimeter = delimeter,
 	#                                  dataname2idx = dataformat), k_split = k_split)
 
-	# 需要验证的模型
+	modellist = [AlexNet_Sun, ResNet18, ResNet34]  # 需要验证的模型
 	n_iter = 1  # 交叉验证重复次数
 	i = 0  # 实验进度计数
 

@@ -143,5 +143,7 @@ def delete_processed_walk(dirname = dataroot,
 
 
 if __name__ == '__main__':
+	from bacteria.code_sjh.utils.RamanData import readdatafunc
+
 	delete_processed_walk()
 	dir_process_walk()

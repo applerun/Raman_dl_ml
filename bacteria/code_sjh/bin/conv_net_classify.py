@@ -243,7 +243,6 @@ def plt_res_val(pltdir,
 	cm_fig.savefig(os.path.join(pltdir, informations + "_confusion_matrix.png"))
 	plt.close(cm_fig)
 
-
 # def replt_cam(pltdir,db: RamanDatasetCore):
 # 	camdir = os.path.join(pltdir,"cam")
 # 	name2label = db.name2label()
@@ -297,6 +296,7 @@ def plt_res(pltdir,
 	plt_res_val(pltdir, res["res_test"], label2name, informations = "test")
 	plt_cam(pltdir, res["val_cam"], val_db, "val")
 	plt_cam(pltdir, res["test_cam"], test_db, "val")
+
 
 # res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
 #            train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数

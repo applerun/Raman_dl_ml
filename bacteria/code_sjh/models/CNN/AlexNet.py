@@ -46,7 +46,6 @@ class AlexNet_Sun(BasicModule):
 			nn.BatchNorm1d(16),
 			nn.LeakyReLU(alpha,inplace = True),
 			nn.MaxPool1d(kernel_size = 2, stride = 2),
-
 		)
 		self.flat = Flat()
 		tensor_sample2 = sample_tensor.clone()

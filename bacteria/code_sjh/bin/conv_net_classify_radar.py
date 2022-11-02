@@ -513,7 +513,7 @@ if __name__ == '__main__':
 		device = device,
 		vis = vis,
 	)
-	modellist = [AlexNet_Sun]  # 需要验证的模型
+	modellist = [AlexNet_Sun,ResNet18,ResNet34]  # 需要验证的模型
 	n_iter = 1  # 交叉验证重复次数
 	i = 0  # 实验进度计数
 

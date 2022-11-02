@@ -737,7 +737,7 @@ class Raman_dirwise(RamanDatasetCore):
 
 		return name2data
 
-
+# class Raman_dirwise_labelfile(RamanDatasetCore)
 def pytorchlize(x):
 	for i in range(3 - len(x.shape)):
 		x = torch.unsqueeze(x, dim = len(x.shape) - 1)

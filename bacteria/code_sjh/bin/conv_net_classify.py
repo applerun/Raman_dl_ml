@@ -521,7 +521,7 @@ if __name__ == '__main__':
 				LoadCsvFile = readdatafunc,
 				k_split = 6,
 				transform = Process.process_series([  # 设置预处理流程
-
+					preprocess,
 					Process.sg_filter(),
 					Process.norm_func(), ]
 				))

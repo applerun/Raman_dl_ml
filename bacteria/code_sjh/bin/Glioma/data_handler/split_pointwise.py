@@ -15,7 +15,7 @@ def datafileSortbyPoint(
         files_per_dir = None,
         dir_inf = "point",
         backend = ".csv",
-        maxPoints = 10,
+        maxPoints = 11,
 
 ):
     file_count = 0
@@ -33,7 +33,7 @@ def datafileSortbyPoint(
             dir_count = int(files.split(" ")[0])
         if dir_count == maxPoints:
             return
-        dir = os.path.join(dirpath, dir_inf + str(dir_count))
+        dir = os.path.join(dirpath, dir_inf + "_" + str(dir_count))
         if not os.path.isdir(dir):
             os.makedirs(dir)
         file_count += 1

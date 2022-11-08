@@ -13,7 +13,7 @@ dataroot_batch1 = os.path.join(projectroot, "data", "脑胶质瘤", "天坛神�
 dataroot_batch2 = os.path.join(projectroot, "data", "脑胶质瘤", "天坛神外 原始数据", "天坛神外 光谱",
                                "第二批 重新测试 2")
 dataroot_batch3 = os.path.join(projectroot, "data", "脑胶质瘤", "天坛神外 原始数据", "天坛神外 光谱", "第三批")
-dst_root = os.path.join(projectroot, "data", "脑胶质瘤", "data_used")
+dst_root = os.path.join(projectroot, "data", "脑胶质瘤", "data_reformed")
 
 
 # batch1
@@ -107,22 +107,24 @@ def batch2(dataroot_batch2):
 
 
 batch3_num = [
-60,
-122,
-110,
-127,
-74,
-91,
-109,
-49,
-136,
-83,
-113,
-130,
-61,
-97,
-120,
+    60,
+    122,
+    110,
+    127,
+    74,
+    91,
+    109,
+    49,
+    136,
+    83,
+    113,
+    130,
+    61,
+    97,
+    120,
 ]
+
+
 def batch3(dataroot_batch3):
     for dir_name in os.listdir(dataroot_batch3):
         dir_name_abs = os.path.join(dataroot_batch3, dir_name)
@@ -168,45 +170,84 @@ def assert_times(dir, lasttime = None):
             print(dir, " might have sth went wrong")
     except:
         print(times, ":", dir)
-    if lasttime is not None and 0< min(times) - lasttime < 10:
-        print(dir, " datas of points got too close:{} -> {}".format(lasttime,min(times)))
+    if lasttime is not None and 0 < min(times) - lasttime < 10:
+        print(dir, " datas of points got too close:{} -> {}".format(lasttime, min(times)))
     return max(times)
-def get_infos(filename:str):
+
+
+def get_infos(filename: str):
     df = pandas.read_excel(filename)
     nums = df["编号"]
     axes = df.axes[1]
-    res = axes[1]
     num2ele2label = {}
 
     for i in range(len(nums)):
         num2ele2label[nums[i]] = {}
-        for j in range(4,13):
-            num2ele2label[nums[i]][axes[j]] = df[axes[j]][i]
+        for j in range(4, 13):
+            label_class: str = axes[j]
+            label_class = label_class.replace("\\", "-")
+            num2ele2label[nums[i]][label_class] = df[axes[j]][i]
     return num2ele2label
+
+
 def count_files(dst_root):
     res = 0
     for r, d, f in os.walk(dst_root):
         res += len(f)
     return res
+
+
 if __name__ == '__main__':
-    infofile = os.path.join(projectroot,"data","脑胶质瘤","data_used","第一二三批 病例编号&大类结果.xlsx")
+    # infofile = os.path.join(projectroot,"data","脑胶质瘤","data_used","第一二三批 病例编号&大类结果.xlsx")
 
-    infos = get_infos(infofile)
-    print(infos)
-    ALL_root = os.path.join(dst_root,"all")
-    GBM_root = os.path.join(dst_root,"gbm")
-    # if os.path.exists(dst_root):
-    #     shutil.rmtree(dst_root)
-    # batch1()
-    # batch2(dataroot_batch2)
-    # batch3(dataroot_batch3)
+    # infos = get_infos(infofile)
+    # print(infos)
+    # ALL_root = os.path.join(dst_root,"all")
+    # GBM_root = os.path.join(dst_root,"gbm")
+    if os.path.exists(dst_root):
+        shutil.rmtree(dst_root)
+    batch1()
+    batch2(dataroot_batch2)
+    batch3(dataroot_batch3)
 
-    # for i in range(3):
-    #     batch = os.path.join(dst_root, "batch{}".format(i + 1))
-    #     for dir in os.listdir(batch):
-    #         datafileSortbyPoint(os.path.join(batch, dir), None if i == 0 else 3)
-    # pass
-    #
+    for i in range(3):
+        batch = os.path.join(dst_root, "batch{}".format(i + 1))
+        for dir in os.listdir(batch):
+            datafileSortbyPoint(os.path.join(batch, dir), None if i == 0 else 3)
+
+    classes = ["batch1", "batch2", "batch3"]
+    # dir_prefix = "point"
+    current_dir = os.path.dirname(__file__)
+    data_root = "../../../../data/脑胶质瘤/data_reformed/"
+    from av_pointwise import *
+
+    xs = None
+    for c in classes:
+        if c == "batch2":
+            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+        elif c == "batch1":
+            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 5, "Intensity": 4})
+        else:
+            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+        class_root = os.path.join(data_root, c)
+        for dirs in os.listdir(class_root):
+            abs_dir = os.path.join(class_root, dirs)
+            if not os.path.isdir(abs_dir):
+                continue
+            for pointdir in os.listdir(abs_dir):
+                abs_pointdir = os.path.join(abs_dir, pointdir)
+                if not os.path.isdir(abs_pointdir):
+                    # or not pointdir.startswith(dir_prefix):
+                    continue
+                dst_file = abs_pointdir + ".csv"
+                for raman_file in os.listdir(abs_pointdir):
+                    abs_raman_file = os.path.join(abs_pointdir, raman_file)
+                    if xs is None:
+                        _, xs = readRaman(abs_raman_file)
+                    refile(abs_raman_file, readRaman, xs = xs)
+                dir2file_av(abs_pointdir, readRaman, dst_file)
+                # file2plot(dst_file, dst_file[:-4] + ".png", readRaman)
+
     # for i in range(1, 3):
     #     batch = os.path.join(dst_root, "batch{}".format(i + 1))
     #     for tissue_dir in os.listdir(batch):
@@ -215,5 +256,3 @@ if __name__ == '__main__':
     #         for point_dir in os.listdir(tissue_dir_abs):
     #             last_time = assert_times(os.path.join(tissue_dir_abs, point_dir), last_time)
     # print(count_files(dst_root))
-
-

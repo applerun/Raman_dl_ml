@@ -4,6 +4,8 @@ import os
 import random
 import sys
 import copy
+import warnings
+
 import numpy
 import visdom
 
@@ -365,8 +367,11 @@ class Raman(RamanDatasetCore):
         :param noising: callable——input：1d spectrum output：noised 1d spectrum
 
         """
-
+        if "max_depth" in list(kwargs.keys()):
+            self.max_depth = kwargs["max_depth"]
+            del kwargs["max_depth"]
         # assert mode in ["train", "val", "test"]
+
         super(Raman, self).__init__(*args, **kwargs)
 
     def LoadCsv(self,
@@ -380,8 +385,14 @@ class Raman(RamanDatasetCore):
 
         if not os.path.exists(os.path.join(self.root, filename)) or self.new:
             RamanFiles = []
+            RamanLabels = []
             for name in self.name2label.keys():
-                files = glob.glob(os.path.join(self.root, name, "*" + self.dataEnd))
+                files = []
+                for r, d, f in os.walk(os.path.join(self.root, name)):
+                    f = list(filter(lambda x: x.endswith(self.dataEnd), f))
+                    files += [os.path.join(r, x) for x in f]
+
+                # files = glob.glob(os.path.join(self.root, name, "*" + self.dataEnd))
                 if self.ratio is not None:
                     if not name in self.ratio.keys():
                         ratio = 1.0
@@ -393,18 +404,20 @@ class Raman(RamanDatasetCore):
                         pass  # TODO:过采样函数
 
                 RamanFiles += files
+                RamanLabels += [self.name2label[name]] * len(files)
 
             if self.shuff:  # 打乱顺序
-                random.shuffle(RamanFiles)
+                z = list(zip(RamanFiles, RamanLabels))
+                random.shuffle(z)
+                RamanFiles, RamanLabels = zip(*z)
+
             with open(os.path.join(self.root, filename), mode = "w", newline = "") as f:  # 记录所有数据
                 writer = csv.writer(f)
 
                 writer.writerow(header)
-
-                for spectrum in RamanFiles:  # spectrum:data root/label name/**.csv
-                    name = spectrum.split(os.sep)[-2]  # label name
-                    label = self.name2label[name]  # label idx
-
+                for i in range(len(RamanFiles)):
+                    spectrum = RamanFiles[i]
+                    label = RamanLabels[i]
                     writer.writerow([label, spectrum])
 
         self.RamanFiles = []
@@ -477,7 +490,7 @@ class Raman(RamanDatasetCore):
                 R[0] = self.transform(R[0])
             R = torch.tensor(R).to(torch.float32)
             self.Ramans.append(R)
-        self.RamanFiles = [os.path.join(os.path.split(os.path.split(x)[0])[1], os.path.split(x)[1]) for x in
+        self.RamanFiles = [x.replace(self.root, "") for x in
                            self.RamanFiles]  # 只留分类和文件名
 
     def get_data_sorted_by_sample(self):
@@ -609,6 +622,7 @@ def Raman_depth_gen(max_depth, min_depth = None):  # 生成一个Raman的子类�
                                self.RamanFiles]  # 只留分类和文件名
 
     return Raman_t
+
 
 class Raman_dirwise(RamanDatasetCore):
     def __init__(self,
@@ -913,6 +927,7 @@ if __name__ == '__main__':
     # header = "Wavenumber"
     # data_in = numpy.expand_dims(db.xs,axis = 0)
     # for i in range(len(db)):
+
     # 	file,data = db.RamanFiles[i],db.Ramans[i]
     # 	header+=","+file
     # 	data = data.numpy()

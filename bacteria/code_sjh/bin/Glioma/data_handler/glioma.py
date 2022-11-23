@@ -224,11 +224,11 @@ if __name__ == '__main__':
     xs = None
     for c in classes:
         if c == "batch2":
-            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+            readRaman = getRamanFromFile(0, 40000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
         elif c == "batch1":
-            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 5, "Intensity": 4})
+            readRaman = getRamanFromFile(0, 40000, dataname2idx = {"Wavelength": 5, "Intensity": 4})
         else:
-            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+            readRaman = getRamanFromFile(0, 40000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
         class_root = os.path.join(data_root, c)
         for dirs in os.listdir(class_root):
             abs_dir = os.path.join(class_root, dirs)
@@ -248,6 +248,13 @@ if __name__ == '__main__':
                 dir2file_av(abs_pointdir, readRaman, dst_file)
                 # file2plot(dst_file, dst_file[:-4] + ".png", readRaman)
 
+    classes = ["batch1", "batch2", "batch3"]
+    db_root = os.path.join(os.path.dirname(data_root), "data")
+    for c in classes:
+        class_root = os.path.join(data_root, c)
+        for tissue_dir in os.listdir(class_root):
+            tissue_dir_abs = os.path.join(class_root, tissue_dir)
+            shutil.copytree(tissue_dir_abs, os.path.join(db_root, "unlabeled", tissue_dir))
     # for i in range(1, 3):
     #     batch = os.path.join(dst_root, "batch{}".format(i + 1))
     #     for tissue_dir in os.listdir(batch):

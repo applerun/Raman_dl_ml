@@ -15,9 +15,11 @@ def getRamanFromFile(wavelengthstart = 0,
 
     def func(filepath: str,
              delimeter = delimeter,
-             dataname2idx = dataname2idx):
-        if dataname2idx is None:
-            dataname2idx = {}
+             in_dataname2idx = dataname2idx):
+        if in_dataname2idx is None:
+            in_dataname2idx = {}
+        else:
+            in_dataname2idx = copy.deepcopy(in_dataname2idx)
         Ramans = []
         Wavelengths = []
         if delimeter is None:
@@ -36,12 +38,12 @@ def getRamanFromFile(wavelengthstart = 0,
                 if data[0] in ["ROI", "Wavelength", "Column", "Intensity"]:
                     if header is None:
                         header = data
-                        dataname2idx["Wavelength"] = header.index("Wavelength")
-                        dataname2idx["Intensity"] = header.index("Intensity")
+                        in_dataname2idx["Wavelength"] = header.index("Wavelength")
+                        in_dataname2idx["Intensity"] = header.index("Intensity")
                     continue
                 try:
-                    wavelength = float(data[dataname2idx["Wavelength"]])
-                    intense = float(data[dataname2idx["Intensity"]])
+                    wavelength = float(data[in_dataname2idx["Wavelength"]])
+                    intense = float(data[in_dataname2idx["Intensity"]])
                 except:
                     print(filepath, ":", data, ",delimeter:", delimeter)
                     raise ValueError
@@ -50,10 +52,10 @@ def getRamanFromFile(wavelengthstart = 0,
                     Wavelengths.append(wavelength)
                 elif wavelength > wavelengthend:
                     break
+        assert all([1 == x for x in Ramans]) is False
         Ramans = np.array([Ramans])
         Wavelengths = np.array(Wavelengths)
         return Ramans, Wavelengths
-
     return func
 
 
@@ -87,6 +89,8 @@ def smooth(data: np.ndarray,
 
 def refile(src_file, readRaman, dst_file = None, xs = None):
     raman, wavelength = readRaman(src_file)
+    if raman[0][0] == 1:
+        return
     if xs is not None:
         wavelength = xs
     raman = smooth(raman)

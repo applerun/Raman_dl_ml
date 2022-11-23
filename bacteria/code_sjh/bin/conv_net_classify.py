@@ -401,7 +401,7 @@ def main(
 		device = device,
 		batchsz = 32,
 		vis = vis,
-		lr = 0.0001,
+		lr = 0.001,
 		epochs = 60,
 		verbose = False,
 	)

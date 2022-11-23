@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
 from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
-from bacteria.code_sjh.utils.RamanData import Raman, getRamanFromFile, Raman_dirwise,Raman_depth_gen
+from bacteria.code_sjh.utils.RamanData import Raman, getRamanFromFile, Raman_dirwise, Raman_depth_gen
 from bacteria.code_sjh.utils.Validation.validation import *
 from bacteria.code_sjh.utils.Validation.visdom_utils import *
 from bacteria.code_sjh.utils.Validation.mpl_utils import *
@@ -26,15 +26,17 @@ torch.backends.cudnn.benchmark = True
 
 coderoot = "../../.."
 projectroot = "../../../.."
-logfile = os.path.join(projectroot, "log", "glioma", "FFR_classification", time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
+logfile = os.path.join(projectroot, "log", "glioma", "DL_classification", os.path.basename(__file__),
+                       time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
 if not os.path.isdir(os.path.dirname(logfile)):
     os.makedirs(os.path.dirname(logfile))
 with open(logfile, "w") as f:
     pass
+
+
 @pysnooper.snoop(
     logfile,
     prefix = "--*--")
-
 def AST_main(
         net,
         # TODO:自动收集sample tensor
@@ -171,7 +173,6 @@ def AST_main(
         test_cam = grad_cam(net, data, l, device)
         cams[l] = test_cam
     res["val_cam"] = cams
-
     label2data = test_db.get_data_sorted_by_label()
     cams = {}
     for l in label2data.keys():
@@ -391,8 +392,8 @@ def main(
             k_split = 6,
             transform = Process.process_series([  # 设置预处理流程
                 # Process.baseline_als(),
-                # Process.bg_removal_niter_fit(),
-                Process.bg_removal_niter_piecewisefit(),
+                Process.bg_removal_niter_fit(),
+                # Process.bg_removal_niter_piecewisefit(),
                 Process.sg_filter(),
                 Process.norm_func(), ]
             )
@@ -404,10 +405,10 @@ def main(
 
     train_cfg = dict(  # 训练参数
         device = device,
-        batchsz = 32,
+        batchsz = 100,
         vis = vis,
-        lr = 0.0001,
-        epochs = 60,
+        lr = 0.01,
+        epochs = 300,
         verbose = False,
     )
     # config = dict(dataroot = os.path.join(projectroot, "data", "data_AST"), backEnd = backend, t_v_t = tvt, LoadCsvFile = getRamanFromFile(wavelengthstart = 0, wavelengthend = 1800, delimeter = delimeter,
@@ -440,9 +441,11 @@ def main(
 
                 train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True)
                 val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
+                test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
+                train_db.show_data_vis()
                 # __________________label_______________________
-                label_RamanData(train_db, path2labelfunc, name2label)
-                label_RamanData(val_db, path2labelfunc, name2label)
+                # label_RamanData(train_db, path2labelfunc, name2label)
+                # label_RamanData(val_db, path2labelfunc, name2label)
                 if conf_m_v is None:
                     conf_m_v = np.zeros((train_db.numclasses, train_db.numclasses))
                     conf_m_t = np.zeros((train_db.numclasses, train_db.numclasses))
@@ -459,7 +462,7 @@ def main(
                     net,
                     train_db,
                     val_db,
-                    val_db,
+                    test_db,
                     **train_cfg,
                     k = k
                 )
@@ -481,7 +484,7 @@ def main(
                 plt_res(pltdir,
                         res,
                         val_db,
-                        val_db,
+                        test_db,
                         informations = None)
                 npsv(pltdir, res, val_db, val_db, )
                 conf_m_v += res["res_val"]["confusion_matrix"]
@@ -516,38 +519,41 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 设置运算设备
     print("using device:", device.__str__())
-    dataroot = os.path.join(projectroot, "data", "脑胶质瘤", "data")
+    dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_new")
     recordroot = os.path.join(projectroot, "results", "glioma", "dl")
-    # raman = Raman_depth_gen(2,2)  # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
-    raman = Raman_dirwise
-    recordroot = os.path.join(recordroot,time.strftime("%Y-%m-%d-%H_%M_%S"))
+    raman = Raman_depth_gen(2, 2)  # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
+    # raman = Raman_dirwise
+    recordroot = os.path.join(recordroot, time.strftime("%Y-%m-%d-%H_%M_%S"))
     for ele in eles:  # TODO：选择合适的标签
         num2label = {}
         for k in num2ele2label.keys():
             num2label[k] = num2ele2label[k][ele]
         name2label = {"neg": 0, "pos": 1}
-
+        dataroot = os.path.join(dataroot_, ele)
         modellist = [AlexNet_Sun, ResNet18, ResNet34]
         for preprocess in [
             # Process.baseline_als(),
             Process.bg_removal_niter_fit(),
             # Process.bg_removal_niter_piecewisefit(),
         ]:  # TODO: 选择合适的预处理函数
+
             db_cfg = dict(  # 数据集设置
                 dataroot = dataroot,
                 backEnd = ".csv",
                 # backEnd = ".asc",
-                t_v_t = [0.8, 0.2, 0.0],
+                t_v_t = [0.8, 0.1, 0.1],
                 LoadCsvFile = readdatafunc,
-                k_split = 6,
+                k_split = 9,
                 transform = Process.process_series([  # 设置预处理流程
-                    preprocess,
+
                     Process.sg_filter(),
+                    preprocess,
                     Process.norm_func(), ]
                 ))
             # dataroot = os.path.join(projectroot, "data", "liver_cell")
             recorddir = ele
             recorddir = os.path.join(recordroot, recorddir)
             path2labelfunc = path2func_generator(num2label)
-            main(dataroot, raman = raman, modellist = modellist, recorddir = recorddir, path2labelfunc = path2labelfunc)
+            main(dataroot,db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir, path2labelfunc = path2labelfunc)
+
 # 设置数据集分割

@@ -116,8 +116,8 @@ def main(
 				if conf_m is None:
 					conf_m = np.zeros((train_db.numclasses, train_db.numclasses))
 				if not n and not k:
-					train_db.show_data(win = "train")
-					val_db.show_data(win = "test")
+					train_db.show_data_vis(win = "train")
+					val_db.show_data_vis(win = "test")
 				l1 = train_db.RamanFiles
 				l2 = val_db.RamanFiles
 				l = list(set(l1) & set(l2))

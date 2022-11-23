@@ -275,10 +275,10 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
     def wavelengths(self):
         return torch.tensor(self.xs)
 
-    def show_data(self,
-                  xs = None,
-                  vis = None,
-                  win = "data"):
+    def show_data_vis(self,
+                      xs = None,
+                      vis = None,
+                      win = "data"):
 
         label2name = self.label2name()
         label2data = self.get_data_sorted_by_label()
@@ -490,7 +490,7 @@ class Raman(RamanDatasetCore):
         return res
 
 
-def Raman_depth_gen(max_depth, min_depth = None):  # 生成一个Raman的子类的walk版本，只读取目录下指定深度的文件
+def Raman_depth_gen(max_depth, min_depth = None, warning = False):  # 生成一个Raman的子类的walk版本，只读取目录下指定深度的文件
     assert max_depth > 0, "max_depth should not be less than 1"
     if min_depth is None:
         min_depth = 0
@@ -530,14 +530,16 @@ def Raman_depth_gen(max_depth, min_depth = None):  # 生成一个Raman的子类�
                     files = []
 
                     for r, d, f in os.walk(os.path.join(self.root, name), ):
-                        d = len(r.replace(self.root,"").split(os.sep)) - 1
+                        d = len(r.replace(self.root, "").split(os.sep)) - 1
                         if d < min_depth:
-                            print("depth {} < min_depth {}, ignore dir {}".format(
-                                d, self.max_depth, r))
+                            if warning:
+                                print("depth {} < min_depth {}, ignore dir {}".format(
+                                    d, max_depth, r))
                             continue
                         elif d > max_depth:
-                            print("depth {} > max_depth {}, ignore dir {} ,...".format(
-                                d, self.max_depth, r))
+                            if warning:
+                                print("depth {} > max_depth {}, ignore dir {} ,...".format(
+                                    d, max_depth, r))
                             continue
                         f = list(filter(lambda x: x.endswith(self.dataEnd), f))
                         files += [os.path.join(r, x) for x in f]
@@ -605,10 +607,11 @@ def Raman_depth_gen(max_depth, min_depth = None):  # 生成一个Raman的子类�
                     R[0] = self.transform(R[0])
                 R = torch.tensor(R).to(torch.float32)
                 self.Ramans.append(R)
-            self.RamanFiles = [x.replace(self.root+os.sep, "") for x in
+            self.RamanFiles = [x.replace(self.root + os.sep, "") for x in
                                self.RamanFiles]  # 只留分类和文件名
 
     return Raman_t
+
 
 class Raman_dirwise(RamanDatasetCore):
     def __init__(self,

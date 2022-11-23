@@ -60,7 +60,7 @@ def spectrum_vis_mpl(spectrums: torch.Tensor,
         fig = ax.figure
 
     ax.set_title(name)
-    ax.set_xlabel("wavenumber cm^-^1")
+    ax.set_xlabel("wavenumber cm$^{-1}$")
     ax.set_ylabel("intensity")
     ax.plot(xs, y_mean, label = name, color = line_color)
     if side:

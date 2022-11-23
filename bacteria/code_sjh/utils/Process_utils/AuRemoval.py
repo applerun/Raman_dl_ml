@@ -201,7 +201,7 @@ if __name__ == '__main__':
         ])
 
     db2 = Raman_dirwise(**cfg)
-    db2.show_data()
+    db2.show_data_vis()
     # base2data = db.get_data_sorted_by_sample()
     # startVisdomServer()
     # vis = visdom.Visdom()

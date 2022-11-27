@@ -784,7 +784,7 @@ class Raman_dirwise(RamanDatasetCore):
         spectrum_each_sample = {}
         for i in range(self.__len__()):
             raman, label = self.Ramans[i], self.labels[i]
-            sample_num = self.RamanFiles[i].split(os.sep)[1]
+            sample_num = os.path.split(self.RamanFiles[i])[0]
             if not sample_num in spectrum_each_sample.keys():
                 spectrum_each_sample[sample_num] = raman
             else:

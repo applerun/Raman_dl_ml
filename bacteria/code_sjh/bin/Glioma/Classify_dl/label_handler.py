@@ -10,6 +10,11 @@ import torch
 
 
 def get_infos(filename: str):
+    """
+
+    @param filename:
+    @return:
+    """
     df = pandas.read_excel(filename)
     nums = df["编号"]
     axes = df.axes[1]

@@ -26,6 +26,7 @@ def RecordRead_bi_clas(src):
 
     (a, b), (c, d) = cm
     acc_ = (a + d) / (a + b + c + d)
+    acc_ = round(acc_,4)
     sen = d / (c + d)
     sen = round(sen, 4)
     spe = a / (a + b)
@@ -67,5 +68,10 @@ def main_bi_class(dir, dst):
 
 
 if __name__ == '__main__':
-    main_bi_class(r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl\2022-11-18-21_25_50",
-                  "res_stat_filewise_test_base.csv")
+    resultroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl"
+    for lr in [0.1,0.01,0.001]:
+        src_dir = "test_base_lr{}".format(lr)
+        dst_file = "res_stat_filewise_test_base_lr{}.csv".format(lr)
+
+        main_bi_class(os.path.join(resultroot,src_dir),dst_file)
+

@@ -407,7 +407,7 @@ def main(
         device = device,
         batchsz = 100,
         vis = vis,
-        lr = 0.01,
+        lr = 0.1,
         epochs = 300,
         verbose = False,
     )
@@ -439,7 +439,7 @@ def main(
             for k in range(k_split):
                 sfpath = "Raman_" + str(n) + ".csv"
 
-                train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True)
+                train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True if n>0 else False)
                 val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
                 test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
                 train_db.show_data_vis()
@@ -473,6 +473,7 @@ def main(
                 b, t, be, auc_val, auc_test = res["best_acc"], res["res_test"]["acc"], res["best_epoch"], \
                                               np.mean(list(res["res_val"]["label2auc"].values())), \
                                               np.mean(list(res["res_test"]["label2auc"].values()))
+                assert b == res["res_val"]["acc"]
                 writer.writerow([n, k, b, t, be, auc_val, auc_test])
                 bestaccs.append(b)
                 testaccs.append(t)
@@ -491,6 +492,8 @@ def main(
                 conf_m_t += res["res_test"]["confusion_matrix"]
         np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_v, delimiter = ",")
         np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_t, delimiter = ",")
+        np.savetxt("test_confusion_matrix.csv",conf_m_t,delimiter = ",")
+        np.savetxt("val_confusion_matrix.csv", conf_m_v, delimiter = ",")
         heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"))
         heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
         # train_db.shufflecsv()

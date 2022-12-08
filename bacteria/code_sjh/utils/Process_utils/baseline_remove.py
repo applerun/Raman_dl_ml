@@ -29,7 +29,7 @@ def baseline_als(lam = 100000, p = 0.01, niter = 10):
     return func
 
 
-def bg_removal_niter_fit(num_iter = 10, degree = 4, vis = False
+def bg_removal_niter_fit(num_iter = 10, degree =4, vis = False
                          , start_end = None
                          ):
     """

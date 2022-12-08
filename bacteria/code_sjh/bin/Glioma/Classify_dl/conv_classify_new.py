@@ -351,7 +351,7 @@ def npsv(pltdir,
 
 readdatafunc0 = getRamanFromFile(  # 定义读取数据的函数
     wavelengthstart = 39, wavelengthend = 1810, delimeter = None,
-    dataname2idx = {"Wavelength": 0, "Intensity": 1}
+    dataname2idx = {"Wavelength": 2, "Intensity": 6}
 )
 
 
@@ -376,6 +376,7 @@ def main(
         modellist = None,
         recorddir = None,
         path2labelfunc = None,
+        test_db = None,
 ):
     if recorddir is None:
         recorddir = "Record_" + time.strftime("%Y-%m-%d-%H_%M_%S")
@@ -439,9 +440,13 @@ def main(
             for k in range(k_split):
                 sfpath = "Raman_" + str(n) + ".csv"
 
-                train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True if n>0 else False)
+                train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True if n > 0 else False)
                 val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
-                test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
+                if db_cfg["t_v_t"][2] == 0 and test_db is None:
+                    test_db = val_db
+                elif test_db is None:
+                    test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
+
                 train_db.show_data_vis()
                 # __________________label_______________________
                 # label_RamanData(train_db, path2labelfunc, name2label)
@@ -452,7 +457,7 @@ def main(
                 assert len(val_db) > 0, str(val_db.sfpath) + ":" + str(val_db.RamanFiles)
                 # test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
                 # train_db.show_data()
-                sample_tensor, sample_label = train_db.__getitem__(1)
+                sample_tensor, sample_label = train_db.__getitem__(0)
                 vis.line(sample_tensor, win = "sampletensor")
 
                 sample_tensor = torch.unsqueeze(sample_tensor, dim = 0)
@@ -492,7 +497,7 @@ def main(
                 conf_m_t += res["res_test"]["confusion_matrix"]
         np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_v, delimiter = ",")
         np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_t, delimiter = ",")
-        np.savetxt("test_confusion_matrix.csv",conf_m_t,delimiter = ",")
+        np.savetxt("test_confusion_matrix.csv", conf_m_t, delimiter = ",")
         np.savetxt("val_confusion_matrix.csv", conf_m_v, delimiter = ",")
         heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"))
         heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
@@ -516,23 +521,26 @@ if __name__ == '__main__':
     vis = visdom.Visdom()  # visdom对象
     from bacteria.code_sjh.utils import Process
 
-    info_file = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\第一二三批 病例编号&大类结果.xlsx"
+    info_file = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\第一二三批 病例编号&大类结果2.xlsx"
     num2ele2label = get_infos(info_file)
     eles = list(num2ele2label.values().__iter__().__next__().keys())
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 设置运算设备
     print("using device:", device.__str__())
-    dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_new")
+    dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_classified")
+    dataroot_test_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_indep")
     recordroot = os.path.join(projectroot, "results", "glioma", "dl")
-    raman = Raman_depth_gen(2, 2)  # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
-    # raman = Raman_dirwise
+    # raman = Raman_depth_gen(2, 2)  # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
+    raman = Raman_dirwise
     recordroot = os.path.join(recordroot, time.strftime("%Y-%m-%d-%H_%M_%S"))
+
     for ele in eles:  # TODO：选择合适的标签
         num2label = {}
         for k in num2ele2label.keys():
             num2label[k] = num2ele2label[k][ele]
         name2label = {"neg": 0, "pos": 1}
         dataroot = os.path.join(dataroot_, ele)
+        dataroot_test = os.path.join(dataroot_test_,ele)
         modellist = [AlexNet_Sun, ResNet18, ResNet34]
         for preprocess in [
             # Process.baseline_als(),
@@ -541,22 +549,25 @@ if __name__ == '__main__':
         ]:  # TODO: 选择合适的预处理函数
 
             db_cfg = dict(  # 数据集设置
-                dataroot = dataroot,
+                dataroot = dataroot_test,
                 backEnd = ".csv",
                 # backEnd = ".asc",
-                t_v_t = [0.8, 0.1, 0.1],
+                t_v_t = [0.8, 0.2, 0.0],
                 LoadCsvFile = readdatafunc,
-                k_split = 9,
+                k_split = 6,
                 transform = Process.process_series([  # 设置预处理流程
 
                     Process.sg_filter(),
                     preprocess,
                     Process.norm_func(), ]
                 ))
+            test_db = Raman_dirwise(**db_cfg)
+            db_cfg["dataroot"] = dataroot
             # dataroot = os.path.join(projectroot, "data", "liver_cell")
             recorddir = ele
             recorddir = os.path.join(recordroot, recorddir)
             path2labelfunc = path2func_generator(num2label)
-            main(dataroot,db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir, path2labelfunc = path2labelfunc)
+            main(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
+                 path2labelfunc = path2labelfunc,test_db = test_db)
 
 # 设置数据集分割

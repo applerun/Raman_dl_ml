@@ -49,10 +49,10 @@ def getRamanFromFile(wavelengthstart = 400,
                      delimeter = None):
     if wavelengthend < wavelengthstart:
         wavelengthstart, wavelengthend = wavelengthend, wavelengthstart
+    dataname2idx = copy.deepcopy(dataname2idx)
 
     def func(filepath: str,
-             delimeter = delimeter,
-             dataname2idx = dataname2idx):
+             delimeter = delimeter, dataname2idx = dataname2idx):
         if dataname2idx is None:
             dataname2idx = {}
         Ramans = []
@@ -97,7 +97,6 @@ def getRamanFromFile(wavelengthstart = 400,
 class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
     def __init__(self,
                  dataroot: str,
-
                  mode = "train",
                  t_v_t = None,
                  sfpath = "Ramans.csv",
@@ -130,13 +129,17 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
         """
 
         # assert mode in ["train", "val", "test"]
+        assert os.path.isdir(dataroot), "dataroot {} do not exist".format(dataroot)
         super(RamanDatasetCore, self).__init__()
 
         if t_v_t is None and k_split is None:  # 分割train-validation-test
             t_v_t = [0.7, 0.2, 0.1]
         # if type(t_v_t) is list:
         # 	t_v_t = numpy.array(t_v_t)
-
+        if mode == "all":
+            mode = "train"
+            t_v_t = [1, 0, 0]
+            k_split = None
         self.k_split = k_split
         if k_split is not None:  # k_split 模式
             # t_v_t = [x*k_split for x in t_v_t]
@@ -180,7 +183,13 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
         self.LoadCsv(sfpath)  # 加载所有的数据文件
         # 数据分割
         self.split_data()
-        self.load_raman_data()  # 数据读取
+        try:
+            self.load_raman_data()  # 数据读取
+        except:  # 读取失败则重新创建文件
+            self.new = True
+            self.LoadCsv(sfpath)
+            self.split_data()
+            self.load_raman_data()
 
     # def __add__(self, other):
     # 	if len(other) == 0:
@@ -807,7 +816,7 @@ class Raman_dirwise(RamanDatasetCore):
         sample2label = {}
         for i in range(self.__len__()):
             label = self.labels[i]
-            sample_num = self.RamanFiles[i].split(os.sep)[1]
+            sample_num = os.path.split(self.RamanFiles[i])[0]
             sample2label[sample_num] = label
         return sample2label
 

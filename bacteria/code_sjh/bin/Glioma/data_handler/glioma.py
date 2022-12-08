@@ -13,6 +13,7 @@ dataroot_batch1 = os.path.join(projectroot, "data", "脑胶质瘤", "天坛神�
 dataroot_batch2 = os.path.join(projectroot, "data", "脑胶质瘤", "天坛神外 原始数据", "天坛神外 光谱",
                                "第二批 重新测试 2")
 dataroot_batch3 = os.path.join(projectroot, "data", "脑胶质瘤", "天坛神外 原始数据", "天坛神外 光谱", "第三批")
+dataroot_batch4 = os.path.join(projectroot, "data", "脑胶质瘤", "WJJ")
 dst_root = os.path.join(projectroot, "data", "脑胶质瘤", "data_reformed")
 
 
@@ -156,6 +157,33 @@ def batch3(dataroot_batch3):
                 shutil.copytree(dir_tissue_abs, dst)
 
 
+def batch4(dataroot_batch4 = dataroot_batch4, dst_root = os.path.join(os.path.dirname(dst_root), "data_indep_unlabeled"),
+           xs = None):
+    if os.path.isdir(dst_root):
+        shutil.rmtree(dst_root)
+    os.makedirs(dst_root)
+    readRaman = getRamanFromFile(0, 40000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+    for person_dir in os.listdir(dataroot_batch4):
+        person_dir_abs = os.path.join(dataroot_batch4, person_dir)
+        info = person_dir.replace(",", " ")
+        info = info.replace("，", " ")
+        while "  " in info:
+            info = info.replace("  ", " ")
+        try:
+            num, name, code = info.split(" ")
+        except:
+            continue
+
+        for tissue_dir in os.listdir(person_dir_abs):
+            tissue_dir_abs = os.path.join(person_dir_abs, tissue_dir)
+            new_tissue_dir = " ".join([num, name, code, tissue_dir])
+            new_tissue_dir_abs = os.path.join(dst_root, new_tissue_dir)
+            shutil.copytree(tissue_dir_abs, new_tissue_dir_abs)
+            for file in os.listdir(new_tissue_dir_abs):
+                file_abs = os.path.join(new_tissue_dir_abs, file)
+                refile(file_abs, readRaman, xs = xs)
+
+
 def assert_times(dir, lasttime = None):
     times = []
     for file in os.listdir(dir):
@@ -198,22 +226,6 @@ def count_files(dst_root):
 
 
 if __name__ == '__main__':
-    # infofile = os.path.join(projectroot,"data","脑胶质瘤","data_used","第一二三批 病例编号&大类结果.xlsx")
-
-    # infos = get_infos(infofile)
-    # print(infos)
-    # ALL_root = os.path.join(dst_root,"all")
-    # GBM_root = os.path.join(dst_root,"gbm")
-    if os.path.exists(dst_root):
-        shutil.rmtree(dst_root)
-    batch1()
-    batch2(dataroot_batch2)
-    batch3(dataroot_batch3)
-
-    for i in range(3):
-        batch = os.path.join(dst_root, "batch{}".format(i + 1))
-        for dir in os.listdir(batch):
-            datafileSortbyPoint(os.path.join(batch, dir), None if i == 0 else 3)
 
     classes = ["batch1", "batch2", "batch3"]
     # dir_prefix = "point"
@@ -244,22 +256,75 @@ if __name__ == '__main__':
                     abs_raman_file = os.path.join(abs_pointdir, raman_file)
                     if xs is None:
                         _, xs = readRaman(abs_raman_file)
-                    refile(abs_raman_file, readRaman, xs = xs)
-                dir2file_av(abs_pointdir, readRaman, dst_file)
                 # file2plot(dst_file, dst_file[:-4] + ".png", readRaman)
+    dst_root_indep = os.path.join(os.path.dirname(dst_root), "data_indep_unlabeled","unlabeled")  # batch4用作完全独立验证集
+    batch4(dataroot_batch4, dst_root = dst_root_indep, xs = xs)
 
-    classes = ["batch1", "batch2", "batch3"]
-    db_root = os.path.join(os.path.dirname(data_root), "data")
-    for c in classes:
-        class_root = os.path.join(data_root, c)
-        for tissue_dir in os.listdir(class_root):
-            tissue_dir_abs = os.path.join(class_root, tissue_dir)
-            shutil.copytree(tissue_dir_abs, os.path.join(db_root, "unlabeled", tissue_dir))
-    # for i in range(1, 3):
-    #     batch = os.path.join(dst_root, "batch{}".format(i + 1))
-    #     for tissue_dir in os.listdir(batch):
-    #         tissue_dir_abs = os.path.join(batch, tissue_dir)
-    #         last_time = None
-    #         for point_dir in os.listdir(tissue_dir_abs):
-    #             last_time = assert_times(os.path.join(tissue_dir_abs, point_dir), last_time)
-    # print(count_files(dst_root))
+# if __name__ == '__main__':
+#     # infofile = os.path.join(projectroot,"data","脑胶质瘤","data_used","第一二三批 病例编号&大类结果.xlsx")
+#
+#     # infos = get_infos(infofile)
+#     # print(infos)
+#     # ALL_root = os.path.join(dst_root,"all")
+#     # GBM_root = os.path.join(dst_root,"gbm")
+#     if os.path.exists(dst_root):
+#         shutil.rmtree(dst_root)
+#     batch1()
+#     batch2(dataroot_batch2)
+#     batch3(dataroot_batch3)
+#     dst_root_indep = os.path.join(os.path.dirname(dst_root), "data_indep_unlabeled")  # batch4用作完全独立验证集
+#     batch4(dataroot_batch4, dst_root = dst_root_indep)
+#     for i in range(3):
+#         batch = os.path.join(dst_root, "batch{}".format(i + 1))
+#         for dir in os.listdir(batch):
+#             datafileSortbyPoint(os.path.join(batch, dir), None if i == 0 else 3)
+#
+#     classes = ["batch1", "batch2", "batch3"]
+#     # dir_prefix = "point"
+#     current_dir = os.path.dirname(__file__)
+#     data_root = "../../../../data/脑胶质瘤/data_reformed/"
+#     from av_pointwise import *
+#
+#     xs = None
+#     for c in classes:
+#         if c == "batch2":
+#             readRaman = getRamanFromFile(0, 40000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+#         elif c == "batch1":
+#             readRaman = getRamanFromFile(0, 40000, dataname2idx = {"Wavelength": 5, "Intensity": 4})
+#         else:
+#             readRaman = getRamanFromFile(0, 40000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+#         class_root = os.path.join(data_root, c)
+#         for dirs in os.listdir(class_root):
+#             abs_dir = os.path.join(class_root, dirs)
+#             if not os.path.isdir(abs_dir):
+#                 continue
+#             for pointdir in os.listdir(abs_dir):
+#                 abs_pointdir = os.path.join(abs_dir, pointdir)
+#                 if not os.path.isdir(abs_pointdir):
+#                     # or not pointdir.startswith(dir_prefix):
+#                     continue
+#                 dst_file = abs_pointdir + ".csv"
+#                 for raman_file in os.listdir(abs_pointdir):
+#                     abs_raman_file = os.path.join(abs_pointdir, raman_file)
+#                     if xs is None:
+#                         _, xs = readRaman(abs_raman_file)
+#                     refile(abs_raman_file, readRaman, xs = xs)
+#                 dir2file_av(abs_pointdir, readRaman, dst_file)
+#                 # file2plot(dst_file, dst_file[:-4] + ".png", readRaman)
+#
+#     classes = ["batch1", "batch2", "batch3"]
+#     db_root = os.path.join(os.path.dirname(data_root), "data")
+#     for c in classes:
+#         class_root = os.path.join(data_root, c)
+#         for tissue_dir in os.listdir(class_root):
+#             tissue_dir_abs = os.path.join(class_root, tissue_dir)
+#             shutil.copytree(tissue_dir_abs, os.path.join(db_root, "unlabeled", tissue_dir))
+#
+#     # for i in range(1, 3):
+#     #     batch = os.path.join(dst_root, "batch{}".format(i + 1))
+#     #     for tissue_dir in os.listdir(batch):
+#     #         tissue_dir_abs = os.path.join(batch, tissue_dir)
+#     #         last_time = None
+#     #         for point_dir in os.listdir(tissue_dir_abs):
+#     #             last_time = assert_times(os.path.join(tissue_dir_abs, point_dir), last_time)
+#     # print(count_files(dst_root))

@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     name2pre = {"bals": Process.baseline_als(), "brnf": Process.bg_removal_niter_fit(),
                 "brnp": Process.bg_removal_niter_piecewisefit()}
-    dir = os.path.join(projectroot, "bacteria", "data", "脑胶质瘤", "data_new")
+    dir = os.path.join(projectroot, "bacteria", "data", "脑胶质瘤", "data")
     for pre_name in name2pre.keys():
         pre = name2pre[pre_name]
         plot_dir = os.path.join(os.path.dirname(dir), "data_new_plot", pre_name, )

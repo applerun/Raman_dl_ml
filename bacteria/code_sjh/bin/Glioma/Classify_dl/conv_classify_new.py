@@ -493,12 +493,15 @@ def main(
                         test_db,
                         informations = None)
                 npsv(pltdir, res, val_db, val_db, )
+                shape = res["res_val"]["confusion_matrix"].shape
+                assert shape[0] == shape[1] == train_db.numclasses
+                shape = res["res_test"]["confusion_matrix"].shape
+                assert shape[0] == shape[1] == train_db.numclasses
                 conf_m_v += res["res_val"]["confusion_matrix"]
                 conf_m_t += res["res_test"]["confusion_matrix"]
-        np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_v, delimiter = ",")
-        np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_t, delimiter = ",")
-        np.savetxt("test_confusion_matrix.csv", conf_m_t, delimiter = ",")
-        np.savetxt("val_confusion_matrix.csv", conf_m_v, delimiter = ",")
+        np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_v, delimiter = ",")
+        np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_t, delimiter = ",")
+
         heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"))
         heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
         # train_db.shufflecsv()

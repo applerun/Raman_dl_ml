@@ -52,7 +52,10 @@ def main_bi_class(dir, dst):
     csv_writer.writerow(header1)
     csv_writer.writerow(header)
     for molecule in os.listdir(dir):
+
         molecule_abs = os.path.join(dir, molecule)
+        if not os.path.isdir(molecule_abs):
+            continue
         row = [molecule] + [0] * 12
         for i in range(len(nets)):
             net = nets[i]
@@ -68,10 +71,13 @@ def main_bi_class(dir, dst):
 
 
 if __name__ == '__main__':
-    resultroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl"
-    for lr in [0.1,0.01,0.001]:
-        src_dir = "test_base_lr{}".format(lr)
-        dst_file = "res_stat_filewise_test_base_lr{}.csv".format(lr)
-
-        main_bi_class(os.path.join(resultroot,src_dir),dst_file)
+    # resultroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl"
+    resuldir = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl\2022-12-07-00_01_51"
+    dst_file = os.path.join(resuldir,"res_stat.csv")
+    main_bi_class(resuldir, dst_file)
+    # for lr in [0.1,0.01,0.001]:
+    #     src_dir = "test_base_lr{}".format(lr)
+    #     dst_file = "res_stat_filewise_test_base_lr{}.csv".format(lr)
+    #
+    #     main_bi_class(os.path.join(resultroot,src_dir),dst_file)
 

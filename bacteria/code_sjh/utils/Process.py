@@ -22,18 +22,24 @@ __all__ = ["sg_filter", "norm_func", "process_series", "noising_func_generator",
 
 # S-G filter
 def noising_func_generator(t = 0.01):
-    def func(x):
+    def func(x, y = None):
         res = x + t * (x.mean()) * np.random.normal(0, 1, size = x.shape)
-        return res
+        if y is None:
+            return res
+        else:
+            return res, y
 
     return func
 
 
 def sg_filter(window_length = 11,
               polyorder = 3):
-    def func(x):
+    def func(x,y = None):
         x = savgol_filter(x, window_length, polyorder)
-        return x
+        if y is None:
+            return x
+        else:
+            return x,y
 
     return func
 
@@ -41,8 +47,9 @@ def sg_filter(window_length = 11,
 # spectral normalization
 def norm_func(a = 0,
               b = 1):
-    def func(x):
+    def func(x,y = None):
         return ((b - a) * (x - min(x))) / (max(x) - min(x)) + a
+
 
     return func
 
@@ -62,7 +69,10 @@ def preprocess_default(x,
     # x = bg_removal_niter_fit()(x)
     x = sg_filter(window_length = 15, polyorder = 3)(x)
     x = norm_func(a = 0, b = 1)(x)
-    return x
+    if y == None:
+        return x
+    else:
+        return x, y
 
 
 def process_series(sequence,
@@ -154,7 +164,7 @@ def dir_process_walk(src_dir,
             try:
                 refile(src_file, readdata_func, preprocess, dst_file)
             except:
-                print(src_file," failed")
+                print(src_file, " failed")
 
             # if dst_dir not in filenames and filename == src_dir:  # 没有被处理过
             #     file = os.path.join(dirpath, filename)
@@ -234,6 +244,8 @@ if __name__ == '__main__':
             return Ramans, Wavelengths
 
         return func
+
+
     readdatafunc0 = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
                                      dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
     from scipy import interpolate
@@ -251,6 +263,7 @@ if __name__ == '__main__':
 
         return newR, newX
 
+
     src_dir = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\liver_cell_dou\MIHA"
     dst_dir = r".\data_res\MIHA"
 
@@ -260,7 +273,7 @@ if __name__ == '__main__':
         baseline_remove = name2pre[keys]
         process = process_series([baseline_remove, sg_filter(), norm_func()])
         dst_dir_ = os.path.join(dst_dir, keys)
-        dir_process_walk(src_dir, dst_dir_,readdata_func = readdatafunc,preprocess = process,newfile = True)
+        dir_process_walk(src_dir, dst_dir_, readdata_func = readdatafunc, preprocess = process, newfile = True)
 
     # delete_processed_walk()
     # dir_process_walk()

@@ -428,16 +428,16 @@ def main(
 		f.write(db_cfg.__str__() + "\n")
 		f.write(train_cfg.__str__() + "\n")
 		writer.writerow(["n", "k", "best_acc", "test_acc", "best_epoch", "val_AUC", "test_AUC"])
-		conf_m_v = None
-		conf_m_t = None
+		conf_m_val = None
+		conf_m_test = None
 		for n in range(n_iter):
 			for k in range(k_split):
 				sfpath = "Raman_" + str(n) + ".csv"
 				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True)
 				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
-				if conf_m_v is None:
-					conf_m_v = np.zeros((train_db.numclasses, train_db.numclasses))
-					conf_m_t = np.zeros((train_db.numclasses, train_db.numclasses))
+				if conf_m_val is None:
+					conf_m_val = np.zeros((train_db.numclasses, train_db.numclasses))
+					conf_m_test = np.zeros((train_db.numclasses, train_db.numclasses))
 				assert len(val_db) > 0, str(val_db.sfpath) + ":" + str(val_db.RamanFiles)
 				test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
 				# train_db.show_data()
@@ -476,12 +476,12 @@ def main(
 				        val_db,
 				        informations = None)
 				npsv(pltdir, res, val_db, val_db, )
-				conf_m_v += res["res_val"]["confusion_matrix"]
-				conf_m_t += res["res_test"]["confusion_matrix"]
-		np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_v, delimiter = ",")
-		np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_t, delimiter = ",")
-		heatmap(conf_m_t, os.path.join(recordsubdir, "test_confusion_matrix.png"))
-		heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
+				conf_m_val += res["res_val"]["confusion_matrix"]
+				conf_m_test += res["res_test"]["confusion_matrix"]
+		np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_val, delimiter = ",")
+		np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m_test, delimiter = ",")
+		heatmap(conf_m_test, os.path.join(recordsubdir, "test_confusion_matrix.png"))
+		heatmap(conf_m_val, os.path.join(recordsubdir, "val_confusion_matrix.png"))
 		# train_db.shufflecsv()
 		ba = np.mean(numpy.array(bestaccs)).__str__() + "+-" + numpy.std(numpy.array(bestaccs)).__str__()
 		ta = np.mean(numpy.array(testaccs)).__str__() + "+-" + numpy.std(numpy.array(testaccs)).__str__()

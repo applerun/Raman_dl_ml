@@ -1,11 +1,10 @@
 import numpy as np
-import torch
 
 from bacteria.code_sjh.utils import Process, RamanData
-from bacteria.code_sjh.utils.Validation.visdom_utils import data2mean_std
-from bacteria.code_sjh.utils.Validation.mpl_utils import spectrum_vis_mpl
-from conv_net_classify import readdatafunc
-import os, time
+from bacteria.code_sjh.Core.basic_functions.mpl_func import spectrum_vis_mpl
+from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
+
+import os
 import matplotlib.pyplot as plt
 
 projectroot = __file__
@@ -13,48 +12,39 @@ for i in range(4):
     projectroot = os.path.dirname(projectroot)
 dataroot = os.path.join(projectroot, "data", "tissue", "Try")
 
-raman = RamanData.Raman
-
-db_cfg = dict(  # 数据集设置
-    dataroot = dataroot,
-    backEnd = ".csv",
-    # backEnd = ".asc",
-    t_v_t = [1.0, 0.0, 0.0],
-    LoadCsvFile = readdatafunc,
-    k_split = 6,
-    transform = Process.process_series([  # 设置预处理流程
-        # Process.baseline_als(),
-        # Process.bg_removal_niter_fit(),
-        Process.bg_removal_niter_piecewisefit(),
-        Process.sg_filter(),
-        Process.norm_func(), ]
-    ))
-
 if __name__ == '__main__':
-    from bacteria.code_sjh.utils.RamanData import Raman_dirwise, getRamanFromFile, Raman
+    raman = RamanData.Raman
+
+    db_cfg = dict(  # 数据集设置
+        dataroot = dataroot,
+        backEnd = ".csv",
+        # backEnd = ".asc",
+        t_v_t = [1.0, 0.0, 0.0],
+        LoadCsvFile = getRamanFromFile(  # 定义读取数据的函数
+            wavelengthstart = 39, wavelengthend = 2010, delimeter = None,
+            dataname2idx = {"Wavelength": 0, "Intensity": 1}
+        ),
+        k_split = 6,
+        transform = Process.process_series([  # 设置预处理流程
+            # Process.baseline_als(),
+            # Process.bg_removal_niter_fit(),
+            Process.intorpolator(),
+            Process.bg_removal_niter_piecewisefit(),
+            Process.sg_filter(),
+            Process.norm_func(), ]
+        ))
+    from bacteria.code_sjh.utils.RamanData import Raman_dirwise
+    from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
     from scipy import interpolate
 
-    readdatafunc0 = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
-                                     dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
+    readdatafunc = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
+                                    dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
 
     from pylab import mpl
 
     # 设置中文显示字体
     mpl.rcParams["font.sans-serif"] = ["SimHei"]
     mpl.rcParams["axes.unicode_minus"] = False
-
-
-    def readdatafunc(  # 插值，将光谱长度统一为512
-            filepath
-    ):
-        R, X = readdatafunc0(filepath)
-        R = np.squeeze(R)
-        f = interpolate.interp1d(X, R, kind = "cubic")
-        newX = np.linspace(400, 1800, 512)
-        newR = f(newX)
-        newR = np.expand_dims(newR, axis = 0)
-        return newR, newX
-
 
     name2pre = {"bals": Process.baseline_als(), "brnf": Process.bg_removal_niter_fit(),
                 "brnp": Process.bg_removal_niter_piecewisefit()}
@@ -73,7 +63,7 @@ if __name__ == '__main__':
                                LoadCsvFile = readdatafunc,
                                backEnd = ".csv", t_v_t = [1, 0, 0],
                                transform = Process.process_series([  # 设置预处理流程
-
+                                   Process.intorpolator(),
                                    Process.sg_filter(),
                                    pre,
                                    Process.norm_func(), ]
@@ -92,7 +82,7 @@ if __name__ == '__main__':
                 spectrum_vis_mpl(data, db.xs, ax = ax[label], name = name)
             fig.suptitle(d)
             plt.subplots_adjust(wspace = 0.25, hspace = 0.35)
-            plt.savefig(os.path.join(os.path.dirname(dir),"data_new_plot", pre_name, d + ".png"))
+            plt.savefig(os.path.join(os.path.dirname(dir), "data_new_plot", pre_name, d + ".png"))
             plt.close(fig)
         # plt.show()
 

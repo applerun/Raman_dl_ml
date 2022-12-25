@@ -141,6 +141,6 @@ class muted_encoder():
 		out: torch.Tensor = self.encoder(x)
 		out = torch.squeeze(out)
 
-		out = out.detach().numpy()
+		out = out.detach().np()
 
 		return out

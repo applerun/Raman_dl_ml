@@ -20,6 +20,7 @@ except:
     from utils.RamenData import *
     from utils import Process, validation
 
+from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 
 def show(spectrums, win, bias,std=True):
     y_mean, y_up, y_down = validation.data2mean_std(spectrums[:, 0, :])
@@ -84,9 +85,9 @@ for bias in dic.keys():
     processed_spectrums1 = copy.deepcopy(spectrums)
     processed_spectrums2 = copy.deepcopy(spectrums)
     for i in range(num):
-        processed_spectrums1[i, 0, :] = torch.tensor(nf(sgf(bals(spectrums[i, 0, :].numpy()))))
-        processed_spectrums2[i, 0, :] = torch.tensor(nf(sgf(brnp(spectrums[i, 0, :].numpy()))))
-        spectrums[i, 0, :] = torch.tensor(nf(sgf(spectrums[i, 0, :].numpy())))
+        processed_spectrums1[i, 0, :] = torch.tensor(nf(sgf(bals(spectrums[i, 0, :].np()))))
+        processed_spectrums2[i, 0, :] = torch.tensor(nf(sgf(brnp(spectrums[i, 0, :].np()))))
+        spectrums[i, 0, :] = torch.tensor(nf(sgf(spectrums[i, 0, :].np())))
 
     show(spectrums, "raw", bias,std = False)
     show(processed_spectrums1, "bals", bias,std = False)

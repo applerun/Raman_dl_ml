@@ -4,8 +4,7 @@ import torch, visdom
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from bacteria.code_sjh.utils.iterator import train_CVAE
-from bacteria.code_sjh.utils import Process
-from bacteria.code_sjh.utils.Validation import visdom_utils as validation, visdom_utils
+from bacteria.code_sjh.Core.basic_functions import visdom_func
 from bacteria.code_sjh.models import CVAE, CVAE2_Dlabel_Dclassifier, RamanData, projectroot, coderoot
 
 # eval
@@ -26,7 +25,7 @@ def plt_h(pltdir,
 	for label in label2h.keys():
 		h = label2h[label]
 		if type(h) == torch.Tensor:
-			h = h.detach_().cpu().numpy()
+			h = h.detach_().cpu().np()
 		name = label2name[label]
 		ax.scatter(h[:,0], h[:,1], label = name)
 		if not os.path.isdir(os.path.join(pltdir, informations + "_record")):
@@ -111,11 +110,11 @@ def evaluate_CVAE_all(model: CVAE,
 				correct += c_t
 				score = F.softmax(y_c_hat, dim = 1)
 				for i in range(num_clases):
-					y_true = torch.eq(y, i).int().cpu().numpy()
-					y_score = score[:, i].float().cpu().numpy()
+					y_true = torch.eq(y, i).int().cpu().np()
+					y_score = score[:, i].float().cpu().np()
 					y_true_all[i] = np.append(y_true_all[i], y_true)
 					y_score_all[i] = np.append(y_score_all[i], y_score)
-				cm = confusion_matrix(y.cpu().numpy(), pred.cpu().numpy(), labels = list(range(num_clases)))
+				cm = confusion_matrix(y.cpu().np(), pred.cpu().np(), labels = list(range(num_clases)))
 				conf_m += cm
 		label2data = loader.dataset.get_data_sorted_by_label()
 
@@ -130,7 +129,7 @@ def evaluate_CVAE_all(model: CVAE,
 			frp, tpr, thresholds = roc_curve(y_true_all[i], y_score_all[i])
 			label2roc[i] = (frp, tpr, thresholds)
 			label2auc[i] = auc(frp, tpr)
-			label2h[i] = h.cpu().numpy()
+			label2h[i] = h.cpu().np()
 		acc = correct / total
 		loss = np.mean(loss_list)
 		res = dict(acc = acc, loss = loss, label2roc = label2roc, label2auc = label2auc, label2h = label2h,
@@ -264,8 +263,8 @@ def main(model,
 					win_main = "spectrum_VAE_val_" + label2name[idx] + "_epoch:" + str(epoch + 1)
 					win = win_main + label2name[idx]
 
-					validation.spectrum_vis(spectrum, xs, win, name = "x", vis = viz)
-					validation.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = viz)
+					visdom_func.spectrum_vis(spectrum, xs, win, name = "x", vis = viz)
+					visdom_func.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = viz)
 					if model.neck_axis < 4:
 						model.neck_vis(spectrum, label2name[idx], win = "VAE_val_neck_vis_epoch:" + str(epoch + 1),
 						               vis = viz,
@@ -275,8 +274,8 @@ def main(model,
 					spectrum = spectrum.to(device)
 					spectrum_hat = model(spectrum)[0]
 					win = "spectrum_VAE_train_" + label2name[idx] + "_epoch:" + str(epoch + 1)
-					validation.spectrum_vis(spectrum, xs, win, name = "x", vis = viz)
-					validation.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = viz)
+					visdom_func.spectrum_vis(spectrum, xs, win, name = "x", vis = viz)
+					visdom_func.spectrum_vis(spectrum_hat, xs, win, update = "append", name = "x_hat", vis = viz)
 					if model.neck_axis < 4:
 						model.neck_vis(spectrum, label2name[idx], vis = viz,
 						               update = None if idx == 0 else "append",
@@ -295,22 +294,17 @@ def main(model,
 
 if __name__ == '__main__':
 	from scipy import interpolate
-
-	visdom_utils.startVisdomServer()
+	from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
+	visdom_func.startVisdomServer()
 	vis = visdom.Visdom()  # visdom对象
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 设置运算设备
 	raman = RamanData.Raman_dirwise
 
-	readdatafunc0 = RamanData.getRamanFromFile(wavelengthstart = 596, wavelengthend = 1802,
+	readdatafunc = getRamanFromFile(wavelengthstart = 596, wavelengthend = 1802,
 	                                           dataname2idx = {"Wavelength": 0, "Column": 1, "Intensity": 2})
 
 
-	def readdatafunc(filepath):
-		R, X = readdatafunc0(filepath)
-		f = interpolate.interp1d(X, R, kind = "cubic")
-		newX = np.linspace(600, 1800, 517)
-		newR = f(newX)
-		return newR, newX
+
 
 
 

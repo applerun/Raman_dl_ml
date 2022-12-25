@@ -5,7 +5,6 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
-from bacteria.code_sjh.utils.Validation.visdom_utils import data2mean_std
 
 
 def cal_conf_matrix(file):

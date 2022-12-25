@@ -143,6 +143,6 @@ class muted_VAEncoder():
         h = mu + sigma * torch.randn_like(sigma)
         out = torch.squeeze(h)
 
-        out = out.detach().numpy()
+        out = out.detach().np()
 
         return out

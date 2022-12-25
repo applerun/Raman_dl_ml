@@ -13,7 +13,7 @@ for i in range(2):
 projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", )
 sys.path.append(coderoot)
-
+from bacteria.code_sjh.Core.basic_functions.data_functions import data2mean_std
 
 def startVisdomServer(url = "http://localhost:8097"):
     try:

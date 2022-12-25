@@ -1,8 +1,5 @@
-import copy
-
 import numpy as np
 import scipy.signal
-import torch
 from bacteria.code_sjh.utils.RamanData import Raman_dirwise
 from bacteria.code_sjh.utils import Process
 
@@ -30,14 +27,15 @@ class Raman_Auremoval(Raman_dirwise):
     def __init__(self, *arg, **kwargs):
         super(Raman_Auremoval, self).__init__(*arg, **kwargs)
 
-def niter_removal(R,X,Au,
+
+def niter_removal(R, X, Au,
                   preprocess = Process.process_series([
-            # Process.bg_removal_niter_fit(num_iter = 100),
-            Process.baseline_als(),
-            Process.sg_filter(window_length = 17),
-            Process.norm_func()
-        ])):
-    R_n = np.squeeze(R.numpy())
+                      # Process.bg_removal_niter_fit(num_iter = 100),
+                      Process.baseline_als(),
+                      Process.sg_filter(window_length = 17),
+                      Process.norm_func()
+                  ])):
+    R_n = np.squeeze(R.np())
     for i in range(R_n.shape[0]):
         R_n[i] = preprocess(R_n[i])
         # R_p = Process.preprocess_default(R_msc[i])
@@ -45,14 +43,15 @@ def niter_removal(R,X,Au,
         # w = 1
         # AuProcessed[i] = w*R_p-Au_p
     Au_n = preprocess(Au[0])
-    R_n -=Au_n
+    R_n -= Au_n
     res = np.zeros_like(R_n)
     for i in range(res.shape[0]):
         res[i] = Process.norm_func()(R_n[i])
     return res
 
+
 def msc_removal(R, X, Au, l = 0.7, p = 0.5):
-    R_msc, Au_msc = msc(np.squeeze(R.numpy()), Au)# 多元散射矫正
+    R_msc, Au_msc = msc(np.squeeze(R.np()), Au)  # 多元散射矫正
 
     # 缩放Au信号，削除Si峰
     Peaks_Au = scipy.signal.find_peaks(Au_msc,
@@ -103,11 +102,11 @@ def AuRemove(db: Raman_dirwise, func, Au_src = None, readdata = None, R_dst = No
             print(os.path.join(Au_src, file_without_backend + ".csv"))
             raise AssertionError
         for i in range(len(R)):
-            filename = name+"-"+str(i) + ".csv"
+            filename = name + "-" + str(i) + ".csv"
             filepath = os.path.join(dst, filename)
             try:
                 np.savetxt(filepath, np.vstack((X, np.arange(len(X)), R_new[i])).T, delimiter = ",",
-                           comments ="",
+                           comments = "",
                            header = "Wavelength,Column,Intensity")
             except:
                 print(filepath)
@@ -115,11 +114,10 @@ def AuRemove(db: Raman_dirwise, func, Au_src = None, readdata = None, R_dst = No
 
 
 if __name__ == '__main__':
-    from bacteria.code_sjh.utils.RamanData import getRamanFromFile, Raman_dirwise, projectroot
-    from bacteria.code_sjh.utils.Validation.visdom_utils import *
-    from bacteria.code_sjh.utils import *
-    import os, visdom
-
+    from bacteria.code_sjh.utils.RamanData import Raman_dirwise, projectroot
+    from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
+    from bacteria.code_sjh.Core.basic_functions.visdom_func import *
+    import os
 
     # def test_msc_minus_sg_norm(R, X, Au):
     #     win0 = key + "_raw"
@@ -176,7 +174,6 @@ if __name__ == '__main__':
     #
     #     spectrum_vis(AuProcessed, X, win = win2, update = None, name = key + "_AuRemoved", )
 
-
     # def test_
     readdata = getRamanFromFile(wavelengthstart = 400, wavelengthend = 1800,
                                 dataname2idx = {"Wavelength": 0, "Column": 1, "Intensity": 2},
@@ -190,15 +187,16 @@ if __name__ == '__main__':
                        )
 
     db = Raman_dirwise(**csvconfig_c)
-    AuRemove(db,msc_removal)
+    AuRemove(db, msc_removal)
     cfg = copy.deepcopy(csvconfig_c)
     cfg["dataroot"] = os.path.join(projectroot, "data", "liver", "liver_after_basewise")
-    cfg["transform"] =  Process.process_series([
-            Process.bg_removal_niter_fit(num_iter = 10),
-            # Process.baseline_als(),
-            Process.sg_filter(window_length = 11),
-            Process.norm_func()
-        ])
+    cfg["transform"] = Process.process_series([
+        Process.intorpolator(),
+        Process.bg_removal_niter_fit(num_iter = 10),
+        # Process.baseline_als(),
+        Process.sg_filter(window_length = 11),
+        Process.norm_func()
+    ])
 
     db2 = Raman_dirwise(**cfg)
     db2.show_data_vis()

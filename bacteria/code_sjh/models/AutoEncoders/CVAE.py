@@ -20,7 +20,6 @@ projectroot = os.path.split(coderoot)[0]
 
 try:
     from ..BasicModule import BasicModule, Flat
-    from ...utils import RamanData, visdom_utils
     from ...utils import Validation as validation
     from .VAE import VAE
     from ..Criteons import compute_gassian_kl
@@ -29,7 +28,6 @@ except:
     sys.path.append(coderoot)
     from models.BasicModule import BasicModule, Flat
     from utils import RamanData
-    from utils.Validation import visdom_utils
     from utils import Validation as validation
     from models.AutoEncoders.VAE import VAE
     from models.Criteons import compute_gassian_kl
@@ -259,7 +257,7 @@ class CVAE(VAE):
     def onehot(self, y, device = None):  # y：[b]
         if device == None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        y_n = y.cpu().numpy()
+        y_n = y.cpu().np()
         if self.num_classes > 2:
             y_one_hot = self.lb.transform(y_n)
         else:

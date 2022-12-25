@@ -6,10 +6,10 @@ import sys
 import numpy as np
 import pandas as pd
 from scipy.signal import savgol_filter
+from scipy import interpolate
 
 try:
-    from baseline_remove import *
-
+    from Process_utils.baseline_remove import *
 except:
     from bacteria.code_sjh.utils.Process_utils.baseline_remove import *
 coderoot = os.path.split(os.path.split(__file__)[0])[0]
@@ -18,6 +18,21 @@ dataroot = os.path.join(projectroot, "data", "data_ID")
 sys.path.append(coderoot)
 
 __all__ = ["sg_filter", "norm_func", "process_series", "noising_func_generator", "area_norm_func"]
+
+
+def intorpolator(new_x = None):
+    if new_x is None:
+        new_x = np.linspace(400, 1800, 512)
+
+    def func(y, x):
+        # y = np.squeeze(y)
+        f = interpolate.interp1d(x, y, kind = "cubic")
+
+        new_y = f(new_x)
+        # new_y = np.expand_dims(new_y, axis = 0)
+        return new_y, new_x
+
+    return func
 
 
 # S-G filter
@@ -34,12 +49,12 @@ def noising_func_generator(t = 0.01):
 
 def sg_filter(window_length = 11,
               polyorder = 3):
-    def func(x,y = None):
+    def func(x, y = None):
         x = savgol_filter(x, window_length, polyorder)
         if y is None:
             return x
         else:
-            return x,y
+            return x, y
 
     return func
 
@@ -47,9 +62,12 @@ def sg_filter(window_length = 11,
 # spectral normalization
 def norm_func(a = 0,
               b = 1):
-    def func(x,y = None):
-        return ((b - a) * (x - min(x))) / (max(x) - min(x)) + a
-
+    def func(x, y = None):
+        x = ((b - a) * (x - min(x))) / (max(x) - min(x)) + a
+        if y is None:
+            return x
+        else:
+            return x, y
 
     return func
 
@@ -69,7 +87,7 @@ def preprocess_default(x,
     # x = bg_removal_niter_fit()(x)
     x = sg_filter(window_length = 15, polyorder = 3)(x)
     x = norm_func(a = 0, b = 1)(x)
-    if y == None:
+    if y is None:
         return x
     else:
         return x, y
@@ -80,11 +98,13 @@ def process_series(sequence,
     ctype2cfunc = {"copy": copy.copy, "deepcopy": copy.deepcopy}
 
     # 将所有处理函数结合在一起
-    def func(x):
-        y = ctype2cfunc[copytype](x)
+    def func(y, x = None):
+        y = ctype2cfunc[copytype](y)
         for funcs in sequence:
-            y = funcs(y)
-        return y
+            y = funcs(y, x)
+            if x is not None:
+                y, x = y
+        return y, x
 
     return func
 
@@ -134,7 +154,7 @@ def refile(src_file, readRaman, process, dst_file = None, xs = None):
     if os.path.isfile(dst_file):
         os.remove(dst_file)
     np.savetxt(dst_file, np.vstack((wavelength, raman)).T, header = "Wavelength,Intensity", delimiter = ",",
-               comments = "")
+               comments = "", fmt = "%s")
 
 
 def dir_process_walk(src_dir,
@@ -246,23 +266,8 @@ if __name__ == '__main__':
         return func
 
 
-    readdatafunc0 = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
-                                     dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
-    from scipy import interpolate
-
-
-    def readdatafunc(
-            filepath
-    ):
-        R, X = readdatafunc0(filepath)
-        R = np.squeeze(R)
-        f = interpolate.interp1d(X, R, kind = "cubic")
-        newX = np.linspace(400, 1800, 512)
-        newR = f(newX)
-        newR = np.expand_dims(newR, axis = 0)
-
-        return newR, newX
-
+    readdatafunc = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
+                                    dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
 
     src_dir = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\liver_cell_dou\MIHA"
     dst_dir = r".\data_res\MIHA"
@@ -271,7 +276,7 @@ if __name__ == '__main__':
                 "brnp": bg_removal_niter_piecewisefit()}
     for keys in name2pre.keys():
         baseline_remove = name2pre[keys]
-        process = process_series([baseline_remove, sg_filter(), norm_func()])
+        process = process_series([intorpolator(), baseline_remove, sg_filter(), norm_func()])
         dst_dir_ = os.path.join(dst_dir, keys)
         dir_process_walk(src_dir, dst_dir_, readdata_func = readdatafunc, preprocess = process, newfile = True)
 

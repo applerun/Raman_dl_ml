@@ -1,26 +1,17 @@
-import sys, os
-import time
+import os
 import warnings
-
-import numpy
-import numpy as np
 
 coderoot = os.path.split(os.path.split(__file__)[0])[0]
 projectroot = os.path.split(coderoot)[0]
-from scipy import interpolate
-import torch, csv, seaborn
-import visdom
-from torch import nn, optim
-import matplotlib.pyplot as plt
+import csv, seaborn
+from torch import optim
 
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
-from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
-
-from bacteria.code_sjh.utils.RamanData import Raman, getRamanFromFile, Raman_dirwise
+from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34
 
 from bacteria.code_sjh.utils.Validation.validation import *
-from bacteria.code_sjh.utils.Validation.visdom_utils import *
-from bacteria.code_sjh.utils.Validation.mpl_utils import *
+from bacteria.code_sjh.Core.basic_functions.visdom_func import *
+from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 
 from bacteria.code_sjh.utils.iterator import train
 
@@ -344,22 +335,13 @@ def npsv(pltdir,
 	return
 
 
-readdatafunc0 = getRamanFromFile(  # 定义读取数据的函数
+readdatafunc = getRamanFromFile(  # 定义读取数据的函数
 	wavelengthstart = 39, wavelengthend = 1810, delimeter = None,
 	dataname2idx = {"Wavelength": 0, "Intensity": 1}
 )
 
 
-def readdatafunc(  # 插值，将光谱长度统一为512
-		filepath
-):
-	R, X = readdatafunc0(filepath)
-	R = numpy.squeeze(R)
-	f = interpolate.interp1d(X, R, kind = "cubic")
-	newX = numpy.linspace(400, 1800, 512)
-	newR = f(newX)
-	newR = numpy.expand_dims(newR, axis = 0)
-	return newR, newX
+
 
 
 def main(
@@ -385,6 +367,7 @@ def main(
 			LoadCsvFile = readdatafunc,
 			k_split = 6,
 			transform = Process.process_series([  # 设置预处理流程
+				Process.intorpolator(),
 				# Process.baseline_als(),
 				# Process.bg_removal_niter_fit(),
 				Process.bg_removal_niter_piecewisefit(),
@@ -521,6 +504,7 @@ if __name__ == '__main__':
 				LoadCsvFile = readdatafunc,
 				k_split = 6,
 				transform = Process.process_series([  # 设置预处理流程
+					Process.intorpolator(),
 					preprocess,
 					Process.sg_filter(),
 					Process.norm_func(), ]

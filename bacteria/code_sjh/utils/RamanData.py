@@ -5,351 +5,16 @@ import random
 import sys
 import copy
 import numpy
-import visdom
-
 import torch
 import torch.utils.data
-from torch.utils.data import Dataset
 
 coderoot = os.path.split(os.path.split(__file__)[0])[0]
 projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_ID")
 sys.path.append(coderoot)
-from sklearn.preprocessing import LabelBinarizer
-
-from bacteria.code_sjh.utils import Process
-from bacteria.code_sjh.utils.Validation import visdom_utils
-
-
-# 请将combined文件后缀前加上减号" - "
-
-def LoadCombinedFile(filename: str,
-                     encoding = "utf-8-sig"):
-    """
-    本函数用于读取数据
-    :param encoding:
-    :param filename: data file name
-    :return:
-    """
-    if not filename.endswith(".csv"):
-        filename += ".csv"
-
-    with open(filename, "r", encoding = encoding) as f:
-        lines = f.readlines()
-
-        for line in lines:
-            data = [float(i) for i in line.split(",")]  # 将字符串转化为浮点数
-            yield data
-    return None
-
-
-def getRamanFromFile(wavelengthstart = 400,
-                     wavelengthend = 1800,
-                     dataname2idx = None,
-                     delimeter = None):
-    if wavelengthend < wavelengthstart:
-        wavelengthstart, wavelengthend = wavelengthend, wavelengthstart
-    dataname2idx = copy.deepcopy(dataname2idx)
-
-    def func(filepath: str,
-             delimeter = delimeter, dataname2idx = dataname2idx):
-        if dataname2idx is None:
-            dataname2idx = {}
-        Ramans = []
-        Wavelengths = []
-        if delimeter is None:
-            if filepath.endswith(".csv"):
-                delimeter = ","
-            elif filepath.endswith(".asc"):
-                delimeter = "\t"
-
-        with open(filepath, "r") as f:
-            lines = f.readlines()
-            header = None
-            for line in lines:
-                line = line.strip()
-                data = line.split(delimeter)
-
-                if data[0] in ["ROI", "Wavelength", "Column", "Intensity"]:
-                    if header is None:
-                        header = data
-                        dataname2idx["Wavelength"] = header.index("Wavelength")
-                        dataname2idx["Intensity"] = header.index("Intensity")
-                    continue
-                try:
-                    wavelength = float(data[dataname2idx["Wavelength"]])
-                    intense = float(data[dataname2idx["Intensity"]])
-                except:
-                    print(filepath, ":", data, ",delimeter:", delimeter)
-                    raise ValueError
-                if wavelengthstart < wavelength and wavelength < wavelengthend:
-                    Ramans.append(intense)
-                    Wavelengths.append(wavelength)
-                elif wavelength > wavelengthend:
-                    break
-        Ramans = numpy.array([Ramans])
-        Wavelengths = numpy.array(Wavelengths)
-        return Ramans, Wavelengths
-
-    return func
-
-
-class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
-    def __init__(self,
-                 dataroot: str,
-                 mode = "train",
-                 t_v_t = None,
-                 sfpath = "Ramans.csv",
-                 shuffle = True,
-                 transform = Process.preprocess_default,
-                 LoadCsvFile = None,
-                 backEnd = ".csv",
-                 unsupervised: bool = False,
-                 noising = None,
-                 newfile = False,
-                 k_split: int = None,
-                 k: int = 0,
-                 ratio: dict = None,
-                 ):
-        """
-
-        :param dataroot: 数据的根目录
-        :param resize: 光谱长度(未实装)
-        :param mode: "train":训练集 "val":验证集 "test":测试集
-        :param t_v_t:[float,float,float] 分割所有数据train-validation-test的比例
-        :param sfpath: 数据文件的名称，初始化时，会在数据根目录创建记录数据的csv文件，文件格式：label，*spectrum，如果已经有该记录文件
-        :param shuffle: 是否将读取的数据打乱
-        :param transform: 数据预处理/增强
-        :param LoadCsvFile:根据数据存储格式自定义的读取文件数据的函数
-        combined:生成器，第一个为光谱数据的header
-        :param backEnd:str 存储文件的后缀
-        :param supervised: 如果为无监督学习，将noising前的信号设置为label
-        :param noising: callable——input：1d spectrum output：noised 1d spectrum
-
-        """
-
-        # assert mode in ["train", "val", "test"]
-        assert os.path.isdir(dataroot), "dataroot {} do not exist".format(dataroot)
-        super(RamanDatasetCore, self).__init__()
-
-        if t_v_t is None and k_split is None:  # 分割train-validation-test
-            t_v_t = [0.7, 0.2, 0.1]
-        # if type(t_v_t) is list:
-        # 	t_v_t = numpy.array(t_v_t)
-        if mode == "all":
-            mode = "train"
-            t_v_t = [1, 0, 0]
-            k_split = None
-        self.k_split = k_split
-        if k_split is not None:  # k_split 模式
-            # t_v_t = [x*k_split for x in t_v_t]
-            assert 0 <= k < k_split, "k must be in range [{},{}]".format(0, k_split - 1)
-        self.k = k
-        # assert t_v_t[0] + t_v_t[1] <= 1
-        self.tvt = t_v_t
-        self.new = newfile
-
-        self.LoadCsvFile = LoadCsvFile
-        self.root = dataroot
-
-        self.name2label = {}  # 为每个分类创建一个label
-        self.sfpath = sfpath
-        self.shuff = shuffle
-        self.mode = mode
-        self.dataEnd = backEnd
-        self.transform = transform
-        self.unsupervised = unsupervised
-        self.noising = noising
-
-        self.train_split = self.tvt[0]
-        self.validation_split = self.tvt[1]
-        self.test_split = self.tvt[2]
-        self.xs = None
-        self.RamanFiles = []
-        self.labels = []
-        self.Ramans = []
-        self.ratio = ratio
-        if self.LoadCsvFile is None:
-            self.LoadCsvFile = getRamanFromFile()
-
-        for name in sorted(os.listdir(dataroot)):
-            if not os.path.isdir(os.path.join(dataroot, name)):
-                continue
-            if not len(os.listdir(os.path.join(dataroot, name))):
-                continue
-            self.name2label[name] = len(self.name2label.keys())
-
-        self.numclasses = len(self.name2label.keys())
-        self.LoadCsv(sfpath)  # 加载所有的数据文件
-        # 数据分割
-        self.split_data()
-        try:
-            self.load_raman_data()  # 数据读取
-        except:  # 读取失败则重新创建文件
-            self.new = True
-            self.LoadCsv(sfpath)
-            self.split_data()
-            self.load_raman_data()
-
-    # def __add__(self, other):
-    # 	if len(other) == 0:
-    # 		return self
-    # 	assert len(self.xs) == len(other.xs)
-    # 	assert self.label2name().keys() == other.label2name().keys()
-    # 	res = copy.deepcopy(self)
-    # 	res.labels = other.labels + self.labels
-    # 	res.Ramans += other.Ramans
-    # 	res.RamanFiles += other.RamanFiles
-    # 	return res
-
-    def LoadCsv(self,
-                filename, ):
-        pass
-
-    def split_data(self):
-        pass
-
-    def load_raman_data(self):
-        pass
-
-    def shuffle(self):
-        z = list(zip(self.Ramans, self.labels, self.RamanFiles))
-        random.shuffle(z)
-        self.Ramans[:], self.labels[:], self.RamanFiles = zip(*z)
-        return
-
-    def shufflecsv(self,
-                   filename = None):
-        if filename is None:
-            filename = self.sfpath
-        path = os.path.join(self.root, filename)
-        with open(path, "r") as f:
-            reader = csv.reader(f)
-            rows = []
-            for row in reader:
-                rows.append(row)
-            random.shuffle(rows)
-        with open(path, "w", newline = "") as f:
-            writer = csv.writer(f)
-
-            writer.writerows(rows)
-
-        return
-
-    def num_classes(self):
-        return self.numclasses
-
-    def file2data(self):
-        return dict(zip(self.RamanFiles, self.Ramans))
-
-    def data2file(self):
-        return dict(zip(self.Ramans, self.RamanFiles))
-
-    def name2label(self):
-        return self.name2label
-
-    def label2name(self):
-        keys = list(self.name2label.values())
-        values = list(self.name2label.keys())
-        return dict(zip(keys, values))
-
-    def get_data_sorted_by_label(self):
-        """
-        返回一个字典，每个label对应的数字指向一个tensor[label=label的光谱的数量,c=1,lenth]
-        """
-        spectrum_each_label = {}
-        for i in range(len(self.name2label)):
-            spectrum_each_label[i] = None
-        for i in range(self.__len__()):
-            raman, label = self.Ramans[i], self.labels[i]
-            raman = torch.unsqueeze(raman, dim = 0)
-
-            if spectrum_each_label[label.item()] is None:
-                spectrum_each_label[label.item()] = raman
-            else:
-                spectrum_each_label[label.item()] = torch.cat(
-                    (spectrum_each_label[label.item()],
-                     raman),
-                    dim = 0
-                )
-        for k in spectrum_each_label.keys():
-            if spectrum_each_label[k] is None:
-                continue
-            if len(spectrum_each_label[k].shape) == 3:
-                return spectrum_each_label
-            else:
-                spectrum_each_label[k] = pytorchlize(spectrum_each_label[k])
-        return spectrum_each_label
-
-    def wavelengths(self):
-        return torch.tensor(self.xs)
-
-    def show_data_vis(self,
-                      xs = None,
-                      vis = None,
-                      win = "data"):
-
-        label2name = self.label2name()
-        label2data = self.get_data_sorted_by_label()
-        if xs == None:
-            xs = self.wavelengths()
-        if len(label2data[0].shape) > 2 and label2data[0].shape[-2] > 1:  # 多通道数据
-            print("多通道数据")
-            return
-
-        if label2data[0].shape[-1] > 3:  # 光谱数据
-            for i in range(self.numclasses):
-                data = label2data[i]
-                name = label2name[i]
-                visdom_utils.spectrum_vis(data, win = win + "_" + name, xs = xs, vis = vis)
-        else:  # 降维后数据
-            # if vis == None:
-            # 	if not win.endswith(".png"):
-            # 		win += ".png"
-            for i in range(self.numclasses):
-                data = torch.squeeze(label2data[i])
-                vis.scatter(data,
-                            win = win,
-                            update = None if i == 0 else "append",
-                            name = self.label2name()[i],
-                            opts = dict(
-                                title = win,
-                                showlegend = True,
-                            )
-                            )
-        return
-
-    def savedata(self,
-                 dir,
-                 mode = "file_wise"):
-        label2data = self.get_data_sorted_by_label()
-        if not os.path.isdir(dir):
-            os.makedirs(dir)
-        if mode == "file_wise":
-            for name in self.name2label.keys():
-                path = os.path.join(dir, name + ".csv")
-                data = label2data[self.name2label[name]]
-                data = data.numpy()
-                data = numpy.squeeze(data)
-                numpy.savetxt(path, data, delimiter = ",")
-
-    def __len__(self):
-        return len(self.Ramans)
-
-    def __getitem__(self,
-                    item):
-        assert item < len(self.Ramans), "{}/{}".format(item, len(self.Ramans))
-
-        raman, label = self.Ramans[item], self.labels[item]
-
-        if self.unsupervised:  # label设置为noising前的光谱数据
-            label = raman.to(torch.float32)
-            if not self.noising == None and self.mode == "train":
-                raman = torch.squeeze(raman)
-                raman = self.noising(raman)
-                raman = torch.unsqueeze(raman, dim = 0).to(torch.float32)
-
-        return raman, label
+from bacteria.code_sjh.Core.basic_functions import visdom_func
+from bacteria.code_sjh.Core.RamanData import RamanDatasetCore
+from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 
 
 class Raman(RamanDatasetCore):
@@ -477,16 +142,18 @@ class Raman(RamanDatasetCore):
         self.Ramans = []
         for file in self.RamanFiles:
             R, X = self.LoadCsvFile(file)
+
+            # 数据预处理
+            if self.transform is not None:
+                R, X = self.transform(R[0], X)
+                R = numpy.expand_dims(R, 0)
+            R = torch.tensor(R).to(torch.float32)
             if self.xs is None:
                 self.xs = X
-            # 数据预处理
-            assert R.shape[-1] == len(self.xs), "R:{},len_x:{},file:{}".format(R.shape, len(self.xs), file)
 
-            if self.transform is not None:
-                R[0] = self.transform(R[0])
-            R = torch.tensor(R).to(torch.float32)
+            assert R.shape[-1] == len(self.xs), "R:{},len_x:{},file:{}".format(R.shape, len(self.xs), file)
             self.Ramans.append(R)
-        self.RamanFiles = [os.path.join(os.path.split(os.path.split(x)[0])[1], os.path.split(x)[1]) for x in
+        self.RamanFiles = [x.replace(self.root + os.sep, "") for x in
                            self.RamanFiles]  # 只留分类和文件名
 
     def get_data_sorted_by_sample(self):
@@ -602,22 +269,6 @@ def Raman_depth_gen(max_depth, min_depth = None, warning = False):  # 生成一�
                         break
             assert len(self.RamanFiles) == len(self.labels)
             return self.RamanFiles, self.labels  # [[float],[],...[]],[int]
-
-        def load_raman_data(self):
-            self.Ramans = []
-            for file in self.RamanFiles:
-                R, X = self.LoadCsvFile(file)
-                if self.xs is None:
-                    self.xs = X
-                # 数据预处理
-                assert R.shape[-1] == len(self.xs), "R:{},len_x:{},file:{}".format(R.shape, len(self.xs), file)
-
-                if self.transform is not None:
-                    R[0] = self.transform(R[0])
-                R = torch.tensor(R).to(torch.float32)
-                self.Ramans.append(R)
-            self.RamanFiles = [x.replace(self.root + os.sep, "") for x in
-                               self.RamanFiles]  # 只留分类和文件名
 
     return Raman_t
 
@@ -772,13 +423,14 @@ class Raman_dirwise(RamanDatasetCore):
             for f in files:
                 file = os.path.join(dir, f)
                 R, X = self.LoadCsvFile(file)
+
+                if self.transform is not None:
+                    R, X = self.transform(R[0], X)
+                    R = numpy.expand_dims(R, 0)
                 if self.xs is None:
                     self.xs = X
                 # 数据预处理
                 assert R.shape[-1] == len(self.xs), "length:{} of the data from {} is invalid".format(R.shape[-1], file)
-
-                if self.transform is not None:
-                    R[0] = self.transform(R[0])
                 R = torch.tensor(R).to(torch.float32)
                 self.Ramans.append(R)
                 self.labels.append(label)
@@ -844,7 +496,7 @@ class Raman_dirwise(RamanDatasetCore):
             label2data = self.get_data_sorted_by_label()
             for label in label2name.keys():
                 name = label2name[label]
-                name2data[name] = numpy.squeeze(label2data[label].numpy())
+                name2data[name] = numpy.squeeze(label2data[label].np())
 
         X = self.xs
         for name in name2data.keys():

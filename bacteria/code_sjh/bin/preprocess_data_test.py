@@ -10,15 +10,15 @@ projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "liver", "liver_all_samplewise")
 sys.path.append(coderoot)
 
-from bacteria.code_sjh.utils.RamanData import Raman, Raman_dirwise
-from bacteria.code_sjh.utils.Validation.visdom_utils import startVisdomServer
+from bacteria.code_sjh.utils.RamanData import Raman_dirwise
+from bacteria.code_sjh.Core.basic_functions.visdom_func import startVisdomServer
 from bacteria.code_sjh.utils import Process
 
 test_db = Raman_dirwise(dataroot, mode = "train", transform = None)
 startVisdomServer()
 sample_tensor, sample_label = test_db.__getitem__(1)
 sample_tensor = torch.squeeze(sample_tensor)
-sample_tensor = sample_tensor.detach().numpy()
+sample_tensor = sample_tensor.detach().np()
 vis = visdom.Visdom()
 
 sgf = Process.sg_filter()

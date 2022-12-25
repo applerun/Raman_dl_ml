@@ -51,11 +51,11 @@ def evaluate_all(model,
 			loss_list.append(loss.item())
 			score = F.softmax(output, dim = 1)  # TODO:也许score就设置为output？
 			for i in range(num_clases):
-				y_true = torch.eq(y, i).int().cpu().numpy()  # [b]
-				y_score = score[:, i].float().cpu().numpy()  # [b]
+				y_true = torch.eq(y, i).int().cpu().np()  # [b]
+				y_score = score[:, i].float().cpu().np()  # [b]
 				y_true_all[i] = np.append(y_true_all[i], y_true)
 				y_score_all[i] = np.append(y_score_all[i], y_score)
-			cm = confusion_matrix(y.cpu().numpy(), pred.cpu().numpy(), labels = list(range(num_clases)))
+			cm = confusion_matrix(y.cpu().np(), pred.cpu().np(), labels = list(range(num_clases)))
 			conf_m += cm
 
 	label2roc = {}
@@ -109,8 +109,8 @@ def grad_cam(convnet,
 	class_loss = comp_class_vec(output, convnet.num_classes, label, device)
 	class_loss.backward()
 
-	fmap = fh.fmap_block[0].cpu().data.numpy()#.squeeze()
-	grad_val = bh.grad_block[0][0].cpu().data.numpy()#.squeeze()  # [b,c,feature_length]
+	fmap = fh.fmap_block[0].cpu().data.np()#.squeeze()
+	grad_val = bh.grad_block[0][0].cpu().data.np()#.squeeze()  # [b,c,feature_length]
 
 	# remove the hooks
 	h1.remove()

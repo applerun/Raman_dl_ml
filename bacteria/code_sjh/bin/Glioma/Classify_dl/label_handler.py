@@ -3,7 +3,8 @@ import os.path
 import shutil
 import warnings
 import numpy
-from bacteria.code_sjh.utils.RamanData import RamanDatasetCore, Raman_dirwise, Raman, getRamanFromFile, Raman_depth_gen
+from bacteria.code_sjh.utils.RamanData import RamanDatasetCore, Raman_dirwise, Raman, Raman_depth_gen
+from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 from bacteria.code_sjh.utils import Process
 import pandas
 import torch
@@ -90,20 +91,9 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
     data_root = os.path.join(projectroot, "data", "脑胶质瘤", src)
     from scipy import interpolate
 
-    readdatafunc0 = getRamanFromFile(  # 定义读取数据的函数
+    readdatafunc = getRamanFromFile(  # 定义读取数据的函数
         wavelengthstart = 39, wavelengthend = 1810, delimeter = None,
     )
-
-    def readdatafunc(  # 插值，将光谱长度统一为512
-            filepath
-    ):
-        R, X = readdatafunc0(filepath)
-        R = numpy.squeeze(R)
-        f = interpolate.interp1d(X, R, kind = "cubic")
-        newX = numpy.linspace(400, 1800, 512)
-        newR = f(newX)
-        newR = numpy.expand_dims(newR, axis = 0)
-        return newR, newX
 
     db_cfg = dict(  # 数据集设置
         dataroot = data_root,
@@ -113,6 +103,7 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
         LoadCsvFile = readdatafunc,
         k_split = 6,
         transform = Process.process_series([  # 设置预处理流程
+            Process.intorpolator(),
             # Process.baseline_als(),
             # Process.bg_removal_niter_fit(),
             Process.bg_removal_niter_piecewisefit(),

@@ -115,7 +115,7 @@ def report_dirwise_classify(dataset: Raman_dirwise,  # raman_dir -> root/class/d
         with torch.no_grad():
             logits = model(raman)  # [num_file,n_c]
         if stat_strategy == "file_wise":
-            pred = torch.detach(logits.argmax(dim = 1)).cpu().numpy()  # [num_file]
+            pred = torch.detach(logits.argmax(dim = 1)).cpu().np()  # [num_file]
             for i in range(len(pred)):
                 res[pred[i] + 1] += 1
                 res[-1] += 1
@@ -136,26 +136,17 @@ def report_dirwise_classify(dataset: Raman_dirwise,  # raman_dir -> root/class/d
 if __name__ == '__main__':
     import numpy as np
     from torch.utils.data import DataLoader
-    from bacteria.code_sjh.utils.RamanData import getRamanFromFile
+    from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
     from bacteria.code_sjh.utils import Process
     from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
     from scipy import interpolate
-    readdatafunc0 = getRamanFromFile(  # 定义读取数据的函数
+    readdatafunc = getRamanFromFile(  # 定义读取数据的函数
         wavelengthstart = 39, wavelengthend = 1810, delimeter = None,
         dataname2idx = {"Wavelength": 0, "Intensity": 1}
     )
 
 
-    def readdatafunc(  # 插值，将光谱长度统一为512
-            filepath
-    ):
-        R, X = readdatafunc0(filepath)
-        R = np.squeeze(R)
-        f = interpolate.interp1d(X, R, kind = "cubic")
-        newX = np.linspace(400, 1800, 512)
-        newR = f(newX)
-        newR = np.expand_dims(newR, axis = 0)
-        return newR, newX
+
     dataroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_indep"
     mdl_root = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\code_sjh\checkpoints\alexnet.mdl"
 
@@ -167,6 +158,7 @@ if __name__ == '__main__':
         LoadCsvFile = readdatafunc,
         k_split = 9,
         transform = Process.process_series([  # 设置预处理流程
+            Process.intorpolator(),
             Process.sg_filter(),
             Process.bg_removal_niter_fit(),
             Process.norm_func(), ]

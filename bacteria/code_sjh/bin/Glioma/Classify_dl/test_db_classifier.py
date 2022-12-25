@@ -1,23 +1,15 @@
-import sys, os
-import time
 import warnings
-import numpy as np
 
-from scipy import interpolate
-import torch, csv, seaborn
-import visdom
-from torch import nn, optim
-import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
+import csv, seaborn
+from torch import optim
 
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
-from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
-from bacteria.code_sjh.utils.RamanData import Raman, getRamanFromFile, Raman_dirwise, Raman_depth_gen
+from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34
 from bacteria.code_sjh.utils.Validation.validation import *
-from bacteria.code_sjh.utils.Validation.visdom_utils import *
-from bacteria.code_sjh.utils.Validation.mpl_utils import *
+from bacteria.code_sjh.Core.basic_functions.visdom_func import *
+from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 from bacteria.code_sjh.utils.iterator import train
-from label_handler import get_infos, path2func_generator, label_RamanData
+from label_handler import get_infos, path2func_generator
 from bacteria.code_sjh.utils.Classifier import report_dirwise_classify
 
 global loss

@@ -1,15 +1,14 @@
 import warnings
 
-from bacteria.code_sjh.utils.RamanData import Raman, projectroot,RamanDatasetCore
+from bacteria.code_sjh.utils.RamanData import Raman, projectroot
 from bacteria.code_sjh.models import AlexNet_Sun
-from bacteria.code_sjh.models.CNN.ResNet import ResNet18,ResNet34,ResNet50,ResNet101,ResNet152
+from bacteria.code_sjh.models.CNN.ResNet import ResNet18,ResNet34
 from bacteria.code_sjh.utils.Validation.validation import evaluate, evaluate_labelwise
-from bacteria.code_sjh.utils.Validation.visdom_utils import startVisdomServer
 from bacteria.code_sjh.utils.iterator import train
-from bacteria.code_sjh.utils.Validation.visdom_utils import batch_plt
+from bacteria.code_sjh.Core.basic_functions.visdom_func import batch_plt
 from bacteria.code_sjh.utils.Classifier import copy_filewise_classify
 import torch, numpy, visdom
-import csv, os, sys
+import csv, os
 import glob,random
 
 from torch import nn, optim

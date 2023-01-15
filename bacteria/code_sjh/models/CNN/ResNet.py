@@ -156,7 +156,7 @@ class net2(BasicModule):
 			nn.Conv1d(in_channels = ch_out, out_channels = ch_out, kernel_size = 3, stride = 1, padding = padding,
 			          bias = bias),
 			nn.BatchNorm1d(ch_out),
-			nn.ReLU()
+			# nn.ReLU()
 		)
 
 	def forward(self,
@@ -191,7 +191,7 @@ class net3(BasicModule):
 		self.conv3 = nn.Sequential(
 			nn.Conv1d(in_channels = ch_m, out_channels = ch_out, kernel_size = 1, stride = 1, padding = 0),
 			nn.BatchNorm1d(ch_out),
-			nn.ReLU()
+			# nn.ReLU()
 
 		)
 
@@ -274,10 +274,25 @@ class ResNet152(ResNet):
 
 
 if __name__ == '__main__':
+	import time
 	x = torch.Tensor(16, 1, 600)
+
 	for Model in [ResNet18,ResNet34,ResNet50,ResNet101,ResNet152]:
 		model = Model(x, 2)
-		print(model)
+		# print(model)
+		t_0 = time.time()
 		res = model(x)
+		t_1 = time.time()
+		print(t_1-t_0)
 
+	device = torch.device("cuda")
+
+	for Model in [ResNet18,ResNet34,ResNet50,ResNet101,ResNet152]:
+		model = Model(x, 2).to(device)
+		x_ = torch.Tensor(128,1,600).to(device)
+		# print(model)
+		t_0 = time.time()
+		res = model(x_)
+		t_1 = time.time()
+		print(t_1-t_0)
 

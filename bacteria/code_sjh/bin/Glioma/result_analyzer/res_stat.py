@@ -12,21 +12,21 @@ def round_str(res: str, split = "±"):
     return res
 
 
-def RecordRead_bi_clas(src):
+def RecordRead_bi_clas(src, mode = "test"):
     pd = pandas.read_csv(src + ".csv", skiprows = 2, encoding = "GBK")
-    accs = pd["test_acc"]
+    accs = pd[mode + "_acc"]
     ind = len(accs) - 2
-    acc = pd["test_acc"][ind].split("+-")[0]
-    acc = round(float(acc),4)
+    acc = pd[mode + "_acc"][ind].split("+-")[0]
+    acc = round(float(acc), 4)
     # acc = round_str(acc)
-    auc = pd["test_AUC"][ind].split("+-")[0]
+    auc = pd[mode + "_AUC"][ind].split("+-")[0]
     auc = round(float(auc), 2)
     # auc = round_str(auc)
-    cm = np.loadtxt(os.path.join(src, "test_confusion_matrix.csv"), delimiter = ",")
+    cm = np.loadtxt(os.path.join(src, mode + "_confusion_matrix.csv"), delimiter = ",")
 
     (a, b), (c, d) = cm
     acc_ = (a + d) / (a + b + c + d)
-    acc_ = round(acc_,4)
+    acc_ = round(acc_, 4)
     sen = d / (c + d)
     sen = round(sen, 4)
     spe = a / (a + b)
@@ -43,7 +43,8 @@ def RecordRead_Polytomous(src, class_of_interest = -1):
     return
 
 
-def main_bi_class(dir, dst):
+def main_bi_class(dir, dst, mode = "test",
+                  molecules = None):
     f = open(dst, "w", newline = "")
     csv_writer = csv.writer(f)
     nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
@@ -51,7 +52,9 @@ def main_bi_class(dir, dst):
     header = ["模型"] + ["Alexnet", "Resnet18", "Resnet34"] * 4
     csv_writer.writerow(header1)
     csv_writer.writerow(header)
-    for molecule in os.listdir(dir):
+    if molecules is None:
+        molecules = os.listdir(dir)
+    for molecule in molecules:
 
         molecule_abs = os.path.join(dir, molecule)
         if not os.path.isdir(molecule_abs):
@@ -60,7 +63,7 @@ def main_bi_class(dir, dst):
         for i in range(len(nets)):
             net = nets[i]
             src = os.path.join(molecule_abs, "Record" + net)
-            res = RecordRead_bi_clas(src)
+            res = RecordRead_bi_clas(src, mode)
             row[i + 1] = res["sen"]
             row[i + 4] = res["spe"]
             row[i + 7] = res["acc"]
@@ -70,14 +73,27 @@ def main_bi_class(dir, dst):
     return
 
 
-if __name__ == '__main__':
-    # resultroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl"
-    resuldir = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl\2022-12-07-00_01_51"
-    dst_file = os.path.join(resuldir,"res_stat.csv")
-    main_bi_class(resuldir, dst_file)
-    # for lr in [0.1,0.01,0.001]:
-    #     src_dir = "test_base_lr{}".format(lr)
-    #     dst_file = "res_stat_filewise_test_base_lr{}.csv".format(lr)
-    #
-    #     main_bi_class(os.path.join(resultroot,src_dir),dst_file)
+def main(dirname = "2022-11-10-17_57_55_dirwise"):
+    resuldir = os.path.join(r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl", dirname)
+    dst_file = os.path.join(resuldir, "res_stat.csv")
+    main_bi_class(resuldir, dst_file, molecules =
+    "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)".split("@"))
 
+
+def main_2():
+    """
+
+    @return: lr wise
+    """
+    resultroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl"
+
+    for lr in [0.1, 0.01, 0.001]:
+        src_dir = "test_base_lr{}".format(lr)
+        dst_file = "res_stat_filewise_test_base_lr{}.csv".format(lr)
+        main_bi_class(os.path.join(resultroot, src_dir), os.path.join(resultroot, src_dir, dst_file), mode = "test",
+                      molecules =
+                      "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)".split("@"))
+
+
+if __name__ == '__main__':
+    main_2()

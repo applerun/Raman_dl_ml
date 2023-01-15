@@ -77,7 +77,11 @@ def relabel(xingmingsuoxue2xuhao, filepath):
     if type(infos[0]) is not str:
         infos[0] = str(int(infos[0]))
     os.rename(filepath, os.path.join(dir, " ".join(infos)))
-
+def indexinlist(content,l:list):
+    try:
+        return l.index(content)
+    except:
+        return -1
 
 if __name__ == '__main__':
     src = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\GBM分子分型汇总表.xlsx"

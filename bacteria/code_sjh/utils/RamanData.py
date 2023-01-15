@@ -12,7 +12,7 @@ coderoot = os.path.split(os.path.split(__file__)[0])[0]
 projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_ID")
 sys.path.append(coderoot)
-from bacteria.code_sjh.Core.basic_functions import visdom_func
+from bacteria.code_sjh.Core.basic_functions import visdom_func as visdom_utils
 from bacteria.code_sjh.Core.RamanData import RamanDatasetCore
 from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 

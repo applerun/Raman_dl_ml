@@ -57,7 +57,10 @@ def path2func_generator(num2label, prefix_len = 0, delimeter = " ", index = 0, f
         num = int(file_.split(delimeter)[index][prefix_len:])
         if func is not None:
             num = func(num)
-        return num2label[num]
+        try:
+            return num2label[num]
+        except:
+            return -1
 
     return path2label
 
@@ -114,11 +117,11 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
     raman = Raman_depth_gen(2, 2)
     for ele in eles:
         num2label = {}
-        path2labelfunc = path2func_generator(num2label)
+        path2labelfunc = path2func_generator(num2label,func = lambda x:x+1000)
         for k in num2ele2label.keys():
             num2label[k] = num2ele2label[k][ele]
         name2label = {"0": 0, "1": 1}
-        label2name = {"0": "neg", "1": "pos"}
+        label2name = {"0": "neg", "1": "pos","-1":"unknown"}
         db = raman(**db_cfg, sfpath = "Raman_{}_unlabeled.csv".format(ele), newfile = True, shuffle = False)
 
         label_RamanData(db, path2labelfunc, name2label)
@@ -145,4 +148,4 @@ def reform_tree(src_root, dst_root, path2labelfunc):
 
 
 if __name__ == '__main__':
-    main(r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\第一二三批 病例编号&大类结果2.xlsx")
+    main(r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx")

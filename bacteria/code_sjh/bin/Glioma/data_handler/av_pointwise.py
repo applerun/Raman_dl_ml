@@ -100,7 +100,7 @@ def refile(src_file, readRaman, dst_file = None, xs = None):
         os.remove(dst_file)
     np.savetxt(dst_file, np.vstack((wavelength, raman)).T, header = "Wavelength,Intensity", delimiter = ",",
                comments = "")
-
+    return wavelength
 
 def dir2file_av(src_dir,
                 readRaman,

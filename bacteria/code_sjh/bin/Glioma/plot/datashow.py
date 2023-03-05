@@ -34,11 +34,12 @@ def db_plot_samplewise(db: RamanDatasetCore, dst, backend = ".png", ):
 
 
 if __name__ == '__main__':
-
+    # plot所有mol分子分型的光谱
+    mol = "1p19q(缺-1)"
     dataroot_batch1 = os.path.join(projectroot, "data", "脑胶质瘤", "data_classified")
     dataroot_batch2 = os.path.join(projectroot, "data", "脑胶质瘤", "data_indep")
     dstroot = os.path.join(projectroot, "data", "脑胶质瘤", "data_plot")
-    csvconfig_a = dict(dataroot = os.path.join(dataroot_batch1, "1p19q(缺-1)"),
+    csvconfig_a = dict(dataroot = os.path.join(dataroot_batch1, mol),
                        LoadCsvFile = readdatafunc,
                        transform = Process.process_series([
                            Process.bg_removal_niter_fit(),
@@ -48,7 +49,9 @@ if __name__ == '__main__':
                        ]),
                        backEnd = ".csv", t_v_t = [1, 0, 0])
     db1 = Raman_dirwise(**csvconfig_a, newfile = False, shuffle = False, sfpath = "Raman_dirwise.csv")
-    csvconfig_a["dataroot"] = os.path.join(dataroot_batch2, "1p19q(缺-1)")
+    csvconfig_a["dataroot"] = os.path.join(dataroot_batch2, mol)
     db2 = Raman_dirwise(**csvconfig_a, newfile = False, shuffle = False, sfpath = "Raman_dirwise.csv")
     db_plot_samplewise(db1, dstroot, "_old.png")
+    print("batch1 ploted")
     db_plot_samplewise(db2, dstroot, "_new.png")
+    print("batch2 ploted")

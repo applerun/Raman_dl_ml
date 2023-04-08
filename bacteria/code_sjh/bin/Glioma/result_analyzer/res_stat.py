@@ -20,7 +20,7 @@ def RecordRead_bi_clas(src, mode = "test"):
     acc = round(float(acc), 4)
     # acc = round_str(acc)
     auc = pd[mode + "_AUC"][ind].split("+-")[0]
-    auc = round(float(auc), 2)
+    auc = round(float(auc), 4)
     # auc = round_str(auc)
     cm = np.loadtxt(os.path.join(src, mode + "_confusion_matrix.csv"), delimiter = ",")
 
@@ -45,6 +45,10 @@ def RecordRead_Polytomous(src, class_of_interest = -1):
 
 def main_bi_class(dir, dst, mode = "test",
                   molecules = None):
+    if not os.path.isabs(dst):
+        dst = os.path.join(dir, dst)
+    if not dst.endswith(".csv"):
+        dst = dst + ".csv"
     f = open(dst, "w", newline = "")
     csv_writer = csv.writer(f)
     nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
@@ -75,9 +79,9 @@ def main_bi_class(dir, dst, mode = "test",
 
 def main(dirname = "2022-11-10-17_57_55_dirwise"):
     resuldir = os.path.join(r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl", dirname)
-    dst_file = os.path.join(resuldir, "res_stat.csv")
+    dst_file = os.path.join(resuldir, dirname+".csv")
     main_bi_class(resuldir, dst_file, molecules =
-    "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)".split("@"))
+    "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)".split("@"))
 
 
 def main_2():
@@ -96,4 +100,5 @@ def main_2():
 
 
 if __name__ == '__main__':
+    # main("2022-11-11-11_30_17")
     main_2()

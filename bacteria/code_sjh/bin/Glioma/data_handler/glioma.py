@@ -203,19 +203,7 @@ def assert_times(dir, lasttime = None):
     return max(times)
 
 
-def get_infos(filename: str):
-    df = pandas.read_excel(filename)
-    nums = df["编号"]
-    axes = df.axes[1]
-    num2ele2label = {}
 
-    for i in range(len(nums)):
-        num2ele2label[nums[i]] = {}
-        for j in range(4, 13):
-            label_class: str = axes[j]
-            label_class = label_class.replace("\\", "-")
-            num2ele2label[nums[i]][label_class] = df[axes[j]][i]
-    return num2ele2label
 
 
 def count_files(dst_root):
@@ -262,7 +250,19 @@ if __name__ == '__main__':
 
 # if __name__ == '__main__':
 #     # infofile = os.path.join(projectroot,"data","脑胶质瘤","data_used","第一二三批 病例编号&大类结果.xlsx")
+# def get_infos(filename: str):
+#     df = pandas.read_excel(filename)
+#     nums = df["编号"]
+#     axes = df.axes[1]
+#     num2ele2label = {}
 #
+#     for i in range(len(nums)):
+#         num2ele2label[nums[i]] = {}
+#         for j in range(4, 13):
+#             label_class: str = axes[j]
+#             label_class = label_class.replace("\\", "-")
+#             num2ele2label[nums[i]][label_class] = df[axes[j]][i]
+#     return num2ele2label
 #     # infos = get_infos(infofile)
 #     # print(infos)
 #     # ALL_root = os.path.join(dst_root,"all")

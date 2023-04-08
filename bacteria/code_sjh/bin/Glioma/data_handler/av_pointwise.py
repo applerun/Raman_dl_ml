@@ -88,6 +88,14 @@ def smooth(data: np.ndarray,
 # 	print(data)
 
 def refile(src_file, readRaman, dst_file = None, xs = None):
+    """
+    将旧的数据格式的srcfile统一为wavenumber + intensity的格式（csv，逗号分隔），保存在dst_file
+    @param src_file:    数据来源
+    @param readRaman:   自定义文件读取函数，输入：文件名，输出：(intensity, wavenumber)
+    @param dst_file:    新文件路径
+    @param xs:  如果不为None，将覆盖src_file的wavenumber
+    @return:    None
+    """
     raman, wavelength = readRaman(src_file)
     if raman[0][0] == 1:
         return
@@ -107,6 +115,14 @@ def dir2file_av(src_dir,
                 dst_file = None,
                 backend = ".csv",
                 ):
+    """
+    将文件夹下所有的光谱作平均，保存在dst_file
+    @param src_dir:     平均光谱所在的文件夹
+    @param readRaman:   自定义文件读取函数，输入：文件名，输出：(intensity, wavenumber)
+    @param dst_file:    保存文件路径，默认为src_dir+”.csv“
+    @param backend:     数据文件的后缀
+    @return:            None
+    """
     if not os.path.isdir(src_dir):
         raise AssertionError("Not A Dir:" + src_dir)
     if dst_file is None:
@@ -146,32 +162,50 @@ if __name__ == '__main__':
     # dir_prefix = "point"
     current_dir = os.path.dirname(__file__)
     data_root = "../../../../data/脑胶质瘤/data_reformed/"
-    xs = None
-    for c in classes:
-        if c == "batch2":
-            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
-        elif c == "batch1":
-            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 5, "Intensity": 4})
-        else:
-            readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
-        class_root = os.path.join(data_root, c)
-        for dirs in os.listdir(class_root):
-            abs_dir = os.path.join(class_root, dirs)
-            if not os.path.isdir(abs_dir):
+    # xs = None
+    # for c in classes:
+    #     if c == "batch2":
+    #         readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+    #     elif c == "batch1":
+    #         readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 5, "Intensity": 4})
+    #     else:
+    #         readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 2, "Intensity": 5})
+    #     class_root = os.path.join(data_root, c)
+    #     for dirs in os.listdir(class_root):
+    #         abs_dir = os.path.join(class_root, dirs)
+    #         if not os.path.isdir(abs_dir):
+    #             continue
+    #         for pointdir in os.listdir(abs_dir):
+    #             abs_pointdir = os.path.join(abs_dir, pointdir)
+    #             if not os.path.isdir(abs_pointdir):
+    #                 # or not pointdir.startswith(dir_prefix):
+    #                 continue
+    #             dst_file = abs_pointdir + ".csv"
+    #             for raman_file in os.listdir(abs_pointdir):
+    #                 abs_raman_file = os.path.join(abs_pointdir, raman_file)
+    #                 refile(abs_raman_file, readRaman)
+    #
+    #             dir2file_av(abs_pointdir, readRaman, dst_file)
+    #             # file2plot(dst_file, dst_file[:-4] + ".png", readRaman)
+    #
+    #         # for frames in os.listdir(abs_pointdir):
+    #         # 	abs_frame = os.path.join(abs_pointdir, frames)
+    #         # 	file2plot(abs_frame, abs_frame[:-4] + ".png")
+    #
+    class_root = "../../../../data/脑胶质瘤/data_indep_unlabeled/unlabeled"
+    readRaman = getRamanFromFile(0, 4000, dataname2idx = {"Wavelength": 0, "Intensity": 1})
+    for dirs in os.listdir(class_root):
+        abs_dir = os.path.join(class_root, dirs) # 遍历每个组织
+        if not os.path.isdir(abs_dir):
+            continue
+        for pointdir in os.listdir(abs_dir):
+            abs_pointdir = os.path.join(abs_dir, pointdir)
+            if not os.path.isdir(abs_pointdir):
+                # or not pointdir.startswith(dir_prefix):
                 continue
-            for pointdir in os.listdir(abs_dir):
-                abs_pointdir = os.path.join(abs_dir, pointdir)
-                if not os.path.isdir(abs_pointdir):
-                    # or not pointdir.startswith(dir_prefix):
-                    continue
-                dst_file = abs_pointdir + ".csv"
-                for raman_file in os.listdir(abs_pointdir):
-                    abs_raman_file = os.path.join(abs_pointdir, raman_file)
-                    refile(abs_raman_file, readRaman)
+            dst_file = abs_pointdir + ".csv"
+            # for raman_file in os.listdir(abs_pointdir):
+            #     abs_raman_file = os.path.join(abs_pointdir, raman_file)
+            #     refile(abs_raman_file, readRaman)
 
-                dir2file_av(abs_pointdir, readRaman, dst_file)
-                # file2plot(dst_file, dst_file[:-4] + ".png", readRaman)
-
-            # for frames in os.listdir(abs_pointdir):
-            # 	abs_frame = os.path.join(abs_pointdir, frames)
-            # 	file2plot(abs_frame, abs_frame[:-4] + ".png")
+            dir2file_av(abs_pointdir, readRaman, dst_file)

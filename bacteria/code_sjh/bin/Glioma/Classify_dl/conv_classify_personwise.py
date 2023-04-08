@@ -6,18 +6,21 @@ from torch import optim
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
 from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34
 from bacteria.code_sjh.utils.Validation.validation import *
+from bacteria.code_sjh.utils.RamanData import getRamanFromFile
 from bacteria.code_sjh.Core.basic_functions.visdom_func import *
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 from bacteria.code_sjh.utils.iterator import train
 from label_handler import get_infos, path2func_generator
+from torch.utils.data import DataLoader
 
 global loss
 import pysnooper
+from bacteria.code_sjh.utils import Process
 
 torch.backends.cudnn.benchmark = True
 
 coderoot = "../../.."
-projectroot = "../../../.."
+projectroot = "../../../../.."
 logfile = os.path.join(projectroot, "log", "glioma", "DL_classification", os.path.basename(__file__),
                        time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
 if not os.path.isdir(os.path.dirname(logfile)):
@@ -25,17 +28,19 @@ if not os.path.isdir(os.path.dirname(logfile)):
 with open(logfile, "w") as f:
     pass
 
+startVisdomServer()  # python -m visdom.server    启动visdom本地服务器
+vis = visdom.Visdom()  # visdom对象
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 设置运算设备
+
 
 @pysnooper.snoop(
     logfile,
     prefix = "--*--")
-def AST_main(
+def train_classification_net(
         net,
-        # TODO:自动收集sample tensor
         train_db,
         val_db,
         test_db,
-        # TODO:选择分配比例和数据文件夹
         device,
         # 选择训练键
         lr = 0.002,
@@ -48,17 +53,44 @@ def AST_main(
         modelname = None,
         # 选择保存名
         vis = None,
-        save_dir = os.path.join(coderoot, "checkpoints", ),
-        # 选择保存目录
-        epo_interv = 2,
+        save_dir = os.path.join(coderoot, "checkpoints", ),  # 选择保存目录
+
         # 每隔epo_interv 验证一次
         # prog_bar = False,  # 实现进度条功能
         criteon = nn.CrossEntropyLoss(),
         # 选择criteon
         verbose = False,
-        ax = None,
-        k = 0
+        epo_interv = 2,
+        k = 0.,
+        show_test_acc_line = False,
 ):
+    """
+
+    @param net:  训练的网络
+    @param train_db:  训练集
+    @param val_db: 验证集
+    @param test_db: 测试集
+    @param device:  训练设备
+    @param lr:  学习率
+    @param epochs:  最大迭代次数
+    @param batchsz: batch size
+    @param numworkers: data loader 线程数，建议默认为0
+    @param modelname: 模型名称，None则采用默认名称，影响保存的文件名
+    @param vis: visdom可视化对象
+    @param save_dir: 保存文件夹
+    @param criteon: 损失函数
+    @param verbose: 是否冗余报告（每隔epo_interv 验证一次性能)
+    @param epo_interv: 每隔epo_interv 测试一次性能（需要verbose 设置为True）
+    @param k: 多折交叉验证的第k+1折（默认为0）
+    @return:    res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
+               train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
+               best_acc = best_acc, best_epoch = best_epoch,  # early-stopping位置
+               res_test = res_test,  # 测试集所有指标：
+               # acc：float正确率, loss:float,
+               # label2roc:dict 各个label的ROC, label2auc:dict 各个label的AUC, confusion_matrix:np.ndarray 混淆矩阵
+               res_val = res_val,  # 验证集所有指标
+               )
+    """
     if vis == None:
         vis = visdom.Visdom()
 
@@ -76,6 +108,7 @@ def AST_main(
     print("data loaded")
     # optimizer
     best_acc, best_epoch = 0, 0
+    best_loss = 0
     global_step = 0
 
     steps = []
@@ -84,8 +117,9 @@ def AST_main(
 
     vis.line([0], [-1], win = "loss_" + str(k), opts = dict(title = "loss_" + str(k)))
     vis.line([0], [-1], win = "val_acc_" + str(k), opts = dict(title = "val_acc_" + str(k)))
-    vis.line([0], [-1], win = "train_acc_" + str(k), opts = dict(title = "train_acc_" + str(k)))
-    # vis.line([0], [-1], win = "test_acc_" + str(k), opts = dict(title = "test_acc_" + str(k)))
+    vis.line([0], [-1], win = "train_acc_" + str(k), opts = dict(title = "train_acc_" + str(k), name = "train_acc"))
+    if show_test_acc_line:
+        vis.line([0], [-1], win = "val_acc_" + str(k), opts = dict(title = "val_acc_" + str(k), ), name = "test_acc")
     save_dir = os.path.join(save_dir, net.model_name + ".mdl")
 
     if not os.path.exists(save_dir):
@@ -118,7 +152,7 @@ def AST_main(
             vis.line([val_acc], [global_step], win = "val_acc_" + str(k), update = "append")
             vis.line([train_acc], [global_step], win = "train_acc_" + str(k), update = "append")
             # vis.line([test_acc], [global_step], win = "test_acc_" + str(k), update = "append")
-            if val_acc >= best_acc and epoch > 20:
+            if val_acc > best_acc:
                 best_epoch = epoch
                 best_acc = val_acc
                 net.save(save_dir)
@@ -141,7 +175,7 @@ def AST_main(
 
     net.load(save_dir)
 
-    # print("best_acc:", best_acc, "best epoch", best_epoch)
+    print("best_acc:", best_acc, "best epoch", best_epoch)
     # print("loaded from ckpt!")
     res_test = evaluate_all(net, test_loader, criteon, device)
     res_val = evaluate_all(net, val_loader, criteon, device)
@@ -295,15 +329,6 @@ def plt_res(pltdir,
     plt_cam(pltdir, res["test_cam"], test_db, "val")
 
 
-# res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
-#            train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
-#            best_acc = best_acc, best_epoch = best_epoch,  # early-stopping位置
-#            res_test = res_test,  # 测试集所有指标：
-#            # acc：float正确率, loss:float,
-#            # label2roc:dict 各个label的ROC, label2auc:dict 各个label的AUC, confusion_matrix:np.ndarray 混淆矩阵
-#            res_val = res_val,  # 验证集所有指标
-#            cams = cams,  # 梯度加权类激活映射图谱
-#            )
 def heatmap(matrix,
             path):
     cm_fig, cm_ax = plt.subplots()
@@ -347,9 +372,7 @@ readdatafunc = getRamanFromFile(  # 定义读取数据的函数
 )
 
 
-
-
-def main(
+def train_modellist(
         dataroot,
         db_cfg = None,
         raman = RamanDatasetCore,
@@ -359,6 +382,8 @@ def main(
         recorddir = None,
         path2labelfunc = None,
         test_db = None,
+        sfname = "Raman_",
+        n_iter = 1  # 交叉验证重复次数
 ):
     if recorddir is None:
         recorddir = "Record_" + time.strftime("%Y-%m-%d-%H_%M_%S")
@@ -391,14 +416,14 @@ def main(
         device = device,
         batchsz = 100,
         vis = vis,
-        lr = 0.1,
+        lr = 0.001,
         epochs = 300,
         verbose = False,
     )
     # config = dict(dataroot = os.path.join(projectroot, "data", "data_AST"), backEnd = backend, t_v_t = tvt, LoadCsvFile = getRamanFromFile(wavelengthstart = 0, wavelengthend = 1800, delimeter = delimeter,
     #                                  dataname2idx = dataformat), k_split = k_split)
 
-    n_iter = 1  # 交叉验证重复次数
+
     i = 0  # 实验进度计数
 
     # recorddir = os.path.join(projectroot, "results", "liver", recorddir)  # 实验结果保存位置
@@ -421,7 +446,7 @@ def main(
         conf_m_t = None
         for n in range(n_iter):
             for k in range(k_split):
-                sfpath = "Raman_" + str(n) + ".csv"
+                sfpath = sfname + str(n) + ".csv"
 
                 train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True if n > 0 else False)
                 val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
@@ -446,11 +471,11 @@ def main(
                 sample_tensor = torch.unsqueeze(sample_tensor, dim = 0)
 
                 net = model(sample_tensor, train_db.num_classes()).to(device)
-                res = AST_main(
+                res = train_classification_net(
                     net,
-                    train_db,
-                    val_db,
-                    test_db,
+                    train_db =train_db,
+                    val_db = val_db,
+                    test_db = test_db,
                     **train_cfg,
                     k = k
                 )
@@ -502,16 +527,13 @@ def main(
         print("best epochs", bea)
 
 
-if __name__ == '__main__':
-    startVisdomServer()  # python -m visdom.server    启动visdom本地服务器
-    vis = visdom.Visdom()  # visdom对象
+def main_indep_test():
     from bacteria.code_sjh.utils import Process
 
-    info_file = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\第一二三批 病例编号&大类结果2.xlsx"
+    info_file = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx"
     num2ele2label = get_infos(info_file)
     eles = list(num2ele2label.values().__iter__().__next__().keys())
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 设置运算设备
     print("using device:", device.__str__())
     dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_classified")
     dataroot_test_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_indep")
@@ -520,40 +542,98 @@ if __name__ == '__main__':
     raman = Raman_dirwise
     recordroot = os.path.join(recordroot, time.strftime("%Y-%m-%d-%H_%M_%S"))
 
-    for ele in eles:  # TODO：选择合适的标签
+    paras = [(e, pre) for e in eles for pre in [
+        # Process.baseline_als(),
+        Process.bg_removal_niter_fit(),
+        # Process.bg_removal_niter_piecewisefit(),
+    ]]
+
+    for ele, preprocess in paras:
         num2label = {}
         for k in num2ele2label.keys():
             num2label[k] = num2ele2label[k][ele]
         name2label = {"neg": 0, "pos": 1}
         dataroot = os.path.join(dataroot_, ele)
-        dataroot_test = os.path.join(dataroot_test_,ele)
+        dataroot_test = os.path.join(dataroot_test_, ele)
         modellist = [AlexNet_Sun, ResNet18, ResNet34]
-        for preprocess in [
-            # Process.baseline_als(),
-            Process.bg_removal_niter_fit(),
-            # Process.bg_removal_niter_piecewisefit(),
-        ]:  # TODO: 选择合适的预处理函数
+        db_cfg = dict(  # 数据集设置
+            dataroot = dataroot_test,
+            backEnd = ".csv",
+            # backEnd = ".asc",
+            t_v_t = [0.8, 0.2, 0.0],
+            LoadCsvFile = readdatafunc,
+            k_split = 6,
+            transform = Process.process_series([  # 设置预处理流程
+                Process.intorpolator(),
+                Process.sg_filter(),
+                preprocess,
+                Process.norm_func(), ]
+            ))
+        test_db = Raman_dirwise(**db_cfg)
+        db_cfg["dataroot"] = dataroot
+        recorddir = os.path.join(recordroot, ele)
+        path2labelfunc = path2func_generator(num2label)
+        train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
+                        path2labelfunc = path2labelfunc, test_db = test_db)
 
-            db_cfg = dict(  # 数据集设置
-                dataroot = dataroot_test,
-                backEnd = ".csv",
-                # backEnd = ".asc",
-                t_v_t = [0.8, 0.2, 0.0],
-                LoadCsvFile = readdatafunc,
-                k_split = 6,
-                transform = Process.process_series([  # 设置预处理流程
-                    Process.intorpolator(),
-                    Process.sg_filter(),
-                    preprocess,
-                    Process.norm_func(), ]
-                ))
-            test_db = Raman_dirwise(**db_cfg)
-            db_cfg["dataroot"] = dataroot
-            # dataroot = os.path.join(projectroot, "data", "liver_cell")
-            recorddir = ele
-            recorddir = os.path.join(recordroot, recorddir)
-            path2labelfunc = path2func_generator(num2label)
-            main(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
-                 path2labelfunc = path2labelfunc,test_db = test_db)
 
 # 设置数据集分割
+def main_one_datasrc(
+        dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_all")
+):
+    info_file = r"D:\myPrograms\pythonProject\Raman_dl_ml\data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx"
+    num2ele2label = get_infos(info_file)
+    eles = list(num2ele2label.values().__iter__().__next__().keys())
+    print("using device:", device.__str__())
+    recordroot = os.path.join(projectroot, "results", "glioma", "dl")
+    # raman = Raman_depth_gen(2, 2)  # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
+    raman = Raman_dirwise
+    recordroot = os.path.join(recordroot, time.strftime("%Y-%m-%d-%H_%M_%S"))
+
+    paras = [(e, pre) for e in eles for pre in [
+        # Process.baseline_als(),
+        Process.bg_removal_niter_fit(),
+        # Process.bg_removal_niter_piecewisefit(),
+    ]]
+
+    for ele, preprocess in paras:
+        num2label = {}
+        for k in num2ele2label.keys():
+            num2label[k] = num2ele2label[k][ele]
+        name2label = {"neg": 0, "pos": 1}
+        dataroot = os.path.join(dataroot_, ele)
+        # modellist = [AlexNet_Sun, ResNet18, ResNet34]
+        modellist = [AlexNet_Sun]
+        db_cfg = dict(  # 数据集设置
+            dataroot = dataroot,
+            backEnd = ".csv",
+            # backEnd = ".asc",
+            t_v_t = [0.6, 0.2, 0.2],
+            LoadCsvFile = readdatafunc,
+            k_split = 4,
+            transform = Process.process_series([  # 设置预处理流程
+                Process.intorpolator(),
+                Process.sg_filter(),
+                preprocess,
+                Process.norm_func(), ]
+            ))
+        recorddir = os.path.join(recordroot, ele)
+        path2labelfunc = path2func_generator(num2label)
+        train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
+                        path2labelfunc = path2labelfunc, sfname = "Raman_personwise_",n_iter = 5)
+
+
+def main_onesrc_personwise():
+    from samplewise2personwise import rename_files_between, rename_files_between_undo
+    dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_all")
+    rename_files_between(dataroot_, 3)
+    try:
+        main_one_datasrc(dataroot_)
+    except:
+        print("failed")
+    finally:
+        rename_files_between_undo(dataroot_, 3)
+
+
+if __name__ == '__main__':
+    main_onesrc_personwise()

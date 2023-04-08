@@ -1,8 +1,7 @@
-import numpy
 import torch
+import numpy
 import sys, os
 import time
-import numpy as np
 from bacteria.code_sjh.utils.RamanData import Raman, RamanDatasetCore, Raman_dirwise, pytorchlize
 from bacteria.code_sjh.utils.Validation.hooks import *
 import torch.nn.functional as F
@@ -32,7 +31,7 @@ def evaluate_all(model,
 	num_clases = loader.dataset.num_classes()
 	y_true_all = {}
 	y_score_all = {}
-	conf_m = np.zeros((num_clases, num_clases))
+	conf_m = numpy.zeros((num_clases, num_clases))
 	for i in range(num_clases):
 		y_true_all[i] = numpy.array([])
 		y_score_all[i] = numpy.array([])
@@ -51,11 +50,11 @@ def evaluate_all(model,
 			loss_list.append(loss.item())
 			score = F.softmax(output, dim = 1)  # TODO:也许score就设置为output？
 			for i in range(num_clases):
-				y_true = torch.eq(y, i).int().cpu().np()  # [b]
-				y_score = score[:, i].float().cpu().np()  # [b]
-				y_true_all[i] = np.append(y_true_all[i], y_true)
-				y_score_all[i] = np.append(y_score_all[i], y_score)
-			cm = confusion_matrix(y.cpu().np(), pred.cpu().np(), labels = list(range(num_clases)))
+				y_true = torch.eq(y, i).int().cpu().numpy()  # [b]
+				y_score = score[:, i].float().cpu().numpy()  # [b]
+				y_true_all[i] = numpy.append(y_true_all[i], y_true)
+				y_score_all[i] = numpy.append(y_score_all[i], y_score)
+			cm = confusion_matrix(y.cpu().numpy(), pred.cpu().numpy(), labels = list(range(num_clases)))
 			conf_m += cm
 
 	label2roc = {}
@@ -66,21 +65,21 @@ def evaluate_all(model,
 		label2auc[i] = auc(frp, tpr)
 
 	acc = correct / total
-	loss = np.mean(loss_list)
+	loss = numpy.mean(loss_list)
 
 	res = dict(acc = acc, loss = loss, label2roc = label2roc, label2auc = label2auc, confusion_matrix = conf_m)
 	return res
 
 
 def grad_cam(convnet,
-             input,
+             inumpyut,
              label = None,
              savefilepath = None,
              device = None
              ):
 	"""
 
-	:param input: [b , c = 1 ,l]
+	:param inumpyut: [b , c = 1 ,l]
 	:param label:
 	:param savefilepath:
 	:param win:
@@ -91,7 +90,7 @@ def grad_cam(convnet,
 	if not convnet.model_loaded:
 		save_dir = savefilepath if savefilepath else os.path.join(coderoot, "checkpoints", convnet.model_name + ".mdl")
 		convnet.load(save_dir)  # 加载训练模型
-	input = pytorchlize(input).to(device)
+	inumpyut = pytorchlize(inumpyut).to(device)
 	# hook
 	fh = forward_hook()
 	h1 = convnet.features.register_forward_hook(fh)
@@ -99,7 +98,7 @@ def grad_cam(convnet,
 	h2 = convnet.features.register_full_backward_hook(bh)
 
 	# forward
-	output = convnet(input)  # [b,n_c]
+	output = convnet(inumpyut)  # [b,n_c]
 
 	# backward
 	convnet.zero_grad()
@@ -109,23 +108,23 @@ def grad_cam(convnet,
 	class_loss = comp_class_vec(output, convnet.num_classes, label, device)
 	class_loss.backward()
 
-	fmap = fh.fmap_block[0].cpu().data.np()#.squeeze()
-	grad_val = bh.grad_block[0][0].cpu().data.np()#.squeeze()  # [b,c,feature_length]
+	fmap = fh.fmap_block[0].cpu().data.numpy()#.squeeze()
+	grad_val = bh.grad_block[0][0].cpu().data.numpy()#.squeeze()  # [b,c,feature_length]
 
 	# remove the hooks
 	h1.remove()
 	h2.remove()
 
 	# cam_map
-	cam = np.zeros(fmap.shape[::2], dtype = np.float)  # [b,f_l]
-	ws = np.mean(grad_val, axis = (2))  # [b,c]
+	cam = numpy.zeros(fmap.shape[::2], dtype = numpy.float)  # [b,f_l]
+	ws = numpy.mean(grad_val, axis = (2))  # [b,c]
 	bsz = ws.shape[0]
 	chs = ws.shape[1]
 	for b in range(bsz):
 		for c in range(chs):
 			w = ws[b, c]
 			cam[b] += w * fmap[b, c, :]  # [b] * [b,l]
-			cam[b] = np.where(cam[b] > 0, cam[b], 0)
+			cam[b] = numpy.where(cam[b] > 0, cam[b], 0)
 			cam[b] -= cam[b].min()
 			cam[b] /= cam[b].max()
 
@@ -223,7 +222,7 @@ def evaluate_loss(model,
 			loss = criteon(output, y) if loss_plus is None else criteon(output[0], y) + loss_plus(
 				*output[1:])
 			loss_list.append(loss.item())
-	return np.mean(loss_list)
+	return numpy.mean(loss_list)
 
 
 def comp_class_vec(output: torch.Tensor,
@@ -264,15 +263,15 @@ class encode():
 		self.module.eval()
 
 	def __call__(self,
-	             input):
-		out = self.module(input)
+	             inumpyut):
+		out = self.module(inumpyut)
 		out.detach_()
 		return out
 
 
 if __name__ == '__main__':
 	# import matplotlib.pyplot as plt
-	y = np.array([1, 1, 1, 1])
-	y_pred = np.array([1, 1, 1, 1])
+	y = numpy.array([1, 1, 1, 1])
+	y_pred = numpy.array([1, 1, 1, 1])
 	c_m = confusion_matrix(y, y_pred)
 	print(c_m)

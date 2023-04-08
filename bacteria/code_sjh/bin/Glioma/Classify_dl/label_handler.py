@@ -89,7 +89,6 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
     num2ele2label = get_infos(info_file)
     eles = list(num2ele2label.values().__iter__().__next__().keys())
 
-    coderoot = "../../.."
     projectroot = "../../../.."
     data_root = os.path.join(projectroot, "data", "脑胶质瘤", src)
     from scipy import interpolate
@@ -115,6 +114,7 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
         )
     )
     raman = Raman_depth_gen(2, 2)
+
     for ele in eles:
         num2label = {}
         path2labelfunc = path2func_generator(num2label,func = lambda x:x+1000)
@@ -126,6 +126,8 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
 
         label_RamanData(db, path2labelfunc, name2label)
         new_tree = os.path.join(os.path.dirname(data_root), dst, ele)
+        if os.path.isdir(new_tree):
+            shutil.rmtree(new_tree)
         reform_tree(data_root, new_tree, path2labelfunc)
         for dir in os.listdir(new_tree):
             dir_abs = os.path.join(new_tree, dir)
@@ -145,6 +147,7 @@ def reform_tree(src_root, dst_root, path2labelfunc):
         if not os.path.isdir(dst_dir):
             os.makedirs(dst_dir)
         shutil.copytree(dir, os.path.join(dst_dir, os.path.basename(dir)))
+        print("label:",label,"; dir: ",os.path.basename(dir)," done")
 
 
 if __name__ == '__main__':

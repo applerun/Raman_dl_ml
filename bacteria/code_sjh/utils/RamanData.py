@@ -205,7 +205,7 @@ def Raman_depth_gen(max_depth, min_depth = None, warning = False):  # 生成一�
                 for name in self.name2label.keys():
                     files = []
 
-                    for r, d, f in os.walk(os.path.join(self.root, name), ):
+                    for r, _, f in os.walk(os.path.join(self.root, name), ):
                         d = len(r.replace(self.root, "").split(os.sep)) - 1
                         if d < min_depth:
                             if warning:

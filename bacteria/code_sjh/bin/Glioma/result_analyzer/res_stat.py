@@ -78,7 +78,7 @@ def main_bi_class(dir, dst, mode = "test",
 
 
 def main(dirname = "2022-11-10-17_57_55_dirwise"):
-    resuldir = os.path.join(r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl", dirname)
+    resuldir = os.path.join(r"D:\myPrograms\pythonProject\Raman_dl_ml\results\glioma\dl", dirname)
     dst_file = os.path.join(resuldir, dirname+".csv")
     main_bi_class(resuldir, dst_file, molecules =
     "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)".split("@"))
@@ -89,7 +89,7 @@ def main_2():
 
     @return: lr wise
     """
-    resultroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\results\glioma\dl"
+    resultroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\results\glioma\dl"
 
     for lr in [0.1, 0.01, 0.001]:
         src_dir = "test_base_lr{}".format(lr)

@@ -1,11 +1,11 @@
 import torch
 import numpy
 
+
 def pytorchlize(x):
     for i in range(3 - len(x.shape)):
         x = torch.unsqueeze(x, dim = len(x.shape) - 1)
     return x
-
 
 
 def data2mean_std(spectrums: torch.Tensor or numpy.ndarray):
@@ -19,13 +19,14 @@ def data2mean_std(spectrums: torch.Tensor or numpy.ndarray):
         spectrums = torch.squeeze(spectrums, dim = 1)
     elif len(spectrums.shape) > 2:
         raise AssertionError
-
+    if len(spectrums.shape) == 1:
+        return spectrums, spectrums, spectrums
     lenth = spectrums.shape[-1]
     batchsz = spectrums.shape[0]
-
-    y_mean = torch.Tensor(lenth)
-    y_up = torch.Tensor(lenth)
-    y_down = torch.Tensor(lenth)
+    res_t = type(spectrums)
+    y_mean = res_t(lenth)
+    y_up = res_t(lenth)
+    y_down = res_t(lenth)
     for idx in range(lenth):
         p = spectrums[:, idx]
         mean = p.mean()

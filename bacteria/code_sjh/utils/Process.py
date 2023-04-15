@@ -3,8 +3,10 @@ import glob
 import os
 import sys
 
+import numpy
 import numpy as np
 import pandas as pd
+import torch
 from scipy.signal import savgol_filter
 from scipy import interpolate
 
@@ -47,6 +49,28 @@ def noising_func_generator(t = 0.01):
     return func
 
 
+def linearizeByterminal(slit: np.ndarray):
+    shape = copy.deepcopy(slit.shape)
+    l = len(slit.squeeze())
+    for i in range(l):
+        slit[i] = (l - i - 1) / (l - 1) * slit[0] + i / (l - 1) * slit[-1]
+    return slit.reshape(shape)
+
+
+def smoother(
+        max_ = 1000,
+        span = 3):
+    def func(y: np.ndarray, x = None):
+        for i in range(len(y)):
+            slit = y[max(0, i - span):min(len(y) - 1, i + span)]
+            if y[i] - slit.min() > max_:
+                y[max(0, i - span):min(len(y) - 1, i + span)] = linearizeByterminal(
+                    y[max(0, i - span):min(len(y) - 1, i + span)])
+        return y if x is None else (y, x)
+
+    return func
+
+
 def sg_filter(window_length = 11,
               polyorder = 3):
     def func(x, y = None):
@@ -73,8 +97,10 @@ def norm_func(a = 0,
 
 
 def area_norm_func(a = 1):
-    def func(x):
-        return a * x / sum(x) * len(x)
+    def func(y, x = None):
+        y -= y.min()
+        res = a * y / sum(y) * len(y)
+        return res if x is None else (res, x)
 
     return func
 
@@ -93,6 +119,60 @@ def preprocess_default(x,
         return x, y
 
 
+def pytorch_process(process_func):
+    def func(y, x = None):
+        y = y.numpy()
+        res = process_func(y, x)
+        if x is None:
+            return torch.Tensor(res)
+        else:
+            return torch.Tensor(res[0]), res[1]
+
+    return func
+
+
+def batch_process(process_func, copytype = "deepcopy", verbose = False):
+    ctype2cfunc = {"copy": copy.copy, "deepcopy": copy.deepcopy}
+
+    def func(y, x = None):
+        res_y = None
+        res_x = None
+        y = ctype2cfunc[copytype](y)
+        y = numpy.squeeze(y)
+        if len(y.shape) == 1:
+            return process_func(y, x)
+
+        elif len(y.shape) == 2:
+            batch_size = y.shape[0]
+        else:
+            raise AssertionError
+        for line_i in range(batch_size):
+            if verbose:
+                if line_i > 0:
+                    print("\r", end = "")
+                print(line_i+1, "/", batch_size, end = "" if not line_i == batch_size-1 else "\n")
+
+            if x is None:
+                temp = process_func(y[line_i, :])
+                y[line_i, :] = temp
+                res_x = x
+                continue
+            else:
+                y_, x_ = process_func(y[line_i, :], x)
+                if res_x is None:
+                    res_x = x_
+                else:
+                    assert len(res_x) == len(x_)
+            if res_y is None:
+                res_y = numpy.expand_dims(y_, 0)
+            else:
+                res_y = numpy.vstack((res_y, numpy.expand_dims(y_, 0)))
+
+        return y if x is None else (res_y, res_x)
+
+    return func
+
+
 def process_series(sequence,
                    copytype = "deepcopy"):
     ctype2cfunc = {"copy": copy.copy, "deepcopy": copy.deepcopy}
@@ -104,7 +184,7 @@ def process_series(sequence,
             y = funcs(y, x)
             if x is not None:
                 y, x = y
-        return y, x
+        return y if x is None else (y, x)
 
     return func
 
@@ -212,6 +292,10 @@ def delete_processed_walk(dirname = dataroot,
             if filename == savefilename:  # 被处理过
                 file = os.path.join(dirpath, filename)
                 os.remove(file)
+
+
+def none_func(y, x = None):
+    return y if x is None else (y, x)
 
 
 if __name__ == '__main__':

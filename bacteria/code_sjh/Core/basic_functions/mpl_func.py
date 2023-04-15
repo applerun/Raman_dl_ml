@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy
 import torch
 import sys, os
 import numpy as np
@@ -14,14 +15,15 @@ sys.path.append(coderoot)
 from bacteria.code_sjh.Core.basic_functions.data_functions import data2mean_std
 
 
-def spectrum_vis_mpl(spectrums: torch.Tensor,
+def spectrum_vis_mpl(spectrums: torch.Tensor or numpy.ndarray,
                      xs = None,
                      name = None,
                      bias = 0,
                      side = True,
                      ax: plt.Axes = None,
-                     line_color: str = None,
-                     shadow_color: str = None,
+                     line_color = None,
+                     shadow_color = None,
+                     title = None
                      ):
     """
 
@@ -51,7 +53,10 @@ def spectrum_vis_mpl(spectrums: torch.Tensor,
     y_up += bias
     y_down += bias
     if xs is None:
-        xs = torch.arange(spectrums.shape[-1])
+        if type(spectrums) == torch.Tensor:
+            xs = torch.arange(spectrums.shape[-1])
+        elif type(spectrums) == numpy.ndarray:
+            xs = numpy.arange(spectrums.shape[-1])
 
     assert xs.shape[-1] == y_mean.shape[-1], r"lenth of xs and spectrums doesn't fit"
 
@@ -61,7 +66,7 @@ def spectrum_vis_mpl(spectrums: torch.Tensor,
     else:
         fig = ax.figure
 
-    ax.set_title(name)
+    ax.set_title(name if title is None else title)
     ax.set_xlabel("wavenumber cm$^{-1}$")
     ax.set_ylabel("intensity")
     ax.plot(xs, y_mean, label = name, color = line_color)

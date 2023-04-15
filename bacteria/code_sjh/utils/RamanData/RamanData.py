@@ -4,6 +4,8 @@ import os
 import random
 import sys
 import copy
+import warnings
+
 import numpy
 import torch
 import torch.utils.data
@@ -15,7 +17,7 @@ sys.path.append(coderoot)
 from bacteria.code_sjh.Core.basic_functions import visdom_func as visdom_utils
 from bacteria.code_sjh.Core.RamanData import RamanDatasetCore
 from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
-
+from bacteria.code_sjh.utils.RamanData.TensorFunctions import pytorchlize
 
 class Raman(RamanDatasetCore):
     def __init__(self,
@@ -95,11 +97,10 @@ class Raman(RamanDatasetCore):
                     self.labels.append(torch.tensor(label))
                     self.RamanFiles.append(spectrum)
                 except:  # 数据格式有误
-                    print("wrong csv,remaking...")
+                    warnings.warn("wrong csv,remaking...")
                     f.close()
                     os.remove(os.path.join(self.root, filename))
-                    self.LoadCsv(filename)
-                    break
+                    return self.LoadCsv(filename)
         assert len(self.RamanFiles) == len(self.labels)
         return self.RamanFiles, self.labels  # [[float],[],...[]],[int]
 
@@ -475,7 +476,18 @@ class Raman_dirwise(RamanDatasetCore):
     def savedata(self,
                  dir,
                  mode = "file_wise",
+                 backend = ".csv",
+                 delimiter = ",",
                  simplyfied = True):
+        """
+        TODO: 生成文件的时候能按照sample再生成一级文件夹
+        @param dir: 保存的目标文件夹
+        @param mode: "file_wise":一类的所有光谱保存到同一个文件中；"dir_wise"：光谱按照类别保存，一个光谱一个文件
+        @param backend: 保存文件后缀
+        @param delimiter: 数据分割符
+        @param simplyfied: True按照文件夹保存（sample文件夹内所有光谱取均值） 所有光谱都保存
+        @return:
+        """
         if not os.path.isdir(dir):
             os.makedirs(dir)
 
@@ -496,14 +508,14 @@ class Raman_dirwise(RamanDatasetCore):
             label2data = self.get_data_sorted_by_label()
             for label in label2name.keys():
                 name = label2name[label]
-                name2data[name] = numpy.squeeze(label2data[label].np())
+                name2data[name] = numpy.squeeze(label2data[label].numpy())
 
         X = self.xs
         for name in name2data.keys():
             data = name2data[name]
 
             if mode == "file_wise":
-                path = os.path.join(dir, name + ".csv")
+                path = os.path.join(dir, name + backend)
                 numpy.savetxt(path, data, delimiter = ",")
 
             elif mode == "dir_wise":
@@ -512,9 +524,9 @@ class Raman_dirwise(RamanDatasetCore):
                     if not os.path.isdir(name_dir):
                         os.makedirs(name_dir)
 
-                    path = os.path.join(name_dir, name + "-" + str(i) + ".csv")
-                    numpy.savetxt(path, data, delimiter = ",")
-                    numpy.savetxt(path, numpy.vstack((X, numpy.arange(len(X)), data[i])).T, delimiter = ",",
+                    path = os.path.join(name_dir, name + "-" + str(i) + backend)
+                    # numpy.savetxt(path, data, delimiter = ",")
+                    numpy.savetxt(path, numpy.vstack((X, numpy.arange(len(X)), data[i])).T, delimiter = delimiter,
                                   comments = "",
                                   header = "Wavelength,Column,Intensity")
 
@@ -522,10 +534,7 @@ class Raman_dirwise(RamanDatasetCore):
 
 
 # class Raman_dirwise_labelfile(RamanDatasetCore)
-def pytorchlize(x):
-    for i in range(3 - len(x.shape)):
-        x = torch.unsqueeze(x, dim = len(x.shape) - 1)
-    return x
+
 
 
 if __name__ == '__main__':

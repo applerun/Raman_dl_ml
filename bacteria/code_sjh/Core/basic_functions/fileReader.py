@@ -8,10 +8,11 @@ def getRamanFromFile(wavelengthstart = 400,
                      delimeter = None):
     if wavelengthend < wavelengthstart:
         wavelengthstart, wavelengthend = wavelengthend, wavelengthstart
-    dataname2idx = copy.deepcopy(dataname2idx)
+
 
     def func(filepath: str,
              delimeter = delimeter, dataname2idx = dataname2idx):
+        dataname2idx = copy.deepcopy(dataname2idx)
         if dataname2idx is None:
             dataname2idx = {}
         Ramans = []
@@ -27,6 +28,8 @@ def getRamanFromFile(wavelengthstart = 400,
             header = None
             for line in lines:
                 line = line.strip()
+                if not len(line):
+                    continue
                 data = line.split(delimeter)
 
                 if data[0] in ["ROI", "Wavelength", "Column", "Intensity"]:
@@ -39,8 +42,8 @@ def getRamanFromFile(wavelengthstart = 400,
                     wavelength = float(data[dataname2idx["Wavelength"]])
                     intense = float(data[dataname2idx["Intensity"]])
                 except:
-                    print(filepath, ":", data, ",delimeter:", delimeter)
-                    raise ValueError
+                    # print(filepath, ":", data, ",delimeter:", delimeter,"unused line :",line)
+                    continue
                 if wavelengthstart < wavelength and wavelength < wavelengthend:
                     Ramans.append(intense)
                     Wavelengths.append(wavelength)

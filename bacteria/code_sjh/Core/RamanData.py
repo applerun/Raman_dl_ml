@@ -8,6 +8,7 @@ from bacteria.code_sjh.Core.basic_functions.data_functions import *
 from bacteria.code_sjh.Core.basic_functions.fileReader import *
 from bacteria.code_sjh.Core.basic_functions import visdom_func
 
+
 class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
     def __init__(self,
                  dataroot: str,
@@ -104,17 +105,6 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
             self.LoadCsv(sfpath)
             self.split_data()
             self.load_raman_data()
-
-    # def __add__(self, other):
-    # 	if len(other) == 0:
-    # 		return self
-    # 	assert len(self.xs) == len(other.xs)
-    # 	assert self.label2name().keys() == other.label2name().keys()
-    # 	res = copy.deepcopy(self)
-    # 	res.labels = other.labels + self.labels
-    # 	res.Ramans += other.Ramans
-    # 	res.RamanFiles += other.RamanFiles
-    # 	return res
 
     def LoadCsv(self,
                 filename, ):
@@ -236,26 +226,73 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
                             )
         return
 
+    def get_data_sorted_by_name(self):
+        name2data = {}
+        label2data = self.get_data_sorted_by_label()
+        for name in self.name2label.keys():
+            name2data[name] = label2data[self.name2label[name]]
+        return name2data
+
     def savedata(self,
                  dir,
-                 mode = "file_wise"):
+                 mode = "file_wise",
+                 backend = ".csv",
+                 delimiter = ","):
+        """
+
+        @param dir: 保存的文件夹路径（如没有则会被创建
+        @param mode: "file_wise":一类的所有光谱保存到同一个文件中；"dir_wise"：光谱按照类别保存，一个光谱一个文件
+        @param backend: 文件夹后缀
+        @param delimiter: 数据分隔符
+        @return:
+        """
         label2data = self.get_data_sorted_by_label()
         if not os.path.isdir(dir):
             os.makedirs(dir)
-        if mode == "file_wise":
-            for name in self.name2label.keys():
-                path = os.path.join(dir, name + ".csv")
-                data = label2data[self.name2label[name]]
+        for name in self.name2label.keys():
+            data = label2data[self.name2label[name]]
+            if mode == "file_wise":
+                path = os.path.join(dir, name + backend)
                 data = data.numpy()
                 data = numpy.squeeze(data)
-                numpy.savetxt(path, data, delimiter = ",")
+                numpy.savetxt(path, data, delimiter = delimiter)
+            elif mode == "dir_wise":
+                for i in range(len(data)):
+                    name_dir = os.path.join(dir, name)
+                    if not os.path.isdir(name_dir):
+                        os.makedirs(name_dir)
+
+                    path = os.path.join(name_dir, name + "-" + str(i) + backend)
+                    # numpy.savetxt(path, data, delimiter = ",")
+                    numpy.savetxt(path, numpy.vstack((self.xs, numpy.arange(len(self.xs)), data[i])).T,
+                                  delimiter = delimiter,
+                                  comments = "",
+                                  header = "Wavelength,Column,Intensity")
+
+            else:
+                print("unsupported mode:{}".format(mode))
+                raise Exception
+
+    def __add__(self, other):
+        if len(other) == 0:
+            return copy.deepcopy(self)
+        assert len(self.xs) == len(other.xs)
+        assert self.label2name().keys() == other.label2name().keys()
+        res = copy.deepcopy(self)
+        for i in len(other):
+            if other.RamanFiles[i] in self.RamanFiles:
+                assert self.RamanFiles
+            res.labels = other.labels + self.labels
+            res.Ramans += other.Ramans
+            res.RamanFiles += other.RamanFiles
+        return res
 
     def __len__(self):
         return len(self.Ramans)
 
     def __getitem__(self,
                     item):
-        assert item < len(self.Ramans), "{}/{}".format(item, len(self.Ramans))
+        assert item < len(self.Ramans), "{}/{}".format(item, len(self))
 
         raman, label = self.Ramans[item], self.labels[item]
 
@@ -267,4 +304,3 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
                 raman = torch.unsqueeze(raman, dim = 0).to(torch.float32)
 
         return raman, label
-

@@ -20,7 +20,7 @@ from bacteria.code_sjh.utils import Process
 torch.backends.cudnn.benchmark = True
 
 coderoot = "../../.."
-projectroot = "../../../../.."
+projectroot = "../../../../../.."
 logfile = os.path.join(projectroot, "log", "glioma", "DL_classification", os.path.basename(__file__),
                        time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
 if not os.path.isdir(os.path.dirname(logfile)):
@@ -625,7 +625,7 @@ def main_one_datasrc(
 
 def main_onesrc_personwise():
     from samplewise2personwise import rename_files_between, rename_files_between_undo
-    dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_all")
+    dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_classified")
     rename_files_between(dataroot_, 3)
     try:
         main_one_datasrc(dataroot_)

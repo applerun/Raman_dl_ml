@@ -16,11 +16,13 @@ def RecordRead_bi_clas(src, mode = "test"):
     pd = pandas.read_csv(src + ".csv", skiprows = 2, encoding = "GBK")
     accs = pd[mode + "_acc"]
     ind = len(accs) - 2
-    acc = pd[mode + "_acc"][ind].split("+-")[0]
+    acc,acc_std = pd[mode + "_acc"][ind].split("+-")
     acc = round(float(acc), 4)
+    acc_std = round(float(acc_std), 4)
     # acc = round_str(acc)
-    auc = pd[mode + "_AUC"][ind].split("+-")[0]
+    auc,auc_std = pd[mode + "_AUC"][ind].split("+-")
     auc = round(float(auc), 4)
+    auc_std = round(float(auc_std), 4)
     # auc = round_str(auc)
     cm = np.loadtxt(os.path.join(src, mode + "_confusion_matrix.csv"), delimiter = ",")
 
@@ -44,16 +46,20 @@ def RecordRead_Polytomous(src, class_of_interest = -1):
 
 
 def main_bi_class(dir, dst, mode = "test",
+                  nets = None,
                   molecules = None):
+    if nets is None:
+        nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
     if not os.path.isabs(dst):
         dst = os.path.join(dir, dst)
     if not dst.endswith(".csv"):
         dst = dst + ".csv"
     f = open(dst, "w", newline = "")
     csv_writer = csv.writer(f)
-    nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
-    header1 = ["结果"] + ["Sensitivity"] * 3 + ["Specificity"] * 3 + ["Accuracy"] * 3 + ["AUC"] * 3
-    header = ["模型"] + ["Alexnet", "Resnet18", "Resnet34"] * 4
+
+    header1 = ["结果"] + ["Sensitivity"] * len(nets) + ["Specificity"] * len(nets) + ["Accuracy"] * len(nets) + [
+        "AUC"] * len(nets)
+    header = ["模型"] + nets * 4
     csv_writer.writerow(header1)
     csv_writer.writerow(header)
     if molecules is None:
@@ -63,24 +69,26 @@ def main_bi_class(dir, dst, mode = "test",
         molecule_abs = os.path.join(dir, molecule)
         if not os.path.isdir(molecule_abs):
             continue
-        row = [molecule] + [0] * 12
+        row = [molecule] + [0] * 4*len(nets)
         for i in range(len(nets)):
             net = nets[i]
             src = os.path.join(molecule_abs, "Record" + net)
             res = RecordRead_bi_clas(src, mode)
             row[i + 1] = res["sen"]
-            row[i + 4] = res["spe"]
-            row[i + 7] = res["acc"]
-            row[i + 10] = res["auc"]
+            row[i + 1 + len(nets)] = res["spe"]
+            row[i + 1 + len(nets) * 2] = res["acc"]
+            row[i + 1 + len(nets) * 3] = res["auc"]
         csv_writer.writerow(row)
     f.close()
     return
 
 
-def main(dirname = "2022-11-10-17_57_55_dirwise"):
+def main(dirname = "2022-11-10-17_57_55_dirwise", nets = None):
+    if nets is None:
+        nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
     resuldir = os.path.join(r"D:\myPrograms\pythonProject\Raman_dl_ml\results\glioma\dl", dirname)
-    dst_file = os.path.join(resuldir, dirname+".csv")
-    main_bi_class(resuldir, dst_file, molecules =
+    dst_file = os.path.join(resuldir, "res_stat-"+dirname + ".csv")
+    main_bi_class(resuldir, dst_file,nets = nets, molecules =
     "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)".split("@"))
 
 
@@ -100,5 +108,5 @@ def main_2():
 
 
 if __name__ == '__main__':
-    # main("2022-11-11-11_30_17")
-    main_2()
+    main("2023-04-09-21_14_47_old",["Alexnet_Sun",])
+    # main_2()

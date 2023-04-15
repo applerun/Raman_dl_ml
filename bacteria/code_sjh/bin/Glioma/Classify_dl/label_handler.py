@@ -120,7 +120,7 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
         path2labelfunc = path2func_generator(num2label,func = lambda x:x+1000)
         for k in num2ele2label.keys():
             num2label[k] = num2ele2label[k][ele]
-        name2label = {"0": 0, "1": 1}
+        name2label = {"neg": 0, "pos": 1}
         label2name = {"0": "neg", "1": "pos","-1":"unknown"}
         db = raman(**db_cfg, sfpath = "Raman_{}_unlabeled.csv".format(ele), newfile = True, shuffle = False)
 

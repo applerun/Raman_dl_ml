@@ -19,7 +19,7 @@ projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_ID")
 sys.path.append(coderoot)
 
-# __all__ = ["interpolator", "noising_func_generator", "smoother", "sg_filter", "norm_func", "area_norm_func", "nonfunc"]
+__all__ = ["interpolator", "noiser", "smoother", "sg_filter", "normalizer", "area_normalizer","nonfunc"]
 
 
 class interpolator(ProcessorFunction):
@@ -54,9 +54,9 @@ class interpolator(ProcessorFunction):
         return new_y, self.newX
 
 
-class noising_func_generator(ProcessorFunction):
+class noiser(ProcessorFunction):
     def __init__(self, t = 0.01, ):
-        super(noising_func_generator, self).__init__("noise(t={})".format(t))
+        super(noiser, self).__init__("noise(t={})".format(t))
         self.t = t
 
     def __call__(self, x, y = None):
@@ -107,9 +107,9 @@ class sg_filter(ProcessorFunction):
 
 
 # spectral normalization
-class norm_func(ProcessorFunction):
+class normalizer(ProcessorFunction):
     def __init__(self, a = 0, b = 1, ):
-        super(norm_func, self).__init__("norm" if (a == 0 and b == 1) else "norm({},{})".format(a, b))
+        super(normalizer, self).__init__("norm" if (a == 0 and b == 1) else "norm({},{})".format(a, b))
         self.a = a
         self.b = b
 
@@ -121,10 +121,10 @@ class norm_func(ProcessorFunction):
             return y, x
 
 
-class area_norm_func(ProcessorFunction):
+class area_normalizer(ProcessorFunction):
     def __init__(self, a = 1, ):
         assert a > 0, "a must be greater than 0"
-        super(area_norm_func, self).__init__("area_norm" if a == 1 else "area_norm({})".format(a))
+        super(area_normalizer, self).__init__("area_norm" if a == 1 else "area_norm({})".format(a))
         self.a = a
 
     def __call__(self, y, x = None):
@@ -140,15 +140,62 @@ preprocess_default = ProcessorRootSeries([
     DeepCopy(),
     baseline_als(),
     sg_filter(),
-    norm_func(),
+    normalizer(),
 ])
 
 
+def pytorch_process(process_func):
+    def func(y, x = None):
+        y = y.numpy()
+        res = process_func(y, x)
+        if x is None:
+            return torch.Tensor(res)
+        else:
+            return torch.Tensor(res[0]), res[1]
+
+    return func
 
 
+def batch_process(process_func, copytype = "deepcopy", verbose = False):
+    ctype2cfunc = {"copy": copy.copy, "deepcopy": copy.deepcopy}
 
+    def func(y, x = None):
+        res_y = None
+        res_x = None
+        y = ctype2cfunc[copytype](y)
+        y = numpy.squeeze(y)
+        if len(y.shape) == 1:
+            return process_func(y, x)
 
+        elif len(y.shape) == 2:
+            batch_size = y.shape[0]
+        else:
+            raise AssertionError
+        for line_i in range(batch_size):
+            if verbose:
+                if line_i > 0:
+                    print("\r", end = "")
+                print(line_i + 1, "/", batch_size, end = "" if not line_i == batch_size - 1 else "\n")
 
+            if x is None:
+                temp = process_func(y[line_i, :])
+                y[line_i, :] = temp
+                res_x = x
+                continue
+            else:
+                y_, x_ = process_func(y[line_i, :], x)
+                if res_x is None:
+                    res_x = x_
+                else:
+                    assert len(res_x) == len(x_)
+            if res_y is None:
+                res_y = numpy.expand_dims(y_, 0)
+            else:
+                res_y = numpy.vstack((res_y, numpy.expand_dims(y_, 0)))
+
+        return y if x is None else (res_y, res_x)
+
+    return func
 
 
 def dir_process(dirname = "**",
@@ -259,5 +306,5 @@ def delete_processed_walk(dirname = dataroot,
 
 nonfunc = ProcessorFunction
 
-# delete_processed_walk()
-# dir_process_walk()
+    # delete_processed_walk()
+    # dir_process_walk()

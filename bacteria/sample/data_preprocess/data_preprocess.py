@@ -1,5 +1,8 @@
-import os.path
+"""
+读取
+"""
 
+import os.path
 import numpy
 import torch
 from bacteria.code_sjh.utils import Process
@@ -16,32 +19,27 @@ colors = list(mcolors.XKCD_COLORS.keys())
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号 #有中文出现的情况，需要u'内容'
 
-project_root = r"..\.."
-data_root = os.path.join(project_root, "data", "信号")
+project_root = r".."
+data_root = os.path.join(project_root, "Sample_data", "Sample_bad_signal")
+
 print(os.path.abspath(data_root))
 print(os.path.isdir(data_root))
 readdatafunc = fileReader.getRamanFromFile(-200, 4000, dataname2idx = {"Wavelength": 0, "Intensity": 1},
                                            delimeter = "\t")
 db_cfg = dict(
-
     backEnd = ".asc",
     # backEnd = ".asc",
     LoadCsvFile = readdatafunc,
     k_split = 6,
     transform =
     Process.process_series([  # 设置预处理流程
-        Process.intorpolator(numpy.linspace(0, 3400, 1024)),  # 读取的时候
-        # Process.baseline_als(),
-        # Process.bg_removal_niter_fit(),
-        # Process.bg_removal_niter_piecewisefit(),
-        # Process.sg_filter(),
-        # Process.norm_func(),
+        Process.intorpolator(numpy.linspace(0, 3400, 1024)),  # 读取的时候预先插值
     ]
     )
 )
 
-db_glass = Raman(dataroot = os.path.join(data_root, "玻璃"), **db_cfg, mode = "all")
-db_tissue = Raman_dirwise(dataroot = os.path.join(data_root, "组织"), **db_cfg, mode = "all")
+db_glass = Raman(dataroot = os.path.join(data_root, "glass"), **db_cfg, mode = "all")
+db_tissue = Raman_dirwise(dataroot = os.path.join(data_root, "raw_data"), **db_cfg, mode = "all")
 
 glassdata = db_glass.get_data_sorted_by_label()[0].numpy()
 
@@ -58,7 +56,7 @@ mpl_func.spectrum_vis_mpl(glass_p, db_tissue.xs, name = "glass_p", ax = fig.axes
 # baselineremove = baseline_remove.baseline_als(lam = 10000, p = 0.01, niter = 10)
 
 
-def plot_process(svdir = os.path.join(project_root, "data", "信号", "plot"),
+def plot_process(svdir = os.path.join(project_root, "Sample_results", "Sample_bad_signal", "plot"),
                  pointnum = 512,  # 插值点数
                  lam = 10000, p = 0.01, niter = 10,  # bals
                  windor_length = 11, polyorder = 3,  # sg
@@ -74,7 +72,8 @@ def plot_process(svdir = os.path.join(project_root, "data", "信号", "plot"),
 
     newX = numpy.linspace(450, 1800, pointnum) if newX else None
     series = [
-        baseline_remove.baseline_als(lam = lam, p = p, niter = niter),
+        # baseline_remove.baseline_als(lam = lam, p = p, niter = niter),
+        baseline_remove.airALS(lam = lam,p = p,niter = niter),
         Process.intorpolator(newX) if newX is not None else Process.none_func,
         Process.sg_filter(window_length = windor_length, polyorder = polyorder),
         Process.area_norm_func(),
@@ -131,7 +130,7 @@ def plot_process(svdir = os.path.join(project_root, "data", "信号", "plot"),
 
 lambdas = range(100, )
 if __name__ == '__main__':
-    plot_process(svdir = os.path.join(project_root, "data", "信号", "plot"),
+    plot_process(svdir = os.path.join(project_root, "Sample_results", "Sample_bad_signal", "plot_airALS"),
                  pointnum = 512,  # 插值点数
                  lam = 10000, p = 0.01, niter = 10,  # bals
                  windor_length = 11, polyorder = 3,  # sg

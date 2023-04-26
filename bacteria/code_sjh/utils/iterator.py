@@ -38,7 +38,7 @@ def train(model: BasicModule,
     :param criteon: 损失函数
     :param optimizer: 优化器
     :param idx: 此次训练是第idx个epoch
-    :param args: TODO:其它设定
+    :param args: _________[其它设定]_________
     :param snapshot_path: 中继点存储路径
     :param verbose: 是否打印该epoch中的详细信息
     :param mixed: 混合精度训练
@@ -121,7 +121,7 @@ def train_CVAE(model: BasicModule,
     :param criteon: 损失函数
     :param optimizer: 优化器
     :param idx: 此次训练是第idx个epoch
-    :param args: TODO:其它设定
+    :param args: _________[其它设定]_________
     :param snapshot_path: 中继点存储路径
     :param verbose: 是否打印该epoch中的详细信息
     :param mixed: 混合精度训练

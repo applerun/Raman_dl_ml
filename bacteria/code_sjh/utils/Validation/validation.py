@@ -21,7 +21,7 @@ def evaluate_all(model,
                  loss_plus = None):
 	"""
 
-	验证当前模型在验证集或者测试集的准确率\ROC\ TODO：分别验证不同label的准确度并可视化
+	验证当前模型在验证集或者测试集的准确率\ROC\
 
 	"""
 	model.eval()
@@ -136,7 +136,7 @@ def evaluate(model,
              device: torch.device):
 	"""
 
-	验证当前模型在验证集或者测试集的准确率 TODO：分别验证不同label的准确度并可视化
+	验证当前模型在验证集或者测试集的准确率
 
 	"""
 	model.eval()
@@ -181,7 +181,6 @@ def evaluate_labelwise(model,
 def evaluate_samplewise(model,
                         dataset: Raman_dirwise or dict,
                         device: torch.device):
-	# TODO:
 	t0 = time.time()
 	model.eval()
 	sample2acc = {}

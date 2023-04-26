@@ -26,11 +26,9 @@ torch.backends.cudnn.benchmark = True
 
 def AST_main(
 		net,
-		# TODO:自动收集sample tensor
 		train_db,
 		val_db,
 		test_db,
-		# TODO:选择分配比例和数据文件夹
 		device,
 		# 选择训练键
 		lr = 0.002,

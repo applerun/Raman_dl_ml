@@ -32,11 +32,9 @@ with open(logfile, "w") as f:
     prefix = "--*--")
 def AST_main(
         net,
-        # TODO:自动收集sample tensor
         train_db,
         val_db,
         test_db,
-        # TODO:选择分配比例和数据文件夹
         device,
         # 选择训练键
         lr = 0.002,
@@ -532,7 +530,7 @@ if __name__ == '__main__':
     # raman = Raman_depth_gen(2, 2)  # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
     raman = Raman_dirwise
     recordroot = os.path.join(recordroot, time.strftime("%Y-%m-%d-%H_%M_%S"))
-    for ele in eles:  # TODO：选择合适的标签
+    for ele in eles:  # 遍历所有的分子分型
         num2label = {}
         for k in num2ele2label.keys():
             num2label[k] = num2ele2label[k][ele]

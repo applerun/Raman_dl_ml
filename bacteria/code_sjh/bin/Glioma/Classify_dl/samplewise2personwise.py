@@ -1,10 +1,9 @@
 import os
 import shutil
 
-datafile = r"...\01 ZLX 739785 T1\point?(.csv)"
-dstfile = r"...\01\ZLX 739785 T1 point?(.csv)"
 
 
+# TODO；在rename_between中添加参数x，限制每个人最多使用x组织进行分类
 def rename(src, spliter = " "):
     dir_src = os.path.dirname(src)  # ...\01 ZLX 739785 T1
     dir_src_base = os.path.basename(dir_src)  # 01 ZLX 739785 T1
@@ -60,6 +59,8 @@ def rename_files_between_undo(root, depth, warning = False):
             os.rename(file, dst)
         os.rmdir(r)
 if __name__ == '__main__':
+    datafile = r"...\01 ZLX 739785 T1\point?(.csv)"
+    dstfile = r"...\01\ZLX 739785 T1 point?(.csv)"
     print(datafile)
     dstfile = rename(datafile)
     print(dstfile)

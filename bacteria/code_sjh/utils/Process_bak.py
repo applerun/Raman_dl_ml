@@ -22,7 +22,7 @@ sys.path.append(coderoot)
 __all__ = ["sg_filter", "norm_func", "process_series", "noising_func_generator", "area_norm_func"]
 
 
-def intorpolator(new_x = None):
+def interpolator(new_x = None):
     if new_x is None:
         new_x = np.linspace(400, 1800, 512)
 
@@ -360,7 +360,7 @@ if __name__ == '__main__':
                 "brnp": bg_removal_niter_piecewisefit()}
     for keys in name2pre.keys():
         baseline_remove = name2pre[keys]
-        process = process_series([intorpolator(), baseline_remove, sg_filter(), norm_func()])
+        process = process_series([interpolator(), baseline_remove, sg_filter(), norm_func()])
         dst_dir_ = os.path.join(dst_dir, keys)
         dir_process_walk(src_dir, dst_dir_, readdata_func = readdatafunc, preprocess = process, newfile = True)
 

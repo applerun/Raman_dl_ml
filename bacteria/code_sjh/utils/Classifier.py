@@ -158,7 +158,7 @@ if __name__ == '__main__':
         LoadCsvFile = readdatafunc,
         k_split = 9,
         transform = Process.process_series([  # 设置预处理流程
-            Process.intorpolator(),
+            Process.interpolator(),
             Process.sg_filter(),
             Process.bg_removal_niter_fit(),
             Process.norm_func(), ]

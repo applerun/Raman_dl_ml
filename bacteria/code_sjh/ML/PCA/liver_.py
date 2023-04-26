@@ -263,7 +263,7 @@ if __name__ == '__main__':
                                    Process.bg_removal_niter_fit(num_iter = 30, degree = 5),
                                    Process.bg_removal_niter_piecewisefit(), ]:
             transform = Process.process_series([  # 设置预处理流程
-                Process.intorpolator(),
+                Process.interpolator(),
                 baselineRemoveFunc,
                 Process.sg_filter(window_length = 5, polyorder = 1),
                 Process.area_norm_func(), ]

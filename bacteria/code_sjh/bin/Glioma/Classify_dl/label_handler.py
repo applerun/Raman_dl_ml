@@ -105,7 +105,7 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
         LoadCsvFile = readdatafunc,
         k_split = 6,
         transform = Process.process_series([  # 设置预处理流程
-            Process.intorpolator(),
+            Process.interpolator(),
             # Process.baseline_als(),
             # Process.bg_removal_niter_fit(),
             Process.bg_removal_niter_piecewisefit(),

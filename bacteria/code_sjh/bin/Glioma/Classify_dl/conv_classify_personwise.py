@@ -399,7 +399,7 @@ def train_modellist(
             LoadCsvFile = readdatafunc,
             k_split = 6,
             transform = Process.process_series([  # 设置预处理流程
-                Process.intorpolator(),
+                Process.interpolator(),
                 # Process.baseline_als(),
                 Process.bg_removal_niter_fit(),
                 # Process.bg_removal_niter_piecewisefit(),
@@ -564,7 +564,7 @@ def main_indep_test():
             LoadCsvFile = readdatafunc,
             k_split = 6,
             transform = Process.process_series([  # 设置预处理流程
-                Process.intorpolator(),
+                Process.interpolator(),
                 Process.sg_filter(),
                 preprocess,
                 Process.norm_func(), ]
@@ -612,7 +612,7 @@ def main_one_datasrc(
             LoadCsvFile = readdatafunc,
             k_split = 4,
             transform = Process.process_series([  # 设置预处理流程
-                Process.intorpolator(),
+                Process.interpolator(),
                 Process.sg_filter(),
                 preprocess,
                 Process.norm_func(), ]

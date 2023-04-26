@@ -33,7 +33,7 @@ db_cfg = dict(
     k_split = 6,
     transform =
     Process.process_series([  # 设置预处理流程
-        Process.intorpolator(numpy.linspace(0, 3400, 1024)),  # 读取的时候预先插值
+        Process.interpolator(numpy.linspace(0, 3400, 1024)),  # 读取的时候预先插值
     ]
     )
 )
@@ -59,7 +59,7 @@ mpl_func.spectrum_vis_mpl(glass_p, db_tissue.xs, name = "glass_p", ax = fig.axes
 def plot_process(svdir = os.path.join(project_root, "Sample_results", "Sample_bad_signal", "plot"),
                  pointnum = 512,  # 插值点数
                  lam = 10000, p = 0.01, niter = 10,  # bals
-                 windor_length = 11, polyorder = 3,  # sg
+                 windor_length = 11, poly_order = 3,  # sg
                  newX = True,  # 是否要插值
                  pltsave_in_one = False,  # 是否保存所有处理后结果在一张图中
                  substrate_glass = True,  # 是否减玻璃背景
@@ -74,8 +74,8 @@ def plot_process(svdir = os.path.join(project_root, "Sample_results", "Sample_ba
     series = [
         # baseline_remove.baseline_als(lam = lam, p = p, niter = niter),
         baseline_remove.airALS(lam = lam,p = p,niter = niter),
-        Process.intorpolator(newX) if newX is not None else Process.none_func,
-        Process.sg_filter(window_length = windor_length, polyorder = polyorder),
+        Process.interpolator(newX) if newX is not None else Process.none_func,
+        Process.sg_filter(window_length = windor_length, poly_order = poly_order),
         Process.area_norm_func(),
     ]
     data_process_func = Process.process_series(series)
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     plot_process(svdir = os.path.join(project_root, "Sample_results", "Sample_bad_signal", "plot_airALS"),
                  pointnum = 512,  # 插值点数
                  lam = 10000, p = 0.01, niter = 10,  # bals
-                 windor_length = 11, polyorder = 3,  # sg
+                 windor_length = 11, poly_order = 3,  # sg
                  newX = True,  # 是否要插值
                  pltsave_in_one = True,  # 是否保存所有处理后结果在一张图中
                  substrate_glass = False,

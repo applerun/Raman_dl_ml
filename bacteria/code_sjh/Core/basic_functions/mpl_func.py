@@ -96,7 +96,7 @@ if __name__ == '__main__':
                        LoadCsvFile = readdatafunc,
                        transform = Process.process_series([
                            Process.bg_removal_niter_fit(),
-                           Process.intorpolator(np.linspace(400, 1800, 512)),
+                           Process.interpolator(np.linspace(400, 1800, 512)),
                            Process.sg_filter(),
                            Process.norm_func()
                        ]),

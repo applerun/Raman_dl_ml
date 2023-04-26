@@ -191,7 +191,7 @@ if __name__ == '__main__':
     cfg = copy.deepcopy(csvconfig_c)
     cfg["dataroot"] = os.path.join(projectroot, "data", "liver", "liver_after_basewise")
     cfg["transform"] = Process.process_series([
-        Process.intorpolator(),
+        Process.interpolator(),
         Process.bg_removal_niter_fit(num_iter = 10),
         # Process.baseline_als(),
         Process.sg_filter(window_length = 11),

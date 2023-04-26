@@ -365,7 +365,7 @@ def main(
 			LoadCsvFile = readdatafunc,
 			k_split = 6,
 			transform = Process.process_series([  # 设置预处理流程
-				Process.intorpolator(),
+				Process.interpolator(),
 				# Process.baseline_als(),
 				# Process.bg_removal_niter_fit(),
 				Process.bg_removal_niter_piecewisefit(),
@@ -502,7 +502,7 @@ if __name__ == '__main__':
 				LoadCsvFile = readdatafunc,
 				k_split = 6,
 				transform = Process.process_series([  # 设置预处理流程
-					Process.intorpolator(),
+					Process.interpolator(),
 					preprocess,
 					Process.sg_filter(),
 					Process.norm_func(), ]

@@ -28,7 +28,7 @@ if __name__ == '__main__':
         transform = Process.process_series([  # 设置预处理流程
             # Process.baseline_als(),
             # Process.bg_removal_niter_fit(),
-            Process.intorpolator(),
+            Process.interpolator(),
             Process.bg_removal_niter_piecewisefit(),
             Process.sg_filter(),
             Process.norm_func(), ]
@@ -63,7 +63,7 @@ if __name__ == '__main__':
                                LoadCsvFile = readdatafunc,
                                backEnd = ".csv", t_v_t = [1, 0, 0],
                                transform = Process.process_series([  # 设置预处理流程
-                                   Process.intorpolator(),
+                                   Process.interpolator(),
                                    Process.sg_filter(),
                                    pre,
                                    Process.norm_func(), ]

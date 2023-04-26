@@ -257,7 +257,7 @@ def delete_processed_walk(dirname = dataroot,
                 os.remove(file)
 
 
-nonfunc = ProcessorFunction
-
+none_func = ProcessorFunction
+process_series = ProcessorRootSeries
 # delete_processed_walk()
 # dir_process_walk()

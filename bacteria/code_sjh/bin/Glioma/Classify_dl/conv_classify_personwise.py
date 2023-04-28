@@ -196,7 +196,12 @@ def train_classification_net(
         if data is None:
             continue
         data = data.to(device)
-        test_cam = grad_cam(net, data, l, device)
+        try:
+            test_cam = grad_cam(net, data, l, device)
+        except:
+            if len(list(cams.keys())) == 0:
+                warnings.warn("failed to generate cam:{}".format(net.model_name))
+            test_cam = None
         cams[l] = test_cam
     res["val_cam"] = cams
     label2data = test_db.get_data_sorted_by_label()
@@ -423,7 +428,6 @@ def train_modellist(
     # config = dict(dataroot = os.path.join(projectroot, "data", "data_AST"), backEnd = backend, t_v_t = tvt, LoadCsvFile = getRamanFromFile(wavelengthstart = 0, wavelengthend = 1800, delimeter = delimeter,
     #                                  dataname2idx = dataformat), k_split = k_split)
 
-
     i = 0  # 实验进度计数
 
     # recorddir = os.path.join(projectroot, "results", "liver", recorddir)  # 实验结果保存位置
@@ -466,14 +470,14 @@ def train_modellist(
                 # test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
                 # train_db.show_data()
                 sample_tensor, sample_label = train_db.__getitem__(0)
-                vis.line(sample_tensor, win = "sampletensor")
+                # vis.line(sample_tensor, win = "sampletensor")
 
                 sample_tensor = torch.unsqueeze(sample_tensor, dim = 0)
 
                 net = model(sample_tensor, train_db.num_classes()).to(device)
                 res = train_classification_net(
                     net,
-                    train_db =train_db,
+                    train_db = train_db,
                     val_db = val_db,
                     test_db = test_db,
                     **train_cfg,
@@ -620,7 +624,7 @@ def main_one_datasrc(
         recorddir = os.path.join(recordroot, ele)
         path2labelfunc = path2func_generator(num2label)
         train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
-                        path2labelfunc = path2labelfunc, sfname = "Raman_personwise_",n_iter = 5)
+                        path2labelfunc = path2labelfunc, sfname = "Raman_personwise_", n_iter = 5)
 
 
 def main_onesrc_personwise():

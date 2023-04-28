@@ -1,7 +1,6 @@
 import os.path
 import warnings
 from bacteria.code_sjh.Core.RamanData import RamanDatasetCore
-from RamanData import Raman,Raman_dirwise
 def save_csv_file_info(Raman:RamanDatasetCore,dst):
     """
     TODO:根据Raman类型在dst处生成对应的信息文件

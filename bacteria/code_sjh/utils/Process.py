@@ -109,7 +109,7 @@ class sg_filter(ProcessorFunction):
 # spectral normalization
 class norm_func(ProcessorFunction):
     def __init__(self, a = 0, b = 1, ):
-        super(norm_func, self).__init__("norm" if (a == 0 and b == 1) else "norm({},{})".format(a, b))
+        super(norm_func, self).__init__("norm_func()" if (a == 0 and b == 1) else "norm_func({},{})".format(a, b))
         self.a = a
         self.b = b
 
@@ -124,7 +124,7 @@ class norm_func(ProcessorFunction):
 class area_norm_func(ProcessorFunction):
     def __init__(self, a = 1, ):
         assert a > 0, "a must be greater than 0"
-        super(area_norm_func, self).__init__("area_norm" if a == 1 else "area_norm({})".format(a))
+        super(area_norm_func, self).__init__("area_norm_func()" if a == 1 else "area_norm_func({})".format(a))
         self.a = a
 
     def __call__(self, y, x = None):
@@ -259,5 +259,5 @@ def delete_processed_walk(dirname = dataroot,
 
 none_func = ProcessorFunction
 process_series = ProcessorRootSeries
-# delete_processed_walk()
-# dir_process_walk()
+
+

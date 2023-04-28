@@ -81,6 +81,7 @@ def plot_process(svdir = os.path.join(project_root, "Sample_results", "Sample_ba
     data_process_func = Process.process_series(series)
 
     data_process_func = Process.batch_process(data_process_func, verbose = True)
+    print(data_process_func)
     bias = 0
     if pltsave_in_one:
         fig, axes = plt.subplots(1, 1)

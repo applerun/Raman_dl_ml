@@ -30,7 +30,7 @@ def AlexNet_Sun_generator(dropout = 0.1, dense_bias = True, alpha = 0.15):
 
             """
             self.alpha = alpha
-            super(AlexNet, self).__init__()
+            super(AlexNet, self).__init__(sample_tensor)
             sample_tensor = pytorchlize(sample_tensor)
             self.model_name = 'alexnet'
             self.dropout = dropout

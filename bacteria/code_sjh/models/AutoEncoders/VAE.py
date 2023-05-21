@@ -25,9 +25,6 @@ except:
 
 
 class VAE(AutoEncoder):
-    def __init__(self):
-        super(VAE, self).__init__()
-
     def forward(self, x):
         shape = x.shape
         h_ = self.Encoder(x)
@@ -116,7 +113,7 @@ class VAE_conv4(VAE):
 
 class VAE_dense(VAE):
     def __init__(self, sample_tensor: torch.Tensor, neck_axis = 10, dropout = 0.1, bias = True):
-        super(VAE_dense, self).__init__()
+        super(VAE_dense, self).__init__(sample_tensor)
         self.sample_tensor: torch.Tensor = sample_tensor.clone()
         self.model_name = "VAE_dense"
         self.Flat = Flat()

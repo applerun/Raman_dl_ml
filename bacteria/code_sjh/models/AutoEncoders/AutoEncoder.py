@@ -69,7 +69,7 @@ class AutoEncoder(BasicModule):
 
 class ConvAutoEncoder(AutoEncoder):
 	def __init__(self, sample_tensor, neck_axis = 2):
-		super(ConvAutoEncoder, self).__init__()
+		super(ConvAutoEncoder, self).__init__(sample_tensor)
 		self.neck_axis = neck_axis
 		self.model_name = "convolutional_auto_encoder"
 		self.Encoder = _CNN_encoder4(copy.deepcopy(sample_tensor), neck_axis = neck_axis)
@@ -84,10 +84,9 @@ class ConvAutoEncoder(AutoEncoder):
 
 class DenseAutoEncoder(AutoEncoder):
 	def __init__(self, sample_tensor: torch.Tensor, neck_axis = 2, dropout = 0.1, bias = True):
-		super(DenseAutoEncoder, self).__init__()
+		super(DenseAutoEncoder, self).__init__(sample_tensor)
 		# input = [b,c=1,l]
 		self.neck_axis = neck_axis
-		self.sample_tensor: torch.Tensor = sample_tensor.clone()
 		self.model_name = "auto_encoder"
 		self.dropout = dropout
 		self.Flat = Flat()

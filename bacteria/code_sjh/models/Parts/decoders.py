@@ -24,7 +24,7 @@ __all__ = ["_TCNN_decoder4","_dense_decoder"]
 class _dense_decoder(BasicModule):
 	def __init__(self, sample_tensor: torch.Tensor, neck_axis: int = 2, dropout: float = 0.1, bias: bool = True):
 		lenth = sample_tensor.shape[-1]
-		super(_dense_decoder, self).__init__()
+		super(_dense_decoder, self).__init__(sample_tensor = sample_tensor)
 		self.Decoder = nn.Sequential(
 			nn.Linear(neck_axis, 64, bias = bias),
 			nn.LeakyReLU(0.1),
@@ -44,7 +44,7 @@ class _dense_decoder(BasicModule):
 class _TCNN_decoder4(BasicModule):
 	def __init__(self, sample_tensor, TCNN_in_lenth, neck_axis = 2, kernelsize = 8, stride = 3, dropout = 0.1,
 	             verbose = False):
-		super(_TCNN_decoder4, self).__init__()
+		super(_TCNN_decoder4, self).__init__(sample_tensor = sample_tensor)
 		assert TCNN_in_lenth % 64 == 0, "CNN_in_lenth mod 64 must be 0"
 
 		self.lenth = sample_tensor.shape[-1]

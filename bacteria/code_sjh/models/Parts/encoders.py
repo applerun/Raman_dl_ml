@@ -23,7 +23,7 @@ __all__ = ["_CNN_encoder4","_dense_encoder"]
 
 class _CNN_encoder4(BasicModule):
 	def __init__(self, sample_tensor, neck_axis = 2, dropout = 0.1, kernelsize = 8, verbose = False, stride = 3):
-		super(_CNN_encoder4, self).__init__()
+		super(_CNN_encoder4, self).__init__(sample_tensor = sample_tensor)
 		self.CNN1 = nn.Sequential(
 			# self, ch_in, ch_out, dropout = 0.1, kernelsize = 8, stride = 3, Maxpool = True, verbose = False
 			_CNN_layer(1, 32, dropout = dropout, stride = stride, kernelsize = kernelsize, verbose = verbose),

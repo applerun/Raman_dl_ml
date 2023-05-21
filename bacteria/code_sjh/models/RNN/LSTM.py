@@ -17,7 +17,7 @@ class LSTM_Model(BasicModule):
         sample_tensor = pytorchlize(sample_tensor)
         input_dim = 528,
         output_dim = num_classes
-        super(LSTM_Model, self).__init__()
+        super(LSTM_Model, self).__init__(sample_tensor = sample_tensor)
         self.hidden_dim = hidden_dim
         self.layer_dim = layer_dim
         self.lstm = nn.LSTM(input_dim, hidden_dim, layer_dim, dropout = 0.5, batch_first = True)

@@ -33,7 +33,7 @@ class GeneratorDense(BasicModule):
         @param sample_tensor: 样例张量，shape为[b,c,l] 或[b,l]
         @param len_z:
         """
-        super(GeneratorDense, self).__init__()
+        super(GeneratorDense, self).__init__(sample_tensor = sample_tensor)
         self.raman_shape = sample_tensor.shape[1:]
         layers = []
         if dense_node is None:

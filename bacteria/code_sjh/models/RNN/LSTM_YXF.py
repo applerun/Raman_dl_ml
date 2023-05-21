@@ -159,7 +159,7 @@ model = LSTM_Model(input_dim, hidden_dim, layer_dim, output_dim).to(device)
 
 # %%
 criterion = nn.CrossEntropyLoss()
-learning_rate = 0.01
+learning_rate = 0.010
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 print(len(list(model.parameters())))
 

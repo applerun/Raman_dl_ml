@@ -248,8 +248,8 @@ class _CVAE_TCNN_decoder2(BasicModule):
 
 
 class CVAE(VAE):
-    def __init__(self, num_classes):
-        super(CVAE, self).__init__()
+    def __init__(self, num_classes,sample_tensor = None):
+        super(CVAE, self).__init__(sample_tensor=sample_tensor)
         self.num_classes = num_classes
         self.lb = LabelBinarizer()
         self.lb.fit(list(range(0, self.num_classes)))
@@ -291,7 +291,7 @@ class CVAE(VAE):
 
 class CVAE_Dlabel_Dclassifier(CVAE):
     def __init__(self, sample_tensor, num_classes, neck_axis = 2, dropout = 0.3, kernelsize = 8, stride = 3):
-        super(CVAE_Dlabel_Dclassifier, self).__init__(num_classes = num_classes)
+        super(CVAE_Dlabel_Dclassifier, self).__init__(sample_tensor = sample_tensor,num_classes = num_classes)
         self.neck_axis = neck_axis
         self.model_name = "CVAE"
         self.dense_label = nn.Sequential(

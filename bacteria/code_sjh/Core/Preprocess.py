@@ -24,8 +24,7 @@ class ProcessorRootSeries(ProcessorRoot):
         """
 
         @param sequence: list of Processors
-        @param kwargs:
-            deepcopy
+
         """
 
         super(ProcessorRootSeries, self).__init__()
@@ -151,3 +150,14 @@ class batch_process(ProcessorRoot):
 
     def __str__(self):
         return str(self.process_func)
+
+
+def str2processor(series:str):
+    list_processor_str = series.split(" --> ")
+    list_processor = [eval(x) for x in list_processor_str]
+    if len(list_processor) == 0:
+        return ProcessorRoot()
+    elif len(list_processor) == 1:
+        return list_processor[0]
+    else:
+        return ProcessorRootSeries(list_processor)

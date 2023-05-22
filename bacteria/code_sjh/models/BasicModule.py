@@ -39,7 +39,7 @@ class BasicModule(t.nn.Module):
         return name
 
     def save_model(self, name = None, sample_tensor = None, opset_version = 11):
-        self.eval()
+        self.eval() # 保证没有cuda操作
         if not os.path.isdir(os.path.dirname(name)):
             os.makedirs(os.path.dirname(name))
         if name is None:

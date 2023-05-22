@@ -38,7 +38,7 @@ class BasicModule(t.nn.Module):
         t.save(self.state_dict(), name)
         return name
 
-    def save_model(self, name = None, sample_tensor = None):
+    def save_model(self, name = None, sample_tensor = None, opset_version = 11):
         if not os.path.isdir(os.path.dirname(name)):
             os.makedirs(os.path.dirname(name))
         if name is None:
@@ -48,7 +48,7 @@ class BasicModule(t.nn.Module):
             sample_tensor = self.sample_tensor
         if sample_tensor is None:
             warnings.warn("no sample tensor provided, cannot generate graph")
-        torch.onnx.export(self, self.sample_tensor, name, opset_version = 11,
+        torch.onnx.export(self, self.sample_tensor, name, opset_version = opset_version,
                           input_names = ['input'],
                           output_names = ['output'])
 

@@ -27,6 +27,7 @@ class LSTM_Model(BasicModule):
 
     def forward(self, x):
         # (layer_dim,batch_size,hidden_size)
+        device = next(self.parameters()).device
         h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(device)
         c0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_().to(device)
 

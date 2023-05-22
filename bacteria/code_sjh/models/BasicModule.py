@@ -38,8 +38,8 @@ class BasicModule(t.nn.Module):
         t.save(self.state_dict(), name)
         return name
 
-    def save_model(self, name = None, sample_tensor = None, opset_version = 11):
-        self.eval() # 保证没有cuda操作
+    def save_onnx(self, name = None, sample_tensor = None,opset_version = 11):
+        self.eval()  # 保证没有cuda操作
         if not os.path.isdir(os.path.dirname(name)):
             os.makedirs(os.path.dirname(name))
         if name is None:

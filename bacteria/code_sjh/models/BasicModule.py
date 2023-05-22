@@ -39,6 +39,7 @@ class BasicModule(t.nn.Module):
         return name
 
     def save_model(self, name = None, sample_tensor = None, opset_version = 11):
+        self.eval()
         if not os.path.isdir(os.path.dirname(name)):
             os.makedirs(os.path.dirname(name))
         if name is None:

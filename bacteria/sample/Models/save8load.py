@@ -25,13 +25,21 @@ if __name__ == '__main__':
 
     # mod.save_model(mod_path)
     mod2 = torch.jit.load(mod_path)
-    torch.onnx.export(mod, torch.Tensor(16, 1, 512), mod_onnx_path, opset_version = 11,
+    torch.onnx.export(mod, torch.Tensor(1, 1, 512), mod_onnx_path, opset_version = 11,
                       input_names = ['input'],
-                      output_names = ['output'])
+                      output_names = ['output'], dynamic_axes = {
+            'input': {
+                0: 'batch',
+            },
+            'output': {
+                0: 'batch'
+            }
+        }
+                      )
     mod_onnx = onnx.load(mod_onnx_path)
     onnx.checker.check_model(mod_onnx)
-    session = onnxruntime.InferenceSession(mod_onnx_path,)
-    s_input = dict(input=numpy.ones((16, 1, 512),dtype = "float32"))
-    s_output = session.run(['output'],s_input)
+    session = onnxruntime.InferenceSession(mod_onnx_path, )
+    s_input = dict(input = numpy.ones((16, 1, 512), dtype = "float32"))
+    s_output = session.run(['output'], s_input)
 
     print(s_output[0].shape)

@@ -1,6 +1,8 @@
 import numpy
 import copy
 
+import openpyxl
+
 
 def getRamanFromFile(wavelengthstart = 400,
                      wavelengthend = 1800,
@@ -8,7 +10,6 @@ def getRamanFromFile(wavelengthstart = 400,
                      delimeter = None):
     if wavelengthend < wavelengthstart:
         wavelengthstart, wavelengthend = wavelengthend, wavelengthstart
-
 
     def func(filepath: str,
              delimeter = delimeter, dataname2idx = dataname2idx):
@@ -49,6 +50,54 @@ def getRamanFromFile(wavelengthstart = 400,
                     Wavelengths.append(wavelength)
                 elif wavelength > wavelengthend:
                     break
+        Ramans = numpy.array([Ramans])
+        Wavelengths = numpy.array(Wavelengths)
+        return Ramans, Wavelengths
+
+    return func
+
+
+def getRamanFromXlsx(wavelengthstart = 400,
+                     wavelengthend = 1800,
+                     dataname2idx = None, ):
+    if wavelengthend < wavelengthstart:
+        wavelengthstart, wavelengthend = wavelengthend, wavelengthstart
+
+    def func(filepath: str,
+             dataname2idx = dataname2idx):
+        dataname2idx = copy.deepcopy(dataname2idx)
+        if dataname2idx is None:
+            dataname2idx = {}
+        Ramans = []
+        Wavelengths = []
+        wb = openpyxl.load_workbook(filepath)
+        sheet = wb.worksheets[0]
+
+        header = None
+        for row in sheet.iter_rows():
+            data = []
+            for cell in row:
+                data.append(cell.value)
+            if not len(data):
+                continue
+
+            if data[0] in ["ROI", "Wavelength", "Column", "Intensity"]:
+                if header is None:
+                    header = data
+                    dataname2idx["Wavelength"] = header.index("Wavelength")
+                    dataname2idx["Intensity"] = header.index("Intensity")
+                continue
+            try:
+                wavelength = float(data[dataname2idx["Wavelength"]])
+                intense = float(data[dataname2idx["Intensity"]])
+            except:
+                # print(filepath, ":", data, ",delimeter:", delimeter,"unused line :",line)
+                continue
+            if wavelengthstart < wavelength and wavelength < wavelengthend:
+                Ramans.append(intense)
+                Wavelengths.append(wavelength)
+            elif wavelength > wavelengthend:
+                break
         Ramans = numpy.array([Ramans])
         Wavelengths = numpy.array(Wavelengths)
         return Ramans, Wavelengths

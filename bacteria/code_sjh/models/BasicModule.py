@@ -1,4 +1,5 @@
 # coding:utf8
+import copy
 import os.path
 import warnings
 
@@ -17,7 +18,7 @@ class BasicModule(t.nn.Module):
         super(BasicModule, self).__init__()
         self.model_name = str(type(self))  # 默认名字
         self.model_loaded = False
-        self.sample_tensor = sample_tensor.clone()
+        self.sample_tensor = copy.deepcopy(sample_tensor)
 
     def load(self, path):
         """
@@ -38,7 +39,15 @@ class BasicModule(t.nn.Module):
         t.save(self.state_dict(), name)
         return name
 
-    def save_onnx(self, name = None, sample_tensor = None,opset_version = 11):
+    def save_onnx(self, name = None, sample_tensor = None,opset_version = 11,dynamic = True):
+        """
+
+        @param name: 保存路径
+        @param sample_tensor: 样例Tensor，None：使用self.sample_tenor，两者不能全为None
+        @param opset_version: onnx格式版本
+        @param dynamic: 输入模型的batch是否为变化的
+        @return:
+        """
         self.eval()  # 保证没有cuda操作
         if not os.path.isdir(os.path.dirname(name)):
             os.makedirs(os.path.dirname(name))
@@ -51,7 +60,16 @@ class BasicModule(t.nn.Module):
             warnings.warn("no sample tensor provided, cannot generate graph")
         torch.onnx.export(self, self.sample_tensor, name, opset_version = opset_version,
                           input_names = ['input'],
-                          output_names = ['output'])
+                          output_names = ['output'],
+                          dynamic_axes = {
+                              'input': {
+                                  0: 'batch',
+                              },
+                              'output': {
+                                  0: 'batch'
+                              }
+                          } if dynamic else {}
+        )
 
     def set_model_name(self, name):
         self.model_name = name

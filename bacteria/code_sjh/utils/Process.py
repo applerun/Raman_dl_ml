@@ -19,6 +19,7 @@ projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_ID")
 sys.path.append(coderoot)
 
+
 # __all__ = ["interpolator", "noising_func_generator", "smoother", "sg_filter", "norm_func", "area_norm_func", "nonfunc"]
 
 
@@ -144,13 +145,6 @@ preprocess_default = ProcessorRootSeries([
 ])
 
 
-
-
-
-
-
-
-
 def dir_process(dirname = "**",
                 datafilename = "combined-.csv",
                 savefilename = "combined-p.csv",
@@ -257,7 +251,18 @@ def delete_processed_walk(dirname = dataroot,
                 os.remove(file)
 
 
+def str2processor(series: str, prefix = ""):
+    list_processor_str = series.split(" --> ")
+    if not prefix.endswith(".") and len(prefix) > 0:
+        prefix = prefix + "."
+    list_processor = [eval(prefix + x) for x in list_processor_str]
+    if len(list_processor) == 0:
+        return ProcessorRoot()
+    elif len(list_processor) == 1:
+        return list_processor[0]
+    else:
+        return ProcessorRootSeries(list_processor)
+
+
 none_func = ProcessorFunction
 process_series = ProcessorRootSeries
-
-

@@ -146,8 +146,11 @@ class Raman(RamanDatasetCore):
 
             # 数据预处理
             if self.transform is not None:
-                R, X = self.transform(R[0], X)
-                R = numpy.expand_dims(R, 0)
+                try:
+                    R, X = self.transform(R[0], X)
+                    R = numpy.expand_dims(R, 0)
+                except:
+                    raise ValueError("data from {} cannot be transformed".format(file))
             R = torch.tensor(R).to(torch.float32)
             if self.xs is None:
                 self.xs = X

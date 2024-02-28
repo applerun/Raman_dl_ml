@@ -24,7 +24,7 @@ def get_infos(filename: str):
     for i in range(len(nums)):
         num2ele2label[nums[i]] = {}
 
-        for j in range(4, 13):
+        for j in range(4, 11):
             num = nums[i]
             labels = df[axes[j]]
             label = labels[i]
@@ -89,7 +89,7 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
     num2ele2label = get_infos(info_file)
     eles = list(num2ele2label.values().__iter__().__next__().keys())
 
-    projectroot = "../../../.."
+    projectroot = getRootPath("Raman_dl_ml")
     data_root = os.path.join(projectroot, "data", "脑胶质瘤", src)
     from scipy import interpolate
 
@@ -101,28 +101,31 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
         dataroot = data_root,
         backEnd = ".csv",
         # backEnd = ".asc",
+        mod = "all",
         t_v_t = [0.8, 0.2, 0.0],
         LoadCsvFile = readdatafunc,
         k_split = 6,
-        transform = Process.process_series([  # 设置预处理流程
-            Process.interpolator(),
-            # Process.baseline_als(),
-            # Process.bg_removal_niter_fit(),
-            Process.bg_removal_niter_piecewisefit(),
-            Process.sg_filter(),
-            Process.norm_func(), ]
-        )
+        transform = None,
+        # Process.process_series([  # 设置预处理流程
+        #     Process.interpolator(),
+        #     # Process.baseline_als(),
+        #     # Process.bg_removal_niter_fit(),
+        #     Process.bg_removal_niter_piecewisefit(),
+        #     Process.sg_filter(),
+        #     Process.norm_func(), ]
+        # )
     )
     raman = Raman_depth_gen(2, 2)
 
     for ele in eles:
         num2label = {}
-        path2labelfunc = path2func_generator(num2label,func = lambda x:x+1000)
+
         for k in num2ele2label.keys():
             num2label[k] = num2ele2label[k][ele]
+        path2labelfunc = path2func_generator(num2label, func = lambda x: x + 1000)
         name2label = {"neg": 0, "pos": 1}
         label2name = {"0": "neg", "1": "pos","-1":"unknown"}
-        db = raman(**db_cfg, sfpath = "Raman_{}_unlabeled.csv".format(ele), newfile = True, shuffle = False)
+        db = raman(**db_cfg, sfpath = "Raman_{}_unlabeled.csv".format(ele), newfile = True, shuffle = False,transform = None)
 
         label_RamanData(db, path2labelfunc, name2label)
         new_tree = os.path.join(os.path.dirname(data_root), dst, ele)
@@ -151,4 +154,6 @@ def reform_tree(src_root, dst_root, path2labelfunc):
 
 
 if __name__ == '__main__':
-    main(r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx")
+    from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
+    datapath = os.path.join(getRootPath("Raman_dl_ml"),"data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx")
+    main(datapath)

@@ -101,10 +101,8 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
         dataroot = data_root,
         backEnd = ".csv",
         # backEnd = ".asc",
-        mod = "all",
-        t_v_t = [0.8, 0.2, 0.0],
+        mode = "all",
         LoadCsvFile = readdatafunc,
-        k_split = 6,
         transform = None,
         # Process.process_series([  # 设置预处理流程
         #     Process.interpolator(),
@@ -122,10 +120,10 @@ def main(info_file: str, src = "data_indep_unlabeled", dst = "data_indep"):
 
         for k in num2ele2label.keys():
             num2label[k] = num2ele2label[k][ele]
-        path2labelfunc = path2func_generator(num2label, func = lambda x: x + 1000)
+        path2labelfunc = path2func_generator(num2label,prefix_len = 0 if "indep" in src else 1, func = (lambda x: x + 1000) if "indep" in src else None)
         name2label = {"neg": 0, "pos": 1}
         label2name = {"0": "neg", "1": "pos","-1":"unknown"}
-        db = raman(**db_cfg, sfpath = "Raman_{}_unlabeled.csv".format(ele), newfile = True, shuffle = False,transform = None)
+        db = raman(**db_cfg, sfpath = "Raman_{}_unlabeled.csv".format(ele), newfile = True, shuffle = False)
 
         label_RamanData(db, path2labelfunc, name2label)
         new_tree = os.path.join(os.path.dirname(data_root), dst, ele)
@@ -156,4 +154,4 @@ def reform_tree(src_root, dst_root, path2labelfunc):
 if __name__ == '__main__':
     from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
     datapath = os.path.join(getRootPath("Raman_dl_ml"),"data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx")
-    main(datapath)
+    main(datapath,src = "data",dst = "data_batch123")

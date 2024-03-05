@@ -1,5 +1,7 @@
 import glob
 import os
+import shutil
+
 import pandas
 import numpy as np
 
@@ -73,9 +75,10 @@ def relabel(xingmingsuoxue2xuhao, filepath):
     try:
         infos[0] = xingmingsuoxue2xuhao[infos[1]]
     except:
-        infos[0] = "-1"
+        infos[0] = -1
     if type(infos[0]) is not str:
-        infos[0] = str(int(infos[0]))
+        infos[0] = "p"+str(int(infos[0]))
+
     os.rename(filepath, os.path.join(dir, " ".join(infos)))
 def indexinlist(content,l:list):
     try:
@@ -84,9 +87,12 @@ def indexinlist(content,l:list):
         return -1
 
 if __name__ == '__main__':
-    src = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\GBM分子分型汇总表.xlsx"
-    dst = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\分子分型汇总表2.csv"
+
+    src = r"D:\myPrograms\pythonProject\Raman_dl_ml\data\脑胶质瘤\data_used\GBM分子分型汇总表.xlsx"
+    dst = r"D:\myPrograms\pythonProject\Raman_dl_ml\data\脑胶质瘤\data_used\分子分型汇总表2.csv"
     x2x = fenxing2zongjie(src, dst)
-    datapath = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_indep_unlabeled\unlabeled"
+
+    datapath = r"D:\myPrograms\pythonProject\Raman_dl_ml\data\脑胶质瘤\unlabeled_data\data_indep_unlabeled\unlabeled"
     for file in glob.glob(os.path.join(datapath, "*")):
         relabel(x2x,file)
+    # shutil.rmtree(os.path.join("D:\myPrograms\pythonProject\Raman_dl_ml\data\脑胶质瘤","回收站"))

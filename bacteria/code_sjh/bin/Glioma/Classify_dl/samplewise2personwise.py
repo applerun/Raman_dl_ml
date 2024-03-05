@@ -43,6 +43,11 @@ def rename_files_between(root, depth, warning = False):
 
 def rename_files_between_undo(root, depth, warning = False):
     for r, d, f in os.walk(root):
+        if len(d)==0:
+            if warning:
+                print("already renamed or depth ({}) is wrong, ignore dir {}".format(
+                    d, depth, r))
+            continue
         f = d + f
         d = len(r.replace(root, "").split(os.sep)) - 1
         if d != depth:
@@ -50,6 +55,7 @@ def rename_files_between_undo(root, depth, warning = False):
                 print("depth {} != min_depth {}, ignore dir {}".format(
                     d, depth, r))
             continue
+
         for file in f:
             file = os.path.join(r, file)
             dst = rename_undo(file)
@@ -58,6 +64,7 @@ def rename_files_between_undo(root, depth, warning = False):
                 os.makedirs(os.path.dirname(dst))
             os.rename(file, dst)
         os.rmdir(r)
+
 if __name__ == '__main__':
     datafile = r"...\01 ZLX 739785 T1\point?(.csv)"
     dstfile = r"...\01\ZLX 739785 T1 point?(.csv)"
@@ -66,8 +73,8 @@ if __name__ == '__main__':
     print(dstfile)
     datafile2 = rename_undo(dstfile)
     print(datafile2)
-    dataroot_src = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_rename_test - 副本"
-    dataroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_rename_test"
+    dataroot_src = r"D:\myPrograms\pythonProject\Raman_dl_ml\data\脑胶质瘤\data_rename_test"
+    dataroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\data\脑胶质瘤\data_rename_test_dst"
     if os.path.isdir(dataroot):
         shutil.rmtree(dataroot)
     shutil.copytree(dataroot_src,dataroot)

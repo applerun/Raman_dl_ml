@@ -86,7 +86,7 @@ def grad_cam(convnet,
 	:return:
 	"""
 	if device is None:
-		device = torch.device("cuda" if torch.cuda.is_available() else "cpi")
+		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	if not convnet.model_loaded:
 		save_dir = savefilepath if savefilepath else os.path.join(coderoot, "checkpoints", convnet.model_name + ".mdl")
 		convnet.load(save_dir)  # 加载训练模型

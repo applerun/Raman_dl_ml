@@ -41,7 +41,7 @@ class interpolator(ProcessorFunction):
         elif len(args) == 3:
             newX = numpy.linspace(*args)
         else:
-            warnings.warn("args not supported")
+            warnings.warn("args not supported:{}".format(args))
             newX = numpy.linspace(0, 1, 512)
 
         super(interpolator, self).__init__("interpolator({},{},{})".format(newX.min(), newX.max(), len(newX)))

@@ -31,11 +31,11 @@ class BasicModule(t.nn.Module):
         """
         保存模型，默认使用“模型名字+时间”作为文件名
         """
-        if not os.path.isdir(os.path.dirname(name)):
-            os.makedirs(os.path.dirname(name))
         if name is None:
             prefix = '../checkpoints/' + self.model_name + '_'
             name = time.strftime(prefix + '%m%d_%H:%M:%S.pth')
+        if not os.path.isdir(os.path.dirname(name)):
+            os.makedirs(os.path.dirname(name))
         t.save(self.state_dict(), name)
         return name
 

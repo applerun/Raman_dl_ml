@@ -440,13 +440,18 @@ def main_indep_test():
 def main_one_datasrc(
 		dataroot_ = os.path.join(projectroot, "data", "脑胶质瘤", "data_all"),
 		info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx"),
-		raman = Raman_dirwise
+		raman = Raman_dirwise,
+		record_info = None,
 ):
 	num2ele2label = get_infos(info_file)
 	eles = list(num2ele2label.values().__iter__().__next__().keys())
 	print("using device:", device.__str__())
+	if record_info is None:
+		record_info = ""
+	if len(record_info) > 0:
+		record_info = record_info+"_"
 	recordroot = os.path.join(projectroot, "results", "glioma", "dl")
-	recordroot = os.path.join(recordroot, time.strftime("%Y-%m-%d-%H_%M_%S"))
+	recordroot = os.path.join(recordroot, record_info+time.strftime("%Y-%m-%d-%H_%M_%S"))
 	#   # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
 
 	paras = [(e, pre) for e in eles for pre in [
@@ -463,6 +468,8 @@ def main_one_datasrc(
 		dataroot = os.path.join(dataroot_, ele)
 		# modellist = [AlexNet_Sun, ResNet18, ResNet34]
 		modellist = [AlexNet_Sun]
+		if not os.path.isdir(dataroot):
+			continue
 		db_cfg = dict(  # 数据集设置
 			dataroot = dataroot,
 			backEnd = ".csv",
@@ -478,14 +485,15 @@ def main_one_datasrc(
 		recorddir = os.path.join(recordroot, ele)
 		path2labelfunc = path2func_generator(num2label)
 		train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
-						path2labelfunc = path2labelfunc, sfname = "Raman_personwise_", n_iter = 1)
+						path2labelfunc = path2labelfunc, sfname = "Raman_personwise_", n_iter = 1,)
 
 
 def main_onesrc(personwise = True):
 	from samplewise2personwise import rename_files_between, rename_files_between_undo
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 
-	dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_batch123_labeled")
+	# dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_batch123_labeled")
+	dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_all_labeled")
 	if personwise:
 		dataroot_dst = dataroot_ + "_renamed_for_personwise"
 		# rename_files_between(dataroot_dst, 3)
@@ -504,8 +512,11 @@ def main_onesrc(personwise = True):
 		dataroot_dst = dataroot_
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
-	main_one_datasrc(dataroot_dst, info_file,raman = Raman_depth_gen(2, 2))
-	# rename_files_between_undo(dataroot_dst, 3)
+	main_one_datasrc(dataroot_dst, info_file, raman = Raman_depth_gen(2, 2),
+					 record_info = os.path.basename(dataroot_dst)+("person_wise" if personwise else "tissue_wise"))
+
+
+# rename_files_between_undo(dataroot_dst, 3)
 
 
 # try:
@@ -518,3 +529,4 @@ def main_onesrc(personwise = True):
 
 if __name__ == '__main__':
 	main_onesrc(personwise = False)
+	main_onesrc(personwise = True)

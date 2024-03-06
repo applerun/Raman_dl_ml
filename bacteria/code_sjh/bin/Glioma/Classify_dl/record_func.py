@@ -4,7 +4,7 @@ import os
 import seaborn
 from bacteria.code_sjh.Core.RamanData import RamanDatasetCore
 from bacteria.code_sjh.Core.basic_functions.mpl_func import spectrum_vis_mpl
-
+import warnings
 def plt_loss_acc(
 		pltdir,
 		res,

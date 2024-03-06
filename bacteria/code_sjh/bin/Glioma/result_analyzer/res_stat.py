@@ -12,17 +12,17 @@ def round_str(res: str, split = "±"):
 	return res
 
 
-def RecordRead_bi_clas(src, mode = "test"):
+def RecordRead_bi_clas(src, mode = "test",round_digits = 4):
 	pd = pandas.read_csv(src + ".csv", skiprows = 2, encoding = "GBK")
 	accs = pd[mode + "_acc"]
 	ind = len(accs) - 2
 	acc, acc_std = pd[mode + "_acc"][ind].split("+-")
-	acc = round(float(acc), 4)
-	acc_std = round(float(acc_std), 4)
+	acc = round(float(acc), round_digits)
+	acc_std = round(float(acc_std), round_digits)
 	# acc = round_str(acc)
 	auc, auc_std = pd[mode + "_AUC"][ind].split("+-")
-	auc = round(float(auc), 4)
-	auc_std = round(float(auc_std), 4)
+	auc = round(float(auc), round_digits)
+	auc_std = round(float(auc_std), round_digits)
 	# auc = round_str(auc)
 	cm = np.loadtxt(os.path.join(src, mode + "_confusion_matrix.csv"), delimiter = ",")
 
@@ -38,7 +38,7 @@ def RecordRead_bi_clas(src, mode = "test"):
 	if abs(acc_ - acc_f) > 0.01:
 		warnings.warn("acc from conf_m({}) and recordfile({}) are different".format(acc_, acc))
 
-	return dict(acc = acc_, auc = auc, sen = sen, spe = spe)
+	return dict(acc = acc,acc_std=acc_std, auc = auc,auc_std = auc_std, sen = sen, spe = spe)
 
 
 def main_bi_class(dir, dst, mode = "test",
@@ -66,8 +66,7 @@ def main_bi_class(dir, dst, mode = "test",
 		if not os.path.isdir(molecule_abs):
 			continue
 		row = [molecule] + [0] * 4 * len(nets)
-		for i in range(len(nets)):
-			net = nets[i]
+		for i, net in enumerate(nets):
 			src = os.path.join(molecule_abs, "Record" + net)
 			res = RecordRead_bi_clas(src, mode)
 			row[i + 1] = res["sen"]
@@ -95,8 +94,8 @@ def main_2():
 	@return: lr wise
 	"""
 	resultroot = r"D:\myPrograms\pythonProject\Raman_dl_ml\results\glioma\dl"
-	ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)"
-	ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7+-10-@AB(共缺-1)"
+	# ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)"
+	ms = "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7+-10-@AB(共缺-1)"
 	for lr in [0.1, 0.01, 0.001]:
 		src_dir = "test_base_lr{}".format(lr)
 		dst_file = "res_stat_filewise_test_base_lr{}.csv".format(lr)
@@ -106,5 +105,15 @@ def main_2():
 
 
 if __name__ == '__main__':
-	main("2024-03-05-12_51_45", ["Alexnet", ])
-	# main_2()
+	from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
+
+	projectroot = getRootPath("Raman_dl_ml")
+	root = os.path.join(projectroot, "data", "脑胶质瘤")
+	res_root = os.path.join(projectroot, r"results\glioma\dl")
+	for dirname in os.listdir(res_root):
+
+		if not dirname.startswith("data"):
+			continue
+		main(dirname, nets = ["AlexNet"])
+
+# main_2()

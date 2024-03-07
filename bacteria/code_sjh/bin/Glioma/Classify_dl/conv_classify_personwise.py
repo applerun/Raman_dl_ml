@@ -356,7 +356,7 @@ def train_modellist(
 				print(i, "/", len(modellist) * n_iter * k_split)
 
 				plt_res(pltdir, res, val_db, test_db, informations = None)
-				npsv(pltdir, res, val_db, val_db, )
+				npsv(pltdir, res, val_db, test_db, )
 				# net.save(os.path.join(pltdir, "model.pth"))
 
 				shape = res["res_val"]["confusion_matrix"].shape

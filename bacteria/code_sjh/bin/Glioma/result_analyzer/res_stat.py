@@ -82,7 +82,7 @@ def main(dirname = "2022-11-10-17_57_55_dirwise", nets = None):
 	if nets is None:
 		nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
 	ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)"
-	ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7+-10-@AB(共缺-1)"
+	ms = "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7+-10-@AB(共缺-1)"
 	resultdir = os.path.join(r"D:\myPrograms\pythonProject\Raman_dl_ml\results\glioma\dl", dirname)
 	dst_file = os.path.join(resultdir, "res_stat-" + dirname + ".csv")
 	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"))

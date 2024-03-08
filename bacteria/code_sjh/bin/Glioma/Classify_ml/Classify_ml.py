@@ -2,7 +2,7 @@ import os
 import shutil
 import warnings
 import csv
-from sklearn.metrics import roc_curve, confusion_matrix, roc_auc_score
+from sklearn.metrics import roc_curve, confusion_matrix, roc_auc_score,accuracy_score,auc
 
 import pysnooper
 from bacteria.code_sjh.utils.Validation.validation import *
@@ -13,7 +13,7 @@ from bacteria.code_sjh.bin.Glioma.Classify_dl.record_func import plt_res, npsv, 
 from bacteria.code_sjh.bin.Glioma.data_handler.label_handler import get_infos, path2func_generator
 from bacteria.code_sjh.utils import Process
 from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
-from sklearn.metrics import accuracy_score
+
 
 projectroot = getRootPath("Raman_dl_ml")
 coderoot = getRootPath("code_sjh")
@@ -41,8 +41,10 @@ def evaluate_all_by_score(Y_pred,
 		label_true = np.equal(Y_true, i).astype(int)
 		score = Y_probe[:, i]
 		# label2auc[i] = auc(frp, tpr)
-		label2roc[i] = roc_curve(label_true, score)
-		label2auc[i] = roc_auc_score(label_true, score)
+		frp, tpr, thresholds = roc_curve(label_true, score)
+
+		label2roc[i] = (frp, tpr, thresholds)
+		label2auc[i] = auc(frp, tpr)
 	conf_m_val = confusion_matrix(Y_probe, Y_pred)
 
 
@@ -76,8 +78,9 @@ def train_classification_model(
 		label_true = np.equal(val_label, i).astype(int)
 		score = val_prob[:, i]
 		# label2auc[i] = auc(frp, tpr)
-		label2roc[i] = roc_curve(label_true, score)
-		label2auc[i] = roc_auc_score(label_true, score)
+		frp, tpr, thresholds = roc_curve(label_true, score)
+		label2roc[i] = (frp, tpr, thresholds)
+		label2auc[i] = auc(frp, tpr)
 	res_val = dict(
 		acc = val_acc, label2roc = label2roc, label2auc = label2auc, confusion_matrix = conf_m_val
 	)
@@ -302,4 +305,4 @@ if __name__ == '__main__':
 			continue
 
 		main_onesrc(personwise = False, dataroot_ = dir_abs)
-	# main_onesrc(personwise = True, dataroot_ = dir_abs)
+		main_onesrc(personwise = True, dataroot_ = dir_abs)

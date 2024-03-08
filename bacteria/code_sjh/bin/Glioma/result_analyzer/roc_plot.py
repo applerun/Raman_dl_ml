@@ -208,14 +208,14 @@ def main_bi_class(dir, dst, mode = "test",
 	return net2molecule2roc
 
 
-def main(dirname, nets = None):
+def main(dirname, nets = None,mode = "test"):
 	if nets is None:
 		nets = ["Alexnet"]
 	# ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)"
 	ms = "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7+-10-@AB(共缺-1)"
-	resultdir = os.path.join(r"D:\myPrograms\pythonProject\Raman_dl_ml\results\glioma\dl", dirname)
-	dst_file = os.path.join(resultdir, "res_stat-" + dirname + ".csv")
-	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"), positions = [0, 1, 3, 4, 5, 6, 7])
+	resultdir = dirname
+	dst_file = os.path.join(resultdir, "res_stat-" + os.path.basename(dirname) + ".csv")
+	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"), positions = [0, 1, 3, 4, 5, 6, 7],mode = mode)
 
 
 if __name__ == '__main__':
@@ -223,9 +223,12 @@ if __name__ == '__main__':
 
 	projectroot = getRootPath("Raman_dl_ml")
 	root = os.path.join(projectroot, "data", "脑胶质瘤")
-	res_root = os.path.join(projectroot, r"results\glioma\dl")
+	res_root = os.path.join(projectroot, r"results\glioma\ml")
+	# res_root = os.path.join(projectroot, r"results\glioma\dl")
 	for dirname in os.listdir(res_root):
 
 		if not dirname.startswith("data"):
 			continue
-		main(dirname, nets = ["AlexNet"])
+		main(os.path.join(res_root,dirname), nets = ["svm", "pca_svm", "lda_svm"],mode = "val")
+		# main(os.path.join(res_root, dirname), nets = ["AlexNet"], mode = "test")
+

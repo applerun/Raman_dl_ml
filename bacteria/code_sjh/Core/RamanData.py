@@ -149,8 +149,7 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
     def data2file(self):
         return dict(zip(self.Ramans, self.RamanFiles))
 
-    def name2label(self):
-        return self.name2label
+
 
     def label2name(self):
         keys = list(self.name2label.values())

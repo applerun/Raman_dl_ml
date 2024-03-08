@@ -7,8 +7,7 @@ from bacteria.code_sjh.utils import Process
 from sklearn.metrics import roc_curve, confusion_matrix, roc_auc_score
 import seaborn
 import matplotlib.pyplot as plt
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.decomposition import PCA
+from bacteria.code_sjh.ML.Demension.traditional import preprocess_LDA,preprocess_PCA
 from sklearn.model_selection import LeaveOneOut
 from scipy import interpolate
 from bacteria.code_sjh.Core.basic_functions.visdom_func import startVisdomServer
@@ -27,26 +26,7 @@ def heatmap(matrix,
     plt.close(cm_fig)
 
 
-def preprocess_PCA(x_train,
-                   y_train,
-                   x_test,
-                   y_test):
-    pca = PCA(n_components = 2)
-    pca.fit(x_train)
-    x_train = pca.transform(x_train)
-    x_test = pca.transform(x_test)
-    return x_train, y_train, x_test, y_test
 
-
-def preprocess_LDA(x_train,
-                   y_train,
-                   x_test,
-                   y_test):
-    lda = LDA(n_components = 1)
-    lda.fit(x_train, y_train)
-    x_train = lda.transform(x_train)
-    x_test = lda.transform(x_test)
-    return x_train, y_train, x_test, y_test
 
 
 readdatafunc0 = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810, )
@@ -146,8 +126,10 @@ def main(
 
         np.savetxt(os.path.join(recordsubdir, "test_confusion_matrix.csv"), conf_m, delimiter = ",")
         heatmap(conf_m, os.path.join(recordsubdir, "test_confusion_matrix.png"))
+
         ta = np.mean(np.array(testaccs)).__str__() + "+-" + np.std(np.array(testaccs)).__str__()
         auca = np.mean(np.array(testaccs)).__str__() + "+-" + np.std(np.array(testaccs)).__str__()
+
         writer.writerow(["mean", "std", ta, auca])
         if num_classes == 2:
             A, B, C, D = conf_m.flatten()

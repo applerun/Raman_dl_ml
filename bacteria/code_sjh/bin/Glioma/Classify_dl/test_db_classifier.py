@@ -9,7 +9,7 @@ from bacteria.code_sjh.utils.Validation.validation import *
 from bacteria.code_sjh.Core.basic_functions.visdom_func import *
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 from bacteria.code_sjh.utils.iterator import train
-from label_handler import get_infos, path2func_generator
+from bacteria.code_sjh.bin.Glioma.data_handler.label_handler import get_infos, path2func_generator
 from bacteria.code_sjh.utils.Classifier import report_dirwise_classify
 
 global loss

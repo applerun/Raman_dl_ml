@@ -5,6 +5,8 @@ import seaborn
 from bacteria.code_sjh.Core.RamanData import RamanDatasetCore
 from bacteria.code_sjh.Core.basic_functions.mpl_func import spectrum_vis_mpl
 import warnings
+
+
 def plt_loss_acc(
 		pltdir,
 		res,
@@ -34,15 +36,19 @@ def plt_loss_acc(
 	plt.close(trainfig)
 
 
-def saveROC(dst, fpr, tpr, thretholds,auc):
+def saveROC(dst,
+            fpr,
+            tpr,
+            thretholds,
+            auc):
 	res = np.vstack((fpr, tpr, thretholds)).T
 	np.savetxt(dst, res, delimiter = ",", header = "fpr,tpr,thretholds,AUC={}".format(auc))
 
 
 def plt_res_val(pltdir,
-				res,
-				label2name,
-				informations = None):
+                res,
+                label2name,
+                informations = None):
 	if informations is None:
 		informations = ""
 	elif len(informations) > 0:
@@ -51,8 +57,8 @@ def plt_res_val(pltdir,
 	label2auc = res["label2auc"]
 
 	# ROC
-	if not os.path.isdir(os.path.join(pltdir,"roc")):
-		os.makedirs(os.path.join(os.path.join(pltdir,"roc")))
+	if not os.path.isdir(os.path.join(pltdir, "roc")):
+		os.makedirs(os.path.join(os.path.join(pltdir, "roc")))
 	for label in label2roc.keys():
 		fpr, tpr, thresholds = label2roc[label]
 		auc = label2auc[label]
@@ -63,7 +69,7 @@ def plt_res_val(pltdir,
 		roc_ax.set_xlabel("fpr")
 		roc_ax.set_ylabel("tpr")
 		roc_fig.savefig(os.path.join(pltdir, "roc", informations + label2name[label] + "_roc.png"))
-		saveROC(os.path.join(pltdir, "roc", informations + label2name[label] + "_roc.csv"), fpr, tpr, thresholds,auc)
+		saveROC(os.path.join(pltdir, "roc", informations + label2name[label] + "_roc.csv"), fpr, tpr, thresholds, auc)
 		plt.close(roc_fig)
 	confusion_matrix = res["confusion_matrix"]
 	cm_fig, cm_ax = plt.subplots()
@@ -88,9 +94,9 @@ def plt_res_val(pltdir,
 # 		label =name2label[name]
 
 def plt_cam(pltdir,
-			cams,
-			db: RamanDatasetCore,
-			informations = None):
+            cams,
+            db: RamanDatasetCore,
+            informations = None):
 	if informations is None:
 		informations = ""
 	label2name = db.label2name()
@@ -105,9 +111,9 @@ def plt_cam(pltdir,
 		name = label2name[label]
 		data = label2data[label]
 		spectrum_vis_mpl(data, xs = db.xs, name = 'spectrum_' + name, ax = cam_ax, line_color = "blue",
-						 shadow_color = "skyblue")
+		                 shadow_color = "skyblue")
 		spectrum_vis_mpl(cam, xs = np.linspace(db.xs[0], db.xs[-1], cam.shape[-1]), name = "cam_" + name, ax = cam_ax,
-						 line_color = "red", shadow_color = "pink")
+		                 line_color = "red", shadow_color = "pink")
 		cam_ax.legend()
 	plt.subplots_adjust(wspace = 0.25)
 	fig.savefig(os.path.join(pltdir, informations + "_grad_cam"))
@@ -115,22 +121,24 @@ def plt_cam(pltdir,
 
 
 def plt_res(pltdir,
-			res,
-			val_db,
-			test_db,
-			informations = None):
+            res,
+            val_db,
+            test_db = None,
+            informations = None,
+            mode = "dl"):
 	if informations is None:
 		informations = ""
 	label2name = val_db.label2name()
-
-	plt_loss_acc(pltdir, res, informations)
+	if mode == "dl":
+		plt_loss_acc(pltdir, res, informations)
+		plt_res_val(pltdir, res["res_test"], label2name, informations = "test")
+		plt_cam(pltdir, res["val_cam"], val_db, "val")
+		plt_cam(pltdir, res["test_cam"], test_db, "val")
 	plt_res_val(pltdir, res["res_val"], label2name, informations = "val")
-	plt_res_val(pltdir, res["res_test"], label2name, informations = "test")
-	plt_cam(pltdir, res["val_cam"], val_db, "val")
-	plt_cam(pltdir, res["test_cam"], test_db, "val")
+
 
 def heatmap(matrix,
-			path):
+            path):
 	cm_fig, cm_ax = plt.subplots()
 	seaborn.heatmap(matrix, annot = True, cmap = "Blues", ax = cm_ax)
 	cm_ax.set_title('confusion matrix')
@@ -141,13 +149,16 @@ def heatmap(matrix,
 
 
 def npsv(pltdir,
-		 res,
-		 val_db,
-		 test_db,
-		 ):
+         res,
+         val_db,
+         test_db = None,
+         mode = "dl",
+         ):
+	if mode == "ml":
+		return
 	process = np.array([res["train_acces"], res["val_acces"], res["train_losses"], res["val_losses"]]).T
 	np.savetxt(os.path.join(pltdir, "train_process.csv"), process,
-			   header = "train_acces,val_acces,train_losses,val_losses", delimiter = ",")
+	           header = "train_acces,val_acces,train_losses,val_losses", delimiter = ",")
 	os.makedirs(os.path.join(pltdir, "cam"))
 
 	for label in test_db.label2name().keys():
@@ -159,9 +170,9 @@ def npsv(pltdir,
 			xs = np.expand_dims(xs, axis = 0)
 
 			np.savetxt(os.path.join(pltdir, "cam", "val_cam_" + name + "_activated.csv"), np.vstack((xs, val_cam)),
-					   delimiter = ",")
+			           delimiter = ",")
 			np.savetxt(os.path.join(pltdir, "cam", "test_cam_" + name + "_activated.csv"), np.vstack((xs, test_cam)),
-					   delimiter = ",")
+			           delimiter = ",")
 		except:
 			warnings.warn("cam output failed")
 

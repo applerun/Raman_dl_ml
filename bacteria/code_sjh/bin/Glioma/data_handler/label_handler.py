@@ -38,7 +38,11 @@ def get_infos(filename: str):
 	return num2ele2label
 
 
-def path2func_generator(num2label, prefix_len = 0, delimeter = " ", index = 0, func = None):
+def path2func_generator(num2label,
+                        prefix_len = 0,
+                        delimeter = " ",
+                        index = 0,
+                        func = None):
 	"""
 	@param num2label: 序号与标签的对应关系
 	@param prefix_len: 序号prefix，例如文件名为 p02 XXX ****** T1 则设置改变量为1（忽略字母p）
@@ -65,7 +69,9 @@ def path2func_generator(num2label, prefix_len = 0, delimeter = " ", index = 0, f
 	return path2label
 
 
-def label_RamanData(database: RamanDatasetCore, path2label_func, name2label):
+def label_RamanData(database: RamanDatasetCore,
+                    path2label_func,
+                    name2label):
 	for i in range(len(database)):
 		if issubclass(type(database), Raman):
 			file = database.RamanFiles[i]
@@ -85,7 +91,10 @@ def label_RamanData(database: RamanDatasetCore, path2label_func, name2label):
 	database.numclasses = len(list(name2label.keys()))
 
 
-def main(info_file: str, root = None, src = "data_indep_unlabeled", dst = "data_indep"):
+def main(info_file: str,
+         root = None,
+         src = "data_indep_unlabeled",
+         dst = "data_indep"):
 	num2ele2label = get_infos(info_file)
 	eles = list(num2ele2label.values().__iter__().__next__().keys())
 
@@ -125,7 +134,7 @@ def main(info_file: str, root = None, src = "data_indep_unlabeled", dst = "data_
 		# path2labelfunc = path2func_generator(num2label, prefix_len = 0 if "indep" in src else 1,
 		# 									 func = (lambda x: x + 1000) if "indep" in src else None)
 		path2labelfunc = path2func_generator(num2label, prefix_len = 1,
-											 func = None)
+		                                     func = None)
 		name2label = {"neg": 0, "pos": 1}
 		label2name = {"0": "neg", "1": "pos", "-1": "unknown"}
 		db = raman(**db_cfg, sfpath = "Raman_{}_unlabeled.csv".format(ele), newfile = True, shuffle = False)
@@ -143,7 +152,9 @@ def main(info_file: str, root = None, src = "data_indep_unlabeled", dst = "data_
 	return
 
 
-def reform_tree(src_root, dst_root, path2labelfunc):
+def reform_tree(src_root,
+                dst_root,
+                path2labelfunc):
 	for dir in glob.glob(os.path.join(src_root, "*", "*")):
 		try:
 			label = path2labelfunc(dir)
@@ -156,7 +167,8 @@ def reform_tree(src_root, dst_root, path2labelfunc):
 		print("label:", label, "; dir: ", os.path.basename(dir), " done")
 
 
-def strip_unknown(src, dst = None):
+def strip_unknown(src,
+                  dst = None):
 	if dst is None:
 		dst = src
 	if dst != src and not os.path.isdir(dst):
@@ -170,22 +182,23 @@ def strip_unknown(src, dst = None):
 if __name__ == '__main__':
 	from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 
-
-
 	projectroot = getRootPath("Raman_dl_ml")
 	root = os.path.join(projectroot, "data", "脑胶质瘤")
-	# datapath = os.path.join(getRootPath("Raman_dl_ml"), r"data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx")
-	# for dirs in os.listdir(os.path.join(root, "unlabeled_data")):
-	# # # for dirs in ["data_indep_unlabeled"]:
-	# 	if not os.path.isdir(os.path.join(os.path.join(root,"unlabeled_data"),dirs)):
-	# 		continue
-	# 	src = r"unlabeled_data\{}".format(dirs)
-	# 	dst = r"labeled_data\{}".format(dirs.replace("unlabeled", "labeled"))
-	# 	main(datapath,root, src = r"unlabeled_data\{}".format(dirs),
-	# 			 dst = r"labeled_data\{}".format(dirs.replace("unlabeled", "labeled")))
-	# strip_unknown(os.path.join(root,"labeled_data"))
-	shutil.rmtree(os.path.join(root, "labeled_data/data_GBM_labeled"))
+	datapath = os.path.join(getRootPath("Raman_dl_ml"), r"data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx")
+	# # for dirs in os.listdir(os.path.join(root, "unlabeled_data")):
+	for dirs in ["data_indep_unlabeled","data_batch123_unlabeled"]:
+		if not os.path.isdir(os.path.join(root, "unlabeled_data", dirs)):
+			continue
+		src = r"unlabeled_data\{}".format(dirs)
+		dst = r"labeled_data\{}".format(dirs.replace("unlabeled", "labeled"))
+		if os.path.isdir(os.path.join(root,dst)):continue
+		main(datapath, root, src = r"unlabeled_data\{}".format(dirs),
+		     dst = r"labeled_data\{}".format(dirs.replace("unlabeled", "labeled")))
+	strip_unknown(os.path.join(root, "labeled_data"))
+	# shutil.rmtree(os.path.join(root, "labeled_data/data_GBM_labeled"))
+
 	datapath = os.path.join(getRootPath("Raman_dl_ml"), r"data\脑胶质瘤\data_used\病例编号&分类结果2 - GBM.xlsx")
-	main(datapath, root, src = r"unlabeled_data\data_batch123_unlabeled",
-		 dst = r"labeled_data\data_GBM_labeled")
+	if not os.path.isdir(os.path.join(root,dst)):
+		main(datapath, root, src = r"unlabeled_data\data_batch123_unlabeled",
+		     dst = r"labeled_data\data_GBM_labeled")
 	strip_unknown(os.path.join(root, "labeled_data"))

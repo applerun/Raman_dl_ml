@@ -1,5 +1,3 @@
-import os
-
 import pysnooper
 import csv
 from torch import optim
@@ -10,13 +8,13 @@ from bacteria.code_sjh.utils.Validation.validation import *
 from bacteria.code_sjh.Core.basic_functions.visdom_func import *
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 from bacteria.code_sjh.utils.iterator import train
-from label_handler import get_infos, path2func_generator
+from bacteria.code_sjh.bin.Glioma.data_handler.label_handler import get_infos, path2func_generator
 from torch.utils.data import DataLoader
 
 from bacteria.code_sjh.utils import Process
 from bacteria.code_sjh.bin.Glioma.Classify_dl.record_func import plt_res, npsv, heatmap
 
-from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath, copy2merge
+from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 
 torch.backends.cudnn.benchmark = True
 global loss

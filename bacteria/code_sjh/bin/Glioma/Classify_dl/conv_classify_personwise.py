@@ -1,33 +1,31 @@
-import os
 import shutil
 import warnings
 
-import csv, seaborn
+import csv
 from torch import optim
 
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
 from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34
 from bacteria.code_sjh.utils.Validation.validation import *
-from bacteria.code_sjh.utils.RamanData import getRamanFromFile, Raman_depth_gen
+from bacteria.code_sjh.utils.RamanData import getRamanFromFile, Raman_depth_gen, data_leak_check_by_filename
 from bacteria.code_sjh.Core.basic_functions.visdom_func import *
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 from bacteria.code_sjh.utils.iterator import train
 from bacteria.code_sjh.bin.Glioma.Classify_dl.record_func import plt_res, npsv, heatmap
-from label_handler import get_infos, path2func_generator
+from bacteria.code_sjh.bin.Glioma.data_handler.label_handler import get_infos, path2func_generator
 from torch.utils.data import DataLoader
 
-global loss
+from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 import pysnooper
 from bacteria.code_sjh.utils import Process
 
 torch.backends.cudnn.benchmark = True
 
-from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath, copy2merge
-
+global loss
 projectroot = getRootPath("Raman_dl_ml")
 coderoot = getRootPath("code_sjh")
 logfile = os.path.join(projectroot, "log", "glioma", "DL_classification", os.path.basename(__file__),
-					   time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
+                       time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
 if not os.path.isdir(os.path.dirname(logfile)):
 	os.makedirs(os.path.dirname(logfile))
 with open(logfile, "w") as f:
@@ -58,7 +56,8 @@ def train_classification_net(
 		modelname = None,
 		# 选择保存名
 		vis = None,
-		save_dir = os.path.join(coderoot, "checkpoints", ),  # 选择保存目录
+		save_dir = os.path.join(coderoot, "checkpoints", ),
+		# 选择保存目录
 
 		# 每隔epo_interv 验证一次
 		# prog_bar = False,  # 实现进度条功能
@@ -176,7 +175,7 @@ def train_classification_net(
 					update = None if global_step <= epo_interv else "append", viz = vis
 				)
 				batch_plt(sample2acc_train, global_step, win = "val_acc_each_sample" + str(k),
-						  update = None if global_step <= epo_interv else "append", viz = vis)
+				          update = None if global_step <= epo_interv else "append", viz = vis)
 
 	net.load(save_dir)
 
@@ -185,14 +184,14 @@ def train_classification_net(
 	res_test = evaluate_all(net, test_loader, criteon, device)
 	res_val = evaluate_all(net, val_loader, criteon, device)
 	res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
-			   train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
-			   best_acc = best_acc, best_epoch = best_epoch,  # early-stopping位置
-			   res_test = res_test,  # 测试集所有指标：
-			   # acc：float正确率, loss:float,
-			   # label2roc:dict 各个label的ROC, label2auc:dict 各个label的AUC, confusion_matrix:np.ndarray 混淆矩阵
-			   res_val = res_val,  # 验证集所有指标
+	           train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
+	           best_acc = best_acc, best_epoch = best_epoch,  # early-stopping位置
+	           res_test = res_test,  # 测试集所有指标：
+	           # acc：float正确率, loss:float,
+	           # label2roc:dict 各个label的ROC, label2auc:dict 各个label的AUC, confusion_matrix:np.ndarray 混淆矩阵
+	           res_val = res_val,  # 验证集所有指标
 
-			   )
+	           )
 
 	label2data = val_db.get_data_sorted_by_label()
 	cams = {}
@@ -243,7 +242,8 @@ def train_modellist(
 		path2labelfunc = None,
 		test_db = None,
 		sfname = "Raman_",
-		n_iter = 1  # 交叉验证重复次数
+		n_iter = 1
+		# 交叉验证重复次数
 ):
 	if recorddir is None:
 		recorddir = "Record_" + time.strftime("%Y-%m-%d-%H_%M_%S")
@@ -291,7 +291,7 @@ def train_modellist(
 		os.makedirs(recorddir)
 	for model in modellist:
 		recordsubdir = os.path.join(recorddir,
-									"Record" + model.__name__)  # + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
+		                            "Record" + model.__name__)  # + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
 		if not os.path.isdir(recordsubdir):
 			os.makedirs(recordsubdir)
 		recordfile = recordsubdir + ".csv"  # 记录训练的配置和结果
@@ -313,6 +313,10 @@ def train_modellist(
 					test_db = val_db
 				elif test_db is None:
 					test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
+
+				l = data_leak_check_by_filename((train_db, val_db, test_db))
+				if len(l) > 0:
+					warnings.warn("data leak warning:{} \n {}".format(len(l) / len(val_db), l))
 
 				train_db.show_data_vis()
 				# __________________label_______________________
@@ -433,7 +437,7 @@ def main_indep_test():
 		recorddir = os.path.join(recordroot, ele)
 		path2labelfunc = path2func_generator(num2label)
 		train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
-						path2labelfunc = path2labelfunc, test_db = test_db)
+		                path2labelfunc = path2labelfunc, test_db = test_db)
 
 
 # 设置数据集分割
@@ -449,9 +453,9 @@ def main_one_datasrc(
 	if record_info is None:
 		record_info = ""
 	if len(record_info) > 0:
-		record_info = record_info+"_"
+		record_info = record_info + "_"
 	recordroot = os.path.join(projectroot, "results", "glioma", "dl")
-	recordroot = os.path.join(recordroot, record_info+time.strftime("%Y-%m-%d-%H_%M_%S"))
+	recordroot = os.path.join(recordroot, record_info + time.strftime("%Y-%m-%d-%H_%M_%S"))
 	#   # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
 
 	paras = [(e, pre) for e in eles for pre in [
@@ -485,15 +489,17 @@ def main_one_datasrc(
 		recorddir = os.path.join(recordroot, ele)
 		path2labelfunc = path2func_generator(num2label)
 		train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
-						path2labelfunc = path2labelfunc, sfname = "Raman_personwise_", n_iter = 1,)
+		                path2labelfunc = path2labelfunc, sfname = "Raman_personwise_", n_iter = 1, )
 
 
-def main_onesrc(personwise = True):
-	from samplewise2personwise import rename_files_between, rename_files_between_undo
+def main_onesrc(personwise = True,
+                dataroot_ = None):
+	from bacteria.code_sjh.bin.Glioma.data_handler.samplewise2personwise import rename_files_between
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 
 	# dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_batch123_labeled")
-	dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_all_labeled")
+	if dataroot_ is None:
+		dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_all_labeled")
 	if personwise:
 		dataroot_dst = dataroot_ + "_renamed_for_personwise"
 		# rename_files_between(dataroot_dst, 3)
@@ -512,8 +518,8 @@ def main_onesrc(personwise = True):
 		dataroot_dst = dataroot_
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
-	main_one_datasrc(dataroot_dst, info_file, raman = Raman_depth_gen(2, 2),
-					 record_info = os.path.basename(dataroot_dst)+("person_wise" if personwise else "tissue_wise"))
+	main_one_datasrc(dataroot_dst, info_file, raman = Raman_dirwise,
+	                 record_info = os.path.basename(dataroot_dst) + ("person_wise" if personwise else "tissue_wise"))
 
 
 # rename_files_between_undo(dataroot_dst, 3)

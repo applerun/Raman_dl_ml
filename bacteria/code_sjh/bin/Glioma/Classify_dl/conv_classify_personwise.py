@@ -534,5 +534,11 @@ def main_onesrc(personwise = True,
 
 
 if __name__ == '__main__':
-	main_onesrc(personwise = False)
-	main_onesrc(personwise = True)
+	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
+	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
+	# for dir in ["data_GBM_labeled"]:
+		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
+		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
+			continue
+		main_onesrc(personwise = False,dataroot_ = dir_abs)
+		main_onesrc(personwise = True,dataroot_ = dir_abs)

@@ -13,6 +13,7 @@ from bacteria.code_sjh.bin.Glioma.Classify_dl.record_func import plt_res, npsv, 
 from bacteria.code_sjh.bin.Glioma.data_handler.label_handler import get_infos, path2func_generator
 from bacteria.code_sjh.utils import Process
 from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
+from sklearn.metrics import accuracy_score
 
 projectroot = getRootPath("Raman_dl_ml")
 coderoot = getRootPath("code_sjh")
@@ -29,31 +30,54 @@ readdatafunc = getRamanFromFile(
 )
 
 
+def evaluate_all_by_score(Y_pred,
+                          Y_probe,
+                          Y_true):
+	acc = accuracy_score(Y_true, Y_probe)
+	num_classes = len(Y_probe[0])
+	label2auc = {}
+	label2roc = {}
+	for i in range(num_classes):
+		label_true = np.equal(Y_true, i).astype(int)
+		score = Y_probe[:, i]
+		# label2auc[i] = auc(frp, tpr)
+		label2roc[i] = roc_curve(label_true, score)
+		label2auc[i] = roc_auc_score(label_true, score)
+	conf_m_val = confusion_matrix(Y_probe, Y_pred)
+
+
 def train_classification_model(
 		model: basic_SVM,
 		train_db,
 		val_db,
+		test_db,
 		modelname = None,
 ):
 	train_data, train_label = [np.squeeze(x.numpy()) for x in train_db.Ramans], [x.item() for x in
 	                                                                             train_db.labels]
-	val_data, val_label = [np.squeeze(x.numpy()) for x in val_db.Ramans], [x.item() for x in
-	                                                                       val_db.labels]
 	model.fit(train_data, train_label)
 
-	pred = model.predict_proba(val_data)
+	val_data, val_label = [np.squeeze(x.numpy()) for x in val_db.Ramans], [x.item() for x in
+	                                                                       val_db.labels]
+	val_prob = model.predict_proba(val_data)
 	val_acc = model.score(val_data, val_label)
+	val_pred = model.predict(val_data)
+
+	test_data, test_label = [np.squeeze(x.numpy()) for x in test_db.Ramans], [x.item() for x in
+	                                                                          test_db.labels]
+	test_prob = model.predict_proba(test_data)
+	test_acc = model.score(test_data, test_label)
+	test_pred = model.predict(test_data)
 
 	label2auc = {}
-	label2name = train_db.label2name()
 	label2roc = {}
 	conf_m_val = confusion_matrix(val_label, model.predict(val_data))
 	for i in range(train_db.num_classes()):
-		l_t = np.equal(val_label, i).astype(int)
-		score = pred[:, i]
+		label_true = np.equal(val_label, i).astype(int)
+		score = val_prob[:, i]
 		# label2auc[i] = auc(frp, tpr)
-		label2roc[i] = roc_curve(l_t, score)
-		label2auc[i] = roc_auc_score(l_t, score)
+		label2roc[i] = roc_curve(label_true, score)
+		label2auc[i] = roc_auc_score(label_true, score)
 	res_val = dict(
 		acc = val_acc, label2roc = label2roc, label2auc = label2auc, confusion_matrix = conf_m_val
 	)
@@ -76,6 +100,7 @@ def train_modellist(
 		modellist = None,
 		recorddir = None,
 		path2labelfunc = None,
+		test_db = None,
 		sfname = "Raman_",
 		n_iter = 1
 		# 交叉验证重复次数
@@ -124,16 +149,20 @@ def train_modellist(
 		i = 0  # 实验进度计数
 		for n in range(n_iter):
 			for k in range(k_split):
-				pltdir = os.path.join(recordsubdir, "n-{}-k-{}".format(n, k))
-				sfpath = "Raman_" + str(n) + ".csv"
+
+				sfpath = sfname + str(n) + ".csv"
 				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath)
 				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
-
+				if db_cfg["t_v_t"][2] == 0 and test_db is None:
+					test_db = val_db
+				elif test_db is None:
+					test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
 				l = data_leak_check_by_filename((train_db, val_db))
 				if len(l) > 0:
 					warnings.warn("data leak warning:{} \n {}".format(len(l) / len(val_db), l))
-				res = train_classification_model(model, train_db, val_db)
+				res = train_classification_model(model, train_db, val_db, test_db)
 
+				pltdir = os.path.join(recordsubdir, "n-{}-k-{}".format(n, k))
 				val_acc = res["val_acc"]
 				valaccs.append(val_acc)
 				if conf_m_v is None:
@@ -248,7 +277,8 @@ def main_onesrc(personwise = True,
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
 	main_one_datasrc(dataroot_dst, info_file, raman = Raman_dirwise,
-	                 record_info = os.path.basename(dataroot_dst) + ("person_wise" if personwise else "tissue_wise"))
+	                 record_info = os.path.basename(dataroot_dst) + ("person_wise" if personwise else "tissue_wise"),
+	                 )
 
 
 # rename_files_between_undo(dataroot_dst, 3)
@@ -266,10 +296,10 @@ if __name__ == '__main__':
 
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-	# for dir in ["data_GBM_labeled"]:
+		# for dir in ["data_GBM_labeled"]:
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
 			continue
 
 		main_onesrc(personwise = False, dataroot_ = dir_abs)
-		main_onesrc(personwise = True, dataroot_ = dir_abs)
+	# main_onesrc(personwise = True, dataroot_ = dir_abs)

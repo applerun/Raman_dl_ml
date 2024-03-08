@@ -39,7 +39,7 @@ def data_leak_check_by_filename(dbs):
 	else:
 		leaked_data_file = []
 		for i in range(len(dbs)):
-			for j in range(i, len(dbs)):
+			for j in range(i+1, len(dbs)):
 				leaked_data_file += data_leak_check_by_filename([dbs[i], dbs[j]])
 	return leaked_data_file
 

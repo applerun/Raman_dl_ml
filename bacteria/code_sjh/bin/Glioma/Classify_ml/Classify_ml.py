@@ -1,19 +1,18 @@
-import os
 import shutil
 import warnings
 import csv
-from sklearn.metrics import roc_curve, confusion_matrix, roc_auc_score,accuracy_score,auc
+from sklearn.metrics import accuracy_score
 
 import pysnooper
 from bacteria.code_sjh.utils.Validation.validation import *
-from bacteria.code_sjh.utils.RamanData import getRamanFromFile, Raman_depth_gen, data_leak_check_by_filename
+from bacteria.code_sjh.utils.RamanData import data_leak_check_by_filename, Raman_depth_gen
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
-from bacteria.code_sjh.ML.Demension.traditional import PCA, LDA, basic_SVM
+from bacteria.code_sjh.ML import PCA, LDA, basic_SVM, UMAP
 from bacteria.code_sjh.bin.Glioma.Classify_dl.record_func import plt_res, npsv, heatmap
 from bacteria.code_sjh.bin.Glioma.data_handler.label_handler import get_infos, path2func_generator
 from bacteria.code_sjh.utils import Process
 from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
-
+from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 
 projectroot = getRootPath("Raman_dl_ml")
 coderoot = getRootPath("code_sjh")
@@ -122,7 +121,7 @@ def train_modellist(
 			LoadCsvFile = readdatafunc,
 			k_split = 6,
 			transform = Process.process_series([  # 设置预处理流程
-				Process.interpolator(),
+				# Process.interpolator(),
 				# Process.baseline_als(),
 				Process.bg_removal_niter_fit(),
 				# Process.bg_removal_niter_piecewisefit(),
@@ -231,7 +230,8 @@ def main_one_datasrc(
 			num2label[k] = num2ele2label[k][ele]
 		name2label = {"neg": 0, "pos": 1}
 		dataroot = os.path.join(dataroot_, ele)
-		modellist = [basic_SVM(), basic_SVM(PCA(n_components = 10)), basic_SVM(LDA(n_components = 1))]
+		# modellist = [basic_SVM(), basic_SVM(PCA(n_components = 10)), basic_SVM(LDA(n_components = 1))]
+		modellist = [basic_SVM(PCA(n_components = 10)), basic_SVM(UMAP(n_components = 10)), ]
 		if not os.path.isdir(dataroot):
 			continue
 		db_cfg = dict(  # 数据集设置
@@ -242,8 +242,8 @@ def main_one_datasrc(
 			LoadCsvFile = readdatafunc,
 			k_split = 5,
 			transform = Process.process_series([  # 设置预处理流程
-				Process.sg_filter(),
 				preprocess,
+				Process.sg_filter(),
 				Process.norm_func(), ]
 			))
 		recorddir = os.path.join(recordroot, ele)
@@ -253,13 +253,13 @@ def main_one_datasrc(
 		                sfname = "Raman_{}_".format("personwise" if personwise else "tissuewise"), n_iter = 1, )
 
 
-def main_onesrc(personwise = True,
+def main_onesrc(datasplit = "personwise",
                 dataroot_ = None):
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 	if dataroot_ is None:
 		dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_all_labeled")
 	# dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_batch123_labeled")
-
+	personwise = datasplit == "personwise"
 	if personwise:
 		from bacteria.code_sjh.bin.Glioma.data_handler.samplewise2personwise import rename_files_between
 		dataroot_dst = dataroot_ + "_renamed_for_personwise"
@@ -279,8 +279,9 @@ def main_onesrc(personwise = True,
 		dataroot_dst = dataroot_
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
-	main_one_datasrc(dataroot_dst, info_file, raman = Raman_dirwise,
-	                 record_info = os.path.basename(dataroot_dst) + ("person_wise" if personwise else "tissue_wise"),
+	main_one_datasrc(dataroot_dst, info_file,
+	                 raman = Raman_depth_gen(2, 2) if datasplit == "pointwise" else Raman_dirwise,
+	                 record_info = os.path.basename(dataroot_dst) + "_" + datasplit,
 	                 )
 
 
@@ -304,5 +305,5 @@ if __name__ == '__main__':
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
 			continue
 
-		main_onesrc(personwise = False, dataroot_ = dir_abs)
-		main_onesrc(personwise = True, dataroot_ = dir_abs)
+		# main_onesrc(datasplit = "personwise", dataroot_ = dir_abs)
+		main_onesrc(datasplit = "pointwise", dataroot_ = dir_abs)

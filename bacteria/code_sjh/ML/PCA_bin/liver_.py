@@ -7,9 +7,8 @@ from bacteria.code_sjh.utils import Process
 from sklearn.metrics import roc_curve, confusion_matrix, roc_auc_score
 import seaborn
 import matplotlib.pyplot as plt
-from bacteria.code_sjh.ML.Demension.traditional import preprocess_LDA,preprocess_PCA
+from bacteria.code_sjh.ML.traditional import preprocess_LDA,preprocess_PCA
 from sklearn.model_selection import LeaveOneOut
-from scipy import interpolate
 from bacteria.code_sjh.Core.basic_functions.visdom_func import startVisdomServer
 
 startVisdomServer()

@@ -114,7 +114,9 @@ if __name__ == '__main__':
 
 		if not dirname.startswith("data"):
 			continue
-		# main(os.path.join(res_root, dirname), nets = ["svm", "pca_svm", "lda_svm"],mode = "val)
-		main(os.path.join(res_root, dirname), nets = ["AlexNet"],mode = "test")
+		# main(os.path.join(res_root, dirname), nets = ["svm", "pca_svm", "lda_svm"])
+		main(os.path.join(res_root, dirname), nets = ["umap_svm"])
+
+		# main(os.path.join(res_root, dirname), nets = ["AlexNet"])
 
 # main_2()

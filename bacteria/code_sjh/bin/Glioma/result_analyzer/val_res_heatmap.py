@@ -299,18 +299,18 @@ def main():
 	from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 
 	projectroot = getRootPath("Raman_dl_ml")
-	res_stat_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318")
+	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318")
 	l_prefix = "res_stat-data_all,res_stat-data_GBM,res_stat-data_batch123".split(",")
 
-	for res_stat_dir in os.listdir(res_stat_root):
-		res_stat_dir = os.path.join(res_stat_root, res_stat_dir)
+	for res_stat_dir in os.listdir(res_Heatmap_root):
+		res_stat_dir = os.path.join(res_Heatmap_root, res_stat_dir)
 		if not os.path.isdir(res_stat_dir): continue
 		for prefix in l_prefix:
 			merge_stat_files(res_stat_dir, os.path.join(res_stat_dir + prefix + ".csv"), prefix,
 			                 new_models = "pca_svm,AlexNet,umap_svm".split(","),new_rows = 2)
 	for split_strategy in "personwise,tissuewise".split(","):
-		main_hatchwise(os.path.join(res_stat_root, split_strategy + "res_stat-data_all.csv"),
-		               os.path.join(res_stat_root, split_strategy + "res_stat-data_GBM.csv"),
+		main_hatchwise(os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_all.csv"),
+		               os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_GBM.csv"),
 		               os.path.join(split_strategy),skiprows = 2)
 
 

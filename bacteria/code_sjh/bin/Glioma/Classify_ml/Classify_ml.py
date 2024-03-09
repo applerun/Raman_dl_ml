@@ -3,7 +3,7 @@ import warnings
 import csv
 from sklearn.metrics import accuracy_score
 
-import pysnooper
+# import pysnooper
 from bacteria.code_sjh.utils.Validation.validation import *
 from bacteria.code_sjh.utils.RamanData import data_leak_check_by_filename, Raman_depth_gen
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
@@ -18,6 +18,7 @@ projectroot = getRootPath("Raman_dl_ml")
 coderoot = getRootPath("code_sjh")
 logfile = os.path.join(projectroot, "log", "glioma", "ML_classification", os.path.basename(__file__),
                        time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
+# @pysnooper.snoop(logfile, prefix = "--*--")
 if not os.path.isdir(os.path.dirname(logfile)):
 	os.makedirs(os.path.dirname(logfile))
 with open(logfile, "w") as f:
@@ -92,7 +93,7 @@ def train_classification_model(
 	return res
 
 
-@pysnooper.snoop(logfile, prefix = "--*--")
+
 def train_modellist(
 		dataroot,
 		db_cfg = None,
@@ -189,6 +190,7 @@ def train_modellist(
 		np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_v, delimiter = ",")
 		heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
 		# train_db.shufflecsv()
+		assert len(valaccs) == len(vaucs) == n_iter * k_split
 
 		ta = np.mean(np.array(valaccs)).__str__() + "+-" + np.std(np.array(valaccs)).__str__()
 		auc_av = np.mean(np.array(vaucs)).__str__() + "+-" + np.std(np.array(vaucs)).__str__()

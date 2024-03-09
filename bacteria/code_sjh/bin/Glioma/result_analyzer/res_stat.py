@@ -1,5 +1,6 @@
 import warnings
 
+import numpy
 import pandas
 import os
 import numpy as np
@@ -18,18 +19,39 @@ def RecordRead_bi_clas(src,
                        round_digits = 4,
                        skiprows = 1):
 	pd = pandas.read_csv(src + ".csv", skiprows = skiprows, encoding = "GBK")
-	accs = pd[mode + "_acc"]
-	ind = len(accs) - 2
+	ns = pd["n"]
+	ind = list(ns).index("mean")
+
 	acc, acc_std = pd[mode + "_acc"][ind].split("+-")
-	acc = round(float(acc), round_digits)
-	acc_std = round(float(acc_std), round_digits)
+	acc = float(acc)
+	accs = numpy.array(pd[mode + "_acc"][:ind], dtype = float)
+	if abs(accs.mean() - acc) > 0.001:
+		warnings.warn("acc from record_av({}) and recordfile({}) are different"
+		              "dir :{}".format(accs.mean(), acc, src))
+		acc = accs.mean()
 	# acc = round_str(acc)
 	auc, auc_std = pd[mode + "_AUC"][ind].split("+-")
-	auc = round(float(auc), round_digits)
-	auc_std = round(float(auc_std), round_digits)
+	auc = float(auc)
+	aucs = numpy.array(pd[mode + "_AUC"][:ind], dtype = float)
 	# auc = round_str(auc)
+	if abs(aucs.mean() - auc) > 0.001:
+		warnings.warn("auc from record_av({}) and recordfile({}) are different"
+		              "dir :{}".format(aucs.mean(), auc, src))
+		auc = aucs.mean()
+	if os.path.isfile(os.path.join(src, "roc_record.csv")):
+		with open(os.path.join(src, "roc_record.csv")) as f:
+			auc_ = f.readlines().__iter__().__next__().strip().split("=")[1]
+			auc_ = float(auc_)
+		if abs(auc_ - auc) > 0.001:
+			warnings.warn("auc from macro_roc({}) and recordfile({}) are different"
+			              "dir :{}".format(aucs.mean(), auc, src))
+			auc = auc_
 	cm = np.loadtxt(os.path.join(src, mode + "_confusion_matrix.csv"), delimiter = ",")
 
+	acc = round(acc, round_digits)
+	acc_std = round(float(acc_std), round_digits)
+	auc = round(auc, round_digits)
+	auc_std = round(float(auc_std), round_digits)
 	(a, b), (c, d) = cm
 	acc_ = (a + d) / (a + b + c + d)
 	acc_ = round(acc_, 4)
@@ -92,15 +114,20 @@ def main_bi_class(dir,
 
 
 def main(dirname = "2022-11-10-17_57_55_dirwise",
-         nets = None,mode = "test"):
+         nets = None,
+         mode = "test"):
 	if nets is None:
-		nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
+		if os.path.isfile(os.path.join(dirname, "models.txt")):
+			nets = list(numpy.loadtxt(os.path.join(dirname, "models.txt"), delimiter = ","))
+		else:
+			nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
 
 	ms = "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7+-10-@AB(共缺-1)"
 	resultdir = dirname
 	dirname = os.path.basename(dirname)
 	dst_file = os.path.join(resultdir, "res_stat-" + dirname + ".csv")
 	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"), mode = mode)
+	return dst_file
 
 
 if __name__ == '__main__':
@@ -108,15 +135,20 @@ if __name__ == '__main__':
 
 	projectroot = getRootPath("Raman_dl_ml")
 
-	res_root = os.path.join(projectroot, r"results\glioma\dl")
-	# res_root = os.path.join(projectroot, r"results\glioma\ml")
+	# res_root = os.path.join(projectroot, r"results\glioma\dl")
+	# res_root = os.path.join(projectroot, r"results\glioma\ml\svm_pca_umap_pointwise")
+	res_root = os.path.join(projectroot, r"results\glioma\ml\svm_pca_lda_bak")
 	for dirname in os.listdir(res_root):
 
 		if not dirname.startswith("data"):
 			continue
-		# main(os.path.join(res_root, dirname), nets = ["svm", "pca_svm", "lda_svm"])
-		main(os.path.join(res_root, dirname), nets = ["umap_svm"])
+		if os.path.isfile(os.path.join(res_root, "models.txt")):
+			nets = list(numpy.loadtxt(os.path.join(res_root, "models.txt"), dtype = "str", delimiter = ","))
+		# nets = ["svm", "pca_svm", "lda_svm"]
+		# nets = ["pca_svm", "umap_svm"]
+		#
+		main(os.path.join(res_root, dirname), nets = nets, mode = "val")
 
-		# main(os.path.join(res_root, dirname), nets = ["AlexNet"])
+# main(os.path.join(res_root, dirname), nets = ["AlexNet"])
 
 # main_2()

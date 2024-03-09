@@ -20,7 +20,9 @@ color4 = numpy.array([166, 206, 227, 150]) / 255
 color_all = [color1, color4]
 
 
-def cal_roc_macro(fpr: list, tpr: list, type = "macro"):
+def cal_roc_macro(fpr: list,
+                  tpr: list,
+                  type = "macro"):
 	"""
 
 	@param fpr: (l,x)
@@ -49,7 +51,9 @@ def cal_roc_macro(fpr: list, tpr: list, type = "macro"):
 # def plot_roc(fpr, tpr, thresholds, axes):
 
 
-def rocRead_bi(src, mode = "test", pos_label = "pos"):
+def rocRead_bi(src,
+               mode = "test",
+               pos_label = "pos"):
 	f"""
 	read： src/*/roc/{mode}_{pos_label}_roc.csv (二分类) or src/*/roc/{mode}_?_roc.csv (多分类) 
 	每个*对应的文件夹得到一个roc曲线（多分类的时候为平均roc）
@@ -109,12 +113,18 @@ def rocRead_bi(src, mode = "test", pos_label = "pos"):
 	fpr_macro, _, tpr_macro = cal_roc_macro(fprs, tprs)
 	auc_macro = auc(fpr_macro, tpr_macro)
 	numpy.savetxt(os.path.join(src, "roc_record.csv"), numpy.vstack((fpr_macro, tpr_macro)).T, delimiter = ",",
-				  header = "fpr,tpr,auc={}".format(auc_macro),
-				  comments = "")
+	              header = "fpr,tpr,auc={}".format(auc_macro),
+	              comments = "")
 	return fpr_macro, tpr_macro
 
 
-def plot_roc(fpr, tpr, title, axes: plt.Axes = None, show_auc = True, color = color1, name = None):
+def plot_roc(fpr,
+             tpr,
+             title,
+             axes: plt.Axes = None,
+             show_auc = True,
+             color = color1,
+             name = None):
 	if axes is None:
 		fig, axes = plt.subplots(1)
 	if show_auc:
@@ -129,15 +139,15 @@ def plot_roc(fpr, tpr, title, axes: plt.Axes = None, show_auc = True, color = co
 		axes.plot(fpr, tpr, color = color)
 	else:
 		axes.plot(fpr, tpr, color = color, label = name)
-		axes.legend(loc="lower right", fontsize = 12, frameon = False)
+		axes.legend(loc = "lower right", fontsize = 12, frameon = False)
 	for s in axes.spines:
 		axes.spines[s].set_color(numpy.array([100, 100, 100]) / 255)
 	axes.set_xlim(-0.005, 1)
 	axes.set_ylim(0, 1.01)
-	xfontdict = dict(fontsize = 15,fontstyle = "normal", fontweight = 800)
+	xfontdict = dict(fontsize = 15, fontstyle = "normal", fontweight = 800)
 	yfontdict = dict(fontsize = 15, fontstyle = "normal", fontweight = 400)
-	axes.set_xlabel("1 - Specificity",fontdict = xfontdict)
-	axes.set_ylabel("Sensitivity",fontdict = yfontdict)
+	axes.set_xlabel("1 - Specificity", fontdict = xfontdict)
+	axes.set_ylabel("Sensitivity", fontdict = yfontdict)
 	# tickfontdict = dict(fontsize = 5, fontstyle = "normal", fontweight = 400)
 	axes.tick_params(labelsize = 10)
 	# axes.set_yticks(fontdict = tickfontdict)
@@ -145,16 +155,16 @@ def plot_roc(fpr, tpr, title, axes: plt.Axes = None, show_auc = True, color = co
 	return axes
 
 
-def main_bi_class(dir, dst, mode = "test",
-				  nets = None,
-				  molecules = None,
-				  positions = None,
-				  net2axes = None
-				  ):
+def main_bi_class(dir,
+                  mode = "test",
+                  nets = None,
+                  molecules = None,
+                  positions = None,
+                  net2axes = None
+                  ):
 	if nets is None:
 		nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
-	if not os.path.isabs(dst):
-		dst = os.path.join(dir, dst)
+
 	# if not os.path.isdir(dst):
 	# 	os.makedirs(dst)
 
@@ -180,7 +190,7 @@ def main_bi_class(dir, dst, mode = "test",
 		axes: numpy.ndarray
 		if net2axes is None:
 			fig, axes = plt.subplots(num_row, num_row, dpi = 600, figsize = (9.6, 10),
-									 )
+			                         )
 			# , constrained_layout = True
 			plt.subplots_adjust(wspace = 0.4, hspace = 0.6)
 		else:
@@ -197,8 +207,8 @@ def main_bi_class(dir, dst, mode = "test",
 				ax = axes[i]
 				allidx.remove(i)
 			plot_roc(*molecule2roc[molecule], molecule, axes = ax, show_auc = True,
-					 name = "ROC",
-					 color = color4 if "GBM" in dir else color1)
+			         name = "ROC",
+			         color = color4 if "GBM" in dir else color1)
 
 		if net2axes is None:
 			for i in allidx:
@@ -208,27 +218,27 @@ def main_bi_class(dir, dst, mode = "test",
 	return net2molecule2roc
 
 
-def main(dirname, nets = None,mode = "test"):
+def main(dirname,
+         nets = None,
+         mode = "test"):
 	if nets is None:
 		nets = ["Alexnet"]
 	# ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)"
 	ms = "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7+-10-@AB(共缺-1)"
 	resultdir = dirname
-	dst_file = os.path.join(resultdir, "res_stat-" + os.path.basename(dirname) + ".csv")
-	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"), positions = [0, 1, 3, 4, 5, 6, 7],mode = mode)
+	main_bi_class(resultdir, nets = nets, molecules = ms.split("@"), positions = [0, 1, 3, 4, 5, 6, 7], mode = mode)
 
 
 if __name__ == '__main__':
 	from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 
 	projectroot = getRootPath("Raman_dl_ml")
-	root = os.path.join(projectroot, "data", "脑胶质瘤")
-	# res_root = os.path.join(projectroot, r"results\glioma\ml")
-	res_root = os.path.join(projectroot, r"results\glioma\dl")
+	# root = os.path.join(projectroot, "data", "脑胶质瘤")
+	res_root = os.path.join(projectroot, r"results\glioma\ml")
+	# res_root = os.path.join(projectroot, r"results\glioma\dl")
 	for dirname in os.listdir(res_root):
 
 		if not dirname.startswith("data"):
 			continue
-		# main(os.path.join(res_root,dirname), nets = ["svm", "pca_svm", "lda_svm"],mode = "val")
-		main(os.path.join(res_root, dirname), nets = ["AlexNet"], mode = "test")
-
+		main(os.path.join(res_root, dirname), nets = ["svm", "pca_svm", "lda_svm"], mode = "val")
+	# main(os.path.join(res_root, dirname), nets = ["AlexNet"], mode = "test")

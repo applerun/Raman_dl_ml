@@ -493,7 +493,7 @@ def main_one_datasrc(
 		                path2labelfunc = path2labelfunc, sfname = "Raman_personwise_", n_iter = 1, )
 
 
-def main_onesrc(personwise = True,
+def main_onesrc(datasplit = "personwise",
                 dataroot_ = None):
 	from bacteria.code_sjh.bin.Glioma.data_handler.samplewise2personwise import rename_files_between
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
@@ -501,6 +501,7 @@ def main_onesrc(personwise = True,
 	# dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_batch123_labeled")
 	if dataroot_ is None:
 		dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_all_labeled")
+	personwise = datasplit == "personwise"
 	if personwise:
 		dataroot_dst = dataroot_ + "_renamed_for_personwise"
 		# rename_files_between(dataroot_dst, 3)
@@ -519,8 +520,9 @@ def main_onesrc(personwise = True,
 		dataroot_dst = dataroot_
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
-	main_one_datasrc(dataroot_dst, info_file, raman = Raman_dirwise,
-	                 record_info = os.path.basename(dataroot_dst) + ("person_wise" if personwise else "tissue_wise"))
+	main_one_datasrc(dataroot_dst, info_file,
+	                 raman = Raman_depth_gen(2, 2) if datasplit == "pointwise" else Raman_dirwise,
+	                 record_info = os.path.basename(dataroot_dst) + "_" + datasplit)
 
 
 # rename_files_between_undo(dataroot_dst, 3)
@@ -537,9 +539,10 @@ def main_onesrc(personwise = True,
 if __name__ == '__main__':
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 	# for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-	for dir in ["data_GBM_labeled","data"]:
+	for dir in ["data_GBM_labeled", "data"]:
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
 			continue
-		main_onesrc(personwise = False,dataroot_ = dir_abs)
-		main_onesrc(personwise = True,dataroot_ = dir_abs)
+		main_onesrc(datasplit = "tissuewise", dataroot_ = dir_abs)
+		main_onesrc(datasplit = "personwise", dataroot_ = dir_abs)
+		main_onesrc(datasplit = "pointwise", dataroot_ = dir_abs)

@@ -176,7 +176,8 @@ def plot_s(ax: matplotlib.axes.Axes,
 
 def main_hatchwise(HeatData1 = None,
                    HeatData2 = None,
-                   dst = None):  # 纹理热力图
+                   dst = None,
+                   skiprows = 1):  # 纹理热力图
 	if dst is not None and not os.path.isdir(dst):
 		os.makedirs(dst)
 	if HeatData1 is None:
@@ -184,9 +185,9 @@ def main_hatchwise(HeatData1 = None,
 	if HeatData2 is None:
 		HeatData2 = np.loadtxt("Glioma_heatmap_python/plot_res/heatdata2.csv", delimiter = ",", skiprows = 1)
 	if os.path.isfile(HeatData1):
-		HeatData1 = np.loadtxt(HeatData1, delimiter = ",", skiprows = 1)
+		HeatData1 = np.loadtxt(HeatData1, delimiter = ",", skiprows = skiprows)
 	if os.path.isfile(HeatData2):
-		HeatData2 = np.loadtxt(HeatData2, delimiter = ",", skiprows = 1)
+		HeatData2 = np.loadtxt(HeatData2, delimiter = ",", skiprows = skiprows)
 	plt.rcParams['figure.figsize'] = (24, 9)
 
 	hatches = ['//', '..', r"\\"]
@@ -214,7 +215,7 @@ def main_hatchwise(HeatData1 = None,
 	legend_show(ax, (0, 0, 0, 0), hatches[::-1], hatch_color,
 	            pos = (0, 0.8 * 10), interval_y = 0.05)
 	plt.savefig("legend_dl.png" if dst is None else os.path.join(dst, "legend_dl.png"))
-	colorbars([cmap],norm = norm)
+	colorbars([cmap], norm = norm)
 	plt.savefig("legend_colorbar_dl.png" if dst is None else os.path.join(dst, "legend_colorbar_dl.png"))
 	fig, ax = plt.subplots(figsize = (24, 9))
 	plotdata(HeatData1_ml, HeatData2_ml, ax, cmap, hatch_color, hatches, norm, *wh12y,
@@ -306,11 +307,11 @@ def main():
 		if not os.path.isdir(res_stat_dir): continue
 		for prefix in l_prefix:
 			merge_stat_files(res_stat_dir, os.path.join(res_stat_dir + prefix + ".csv"), prefix,
-			                 new_models = "pca_svm,AlexNet,umap_svm".split(","))
+			                 new_models = "pca_svm,AlexNet,umap_svm".split(","),new_rows = 2)
 	for split_strategy in "personwise,tissuewise".split(","):
 		main_hatchwise(os.path.join(res_stat_root, split_strategy + "res_stat-data_all.csv"),
 		               os.path.join(res_stat_root, split_strategy + "res_stat-data_GBM.csv"),
-		               os.path.join(split_strategy))
+		               os.path.join(split_strategy),skiprows = 2)
 
 
 if __name__ == '__main__':

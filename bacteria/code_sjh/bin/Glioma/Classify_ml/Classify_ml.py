@@ -304,6 +304,5 @@ if __name__ == '__main__':
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
 			continue
-
 		# main_onesrc(datasplit = "personwise", dataroot_ = dir_abs)
 		main_onesrc(datasplit = "pointwise", dataroot_ = dir_abs)

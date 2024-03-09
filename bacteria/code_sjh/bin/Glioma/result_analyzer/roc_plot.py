@@ -223,12 +223,12 @@ if __name__ == '__main__':
 
 	projectroot = getRootPath("Raman_dl_ml")
 	root = os.path.join(projectroot, "data", "脑胶质瘤")
-	res_root = os.path.join(projectroot, r"results\glioma\ml")
-	# res_root = os.path.join(projectroot, r"results\glioma\dl")
+	# res_root = os.path.join(projectroot, r"results\glioma\ml")
+	res_root = os.path.join(projectroot, r"results\glioma\dl")
 	for dirname in os.listdir(res_root):
 
 		if not dirname.startswith("data"):
 			continue
-		main(os.path.join(res_root,dirname), nets = ["svm", "pca_svm", "lda_svm"],mode = "val")
-		# main(os.path.join(res_root, dirname), nets = ["AlexNet"], mode = "test")
+		# main(os.path.join(res_root,dirname), nets = ["svm", "pca_svm", "lda_svm"],mode = "val")
+		main(os.path.join(res_root, dirname), nets = ["AlexNet"], mode = "test")
 

@@ -309,6 +309,7 @@ def train_modellist(
 
 				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True if n > 0 else False)
 				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
+
 				if db_cfg["t_v_t"][2] == 0 and test_db is None:
 					test_db = val_db
 				elif test_db is None:
@@ -427,9 +428,9 @@ def main_indep_test():
 			LoadCsvFile = readdatafunc,
 			k_split = 6,
 			transform = Process.process_series([  # 设置预处理流程
-				Process.interpolator(),
-				Process.sg_filter(),
+				# Process.interpolator(),
 				preprocess,
+				Process.sg_filter(),
 				Process.norm_func(), ]
 			))
 		test_db = Raman_dirwise(**db_cfg)
@@ -482,8 +483,8 @@ def main_one_datasrc(
 			LoadCsvFile = readdatafunc,
 			k_split = 5,
 			transform = Process.process_series([  # 设置预处理流程
-				Process.sg_filter(),
 				preprocess,
+				Process.sg_filter(),
 				Process.norm_func(), ]
 			))
 		recorddir = os.path.join(recordroot, ele)
@@ -535,8 +536,8 @@ def main_onesrc(personwise = True,
 
 if __name__ == '__main__':
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
-	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-	# for dir in ["data_GBM_labeled"]:
+	# for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
+	for dir in ["data_GBM_labeled","data"]:
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
 			continue

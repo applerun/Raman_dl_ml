@@ -65,9 +65,9 @@ def main_bi_class(dir,
 	header = ["模型"] + nets * 4
 	csv_writer.writerow(header1)
 	csv_writer.writerow(header)
-	if "ml" in dir:
+	if "ml" in dir.split(os.sep):
 		skiprows = 1
-	elif "dl" in dir:
+	elif "dl" in dir.split(os.sep):
 		skiprows = 2
 	else:
 		skiprows = 0
@@ -92,7 +92,7 @@ def main_bi_class(dir,
 
 
 def main(dirname = "2022-11-10-17_57_55_dirwise",
-         nets = None):
+         nets = None,mode = "test"):
 	if nets is None:
 		nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
 
@@ -100,7 +100,7 @@ def main(dirname = "2022-11-10-17_57_55_dirwise",
 	resultdir = dirname
 	dirname = os.path.basename(dirname)
 	dst_file = os.path.join(resultdir, "res_stat-" + dirname + ".csv")
-	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"), mode = "val")
+	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"), mode = mode)
 
 
 if __name__ == '__main__':
@@ -108,13 +108,13 @@ if __name__ == '__main__':
 
 	projectroot = getRootPath("Raman_dl_ml")
 
-	# res_root = os.path.join(projectroot, r"results\glioma\dl")
-	res_root = os.path.join(projectroot, r"results\glioma\ml")
+	res_root = os.path.join(projectroot, r"results\glioma\dl")
+	# res_root = os.path.join(projectroot, r"results\glioma\ml")
 	for dirname in os.listdir(res_root):
 
 		if not dirname.startswith("data"):
 			continue
-		main(os.path.join(res_root, dirname), nets = ["svm", "pca_svm", "lda_svm"])
-		# main(os.path.join(res_root, dirname), nets = ["AlexNet"])
+		# main(os.path.join(res_root, dirname), nets = ["svm", "pca_svm", "lda_svm"],mode = "val)
+		main(os.path.join(res_root, dirname), nets = ["AlexNet"],mode = "test")
 
 # main_2()

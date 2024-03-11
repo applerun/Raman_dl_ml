@@ -7,7 +7,8 @@ from torch import optim
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
 from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34
 from bacteria.code_sjh.utils.Validation.validation import *
-from bacteria.code_sjh.utils.RamanData import getRamanFromFile, Raman_depth_gen, data_leak_check_by_filename
+from bacteria.code_sjh.utils.RamanData import getRamanFromFile, Raman_depth_gen, data_leak_check_by_filename, \
+	get_dict_str
 from bacteria.code_sjh.Core.basic_functions.visdom_func import *
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 from bacteria.code_sjh.utils.iterator import train
@@ -295,11 +296,15 @@ def train_modellist(
 		if not os.path.isdir(recordsubdir):
 			os.makedirs(recordsubdir)
 		recordfile = recordsubdir + ".csv"  # 记录训练的配置和结果
-		json.dump(db_cfg, os.path.join(recorddir, "db_cfg.json"))
+
 		f = open(recordfile, "w", newline = "")
 		writer = csv.writer(f)
 		f.write(db_cfg.__str__() + "\n")
 		f.write(train_cfg.__str__() + "\n")
+		with open(os.path.join(recordsubdir), "db_cfg.txt") as sf:
+			sf.write(get_dict_str(db_cfg) + "\n")
+		with open(os.path.join(recordsubdir), "train_cfg.txt") as sf:
+			sf.write(get_dict_str(train_cfg) + "\n")
 		writer.writerow(["n", "k", "best_acc", "test_acc", "best_epoch", "val_AUC", "test_AUC"])
 		conf_m_v = None
 		conf_m_t = None

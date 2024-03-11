@@ -243,6 +243,7 @@ def main_one_datasrc(
 		             basic_SVM(UMAP(n_neighbors = 200,
 		                            # default 15, The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation.
 		                            n_components = 3,
+		                            n_jobs = 1,
 		                            # default 2, The dimension of the space to embed into.
 		                            metric = 'euclidean',
 		                            # default 'euclidean', The metric to use to compute distances in high dimensional space.

@@ -96,7 +96,7 @@ def train_classification_model(
 
 def train_modellist(
 		dataroot,
-		db_cfg = None,
+		db_cfg,
 		raman = RamanDatasetCore,
 		# 设置读取数据集的DataSet
 		# 设置k叠交叉验证的k值
@@ -113,23 +113,6 @@ def train_modellist(
 		recorddir = os.path.join(projectroot, "results", "tissue_dl", recorddir)
 	if modellist is None:
 		modellist = [basic_SVM(), basic_SVM(PCA(n_components = 10)), basic_SVM(LDA(n_components = 1))]
-	if db_cfg is None:
-		db_cfg = dict(  # 数据集设置
-			dataroot = dataroot,
-			backEnd = ".csv",
-			# backEnd = ".asc",
-			t_v_t = [0.8, 0.2, 0.0],
-			LoadCsvFile = readdatafunc,
-			k_split = 6,
-			transform = Process.process_series([  # 设置预处理流程
-				# Process.interpolator(),
-				# Process.baseline_als(),
-				Process.bg_removal_niter_fit(),
-				# Process.bg_removal_niter_piecewisefit(),
-				Process.sg_filter(),
-				Process.norm_func(), ]
-			)
-		)
 	if db_cfg["t_v_t"][2] > 0: warnings.warn("val_db is not needed for machine learning")
 
 	k_split = db_cfg["k_split"]
@@ -146,7 +129,7 @@ def train_modellist(
 		f = open(recordfile, "w", newline = "")
 		writer = csv.writer(f)
 		f.write("\n")
-		with open(os.path.join(recordsubdir,"db_cfg.txt")) as sf:
+		with open(os.path.join(recordsubdir, "db_cfg.txt"), "w") as sf:
 			sf.write(get_dict_str(db_cfg) + "\n")
 		writer.writerow(["n", "k", "val_acc", "val_AUC"])
 		conf_m_v = None
@@ -239,7 +222,7 @@ def main_one_datasrc(
 		name2label = {"neg": 0, "pos": 1}
 		dataroot = os.path.join(dataroot_, ele)
 		# modellist = [basic_SVM(), basic_SVM(PCA(n_components = 10)), basic_SVM(LDA(n_components = 1))]
-		modellist = [basic_SVM(PCA(n_components = 10)),
+		modellist = [basic_SVM(PCA(n_components = 3)),
 		             basic_SVM(UMAP(n_neighbors = 200,
 		                            # default 15, The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation.
 		                            n_components = 3,
@@ -361,7 +344,8 @@ if __name__ == '__main__':
 	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
 		# for dir in ["data_GBM_labeled"]:
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
-		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
+		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(
+				("personwise", "failed")) or "indep" in dir:
 			continue
 		# main_onesrc(datasplit = "personwise", dataroot_ = dir_abs)
 		main_onesrc(datasplit = "pointwise", dataroot_ = dir_abs)

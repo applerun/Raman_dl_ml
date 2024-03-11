@@ -301,9 +301,9 @@ def train_modellist(
 		writer = csv.writer(f)
 		f.write(db_cfg.__str__() + "\n")
 		f.write(train_cfg.__str__() + "\n")
-		with open(os.path.join(recordsubdir, "db_cfg.txt")) as sf:
+		with open(os.path.join(recordsubdir, "db_cfg.txt"),"w") as sf:
 			sf.write(get_dict_str(db_cfg) + "\n")
-		with open(os.path.join(recordsubdir, "train_cfg.txt")) as sf:
+		with open(os.path.join(recordsubdir, "train_cfg.txt"),"w") as sf:
 			sf.write(get_dict_str(train_cfg) + "\n")
 		writer.writerow(["n", "k", "best_acc", "test_acc", "best_epoch", "val_AUC", "test_AUC"])
 		conf_m_v = None

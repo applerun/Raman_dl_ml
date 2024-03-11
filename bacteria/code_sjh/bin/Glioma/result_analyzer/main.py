@@ -14,7 +14,7 @@ projectroot = getRootPath("Raman_dl_ml")
 def main_roc_stat():
 	res_root = os.path.join(projectroot, r"results\glioma\ml\svm_pca_umap_811_pointwise")
 	# res_root = os.path.join(projectroot, r"results\glioma\ml\umap_bak\person_wise")
-	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "person_wise")
+	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "9fold91","ml")
 	if not os.path.isdir(res_Heatmap_root):
 		os.makedirs(res_Heatmap_root)
 	statfiles = []
@@ -45,9 +45,9 @@ def main_Heatmap():
 		val_res_heatmap.main_hatchwise(os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_all.csv"),
 		                               os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_GBM.csv"),
 		                               os.path.join(res_Heatmap_root + "_plot_res", split_strategy), skiprows = 2,
-		                               norm = colors.Normalize(0.5, 1, clip = True))
+		                               norm = colors.Normalize(0.3, 1, clip = True))
 
 
 if __name__ == '__main__':
-	# main_roc_stat()
-	main_Heatmap()
+	main_roc_stat()
+	# main_Heatmap()

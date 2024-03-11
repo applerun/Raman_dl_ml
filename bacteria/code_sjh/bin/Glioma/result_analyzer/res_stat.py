@@ -12,7 +12,13 @@ def round_str(res: str,
 	res = [str(round(float(x), 4)) for x in res]
 	res = res[0] + split + res[1]
 	return res
-
+def cal_sen_spe_by_roc(fpr:numpy.ndarray,tpr:numpy.ndarray,):
+	sens = tpr
+	spes = 1-fpr
+	sen_plus_spe:numpy.ndarray = sens+spes
+	idx = numpy.argmax(sen_plus_spe)
+	sen,spe =sens[idx],spes[idx]
+	return sen,spe
 
 def RecordRead_bi_clas(src,
                        mode = "test",
@@ -38,26 +44,30 @@ def RecordRead_bi_clas(src,
 		warnings.warn("auc from record_av({}) and recordfile({}) are different"
 		              "dir :{}".format(aucs.mean(), auc, src))
 		auc = aucs.mean()
+	cm = np.loadtxt(os.path.join(src, mode + "_confusion_matrix.csv"), delimiter = ",")
+	(a, b), (c, d) = cm
+	acc_ = (a + d) / (a + b + c + d)
+	sen = d / (c + d)
+	spe = a / (a + b)
 	if os.path.isfile(os.path.join(src, "roc_record.csv")):
 		with open(os.path.join(src, "roc_record.csv")) as f:
 			auc_ = f.readlines().__iter__().__next__().strip().split("=")[1]
 			auc_ = float(auc_)
+		roc = numpy.loadtxt(os.path.join(src, "roc_record.csv"), delimiter = ",", skiprows = 1)
+		fpr, tpr = roc.T
+		sen, spe = cal_sen_spe_by_roc(fpr, tpr)
 		if abs(auc_ - auc) > 0.001:
 			warnings.warn("auc from macro_roc({}) and recordfile({}) are different"
 			              "dir :{}".format(aucs.mean(), auc, src))
 			auc = auc_
-	cm = np.loadtxt(os.path.join(src, mode + "_confusion_matrix.csv"), delimiter = ",")
+
 
 	acc = round(acc, round_digits)
 	acc_std = round(float(acc_std), round_digits)
 	auc = round(auc, round_digits)
 	auc_std = round(float(auc_std), round_digits)
-	(a, b), (c, d) = cm
-	acc_ = (a + d) / (a + b + c + d)
 	acc_ = round(acc_, 4)
-	sen = d / (c + d)
 	sen = round(sen, 4)
-	spe = a / (a + b)
 	spe = round(spe, 4)
 	# acc_f = float(acc.split("±")[0])
 	acc_f = acc
@@ -66,6 +76,8 @@ def RecordRead_bi_clas(src,
 		              "dir :{}".format(acc_, acc, src))
 
 	return dict(acc = acc, acc_std = acc_std, auc = auc, auc_std = auc_std, sen = sen, spe = spe)
+
+
 
 
 def main_bi_class(dir,

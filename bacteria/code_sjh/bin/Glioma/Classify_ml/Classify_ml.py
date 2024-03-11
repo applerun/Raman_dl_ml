@@ -146,7 +146,7 @@ def train_modellist(
 		f = open(recordfile, "w", newline = "")
 		writer = csv.writer(f)
 		f.write("\n")
-		with open(os.path.join(recordsubdir),"db_cfg.txt") as sf:
+		with open(os.path.join(recordsubdir,"db_cfg.txt")) as sf:
 			sf.write(get_dict_str(db_cfg) + "\n")
 		writer.writerow(["n", "k", "val_acc", "val_AUC"])
 		conf_m_v = None

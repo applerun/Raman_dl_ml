@@ -1,3 +1,4 @@
+import json
 import shutil
 import warnings
 import csv
@@ -5,7 +6,7 @@ from sklearn.metrics import accuracy_score
 
 # import pysnooper
 from bacteria.code_sjh.utils.Validation.validation import *
-from bacteria.code_sjh.utils.RamanData import data_leak_check_by_filename, Raman_depth_gen
+from bacteria.code_sjh.utils.RamanData import data_leak_check_by_filename, Raman_depth_gen, get_dict_str
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 from bacteria.code_sjh.ML import PCA, LDA, basic_SVM, UMAP
 from bacteria.code_sjh.bin.Glioma.Classify_dl.record_func import plt_res, npsv, heatmap
@@ -93,7 +94,6 @@ def train_classification_model(
 	return res
 
 
-
 def train_modellist(
 		dataroot,
 		db_cfg = None,
@@ -133,7 +133,6 @@ def train_modellist(
 	if db_cfg["t_v_t"][2] > 0: warnings.warn("val_db is not needed for machine learning")
 
 	k_split = db_cfg["k_split"]
-	valaccs, vaucs = [], []
 
 	if not os.path.isdir(recorddir):
 		os.makedirs(recorddir)
@@ -146,10 +145,11 @@ def train_modellist(
 
 		f = open(recordfile, "w", newline = "")
 		writer = csv.writer(f)
-		f.write(db_cfg.__str__() + "\n")
+		f.write(get_dict_str(db_cfg) + "\n")
 		writer.writerow(["n", "k", "val_acc", "val_AUC"])
 		conf_m_v = None
 		i = 0  # 实验进度计数
+		valaccs, vaucs = [], []
 		for n in range(n_iter):
 			for k in range(k_split):
 
@@ -160,6 +160,7 @@ def train_modellist(
 					test_db = val_db
 				elif test_db is None:
 					test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
+
 				l = data_leak_check_by_filename((train_db, val_db))
 				if len(l) > 0:
 					warnings.warn("data leak warning:{} \n {}".format(len(l) / len(val_db), l))
@@ -190,7 +191,10 @@ def train_modellist(
 		np.savetxt(os.path.join(recordsubdir, "val_confusion_matrix.csv"), conf_m_v, delimiter = ",")
 		heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
 		# train_db.shufflecsv()
-		assert len(valaccs) == len(vaucs) == n_iter * k_split
+		assert len(valaccs) == len(vaucs) == n_iter * k_split, "valaccs:{}\n,vaucs:{}\n,n*k = {}*{}".format(valaccs,
+		                                                                                                    vaucs,
+		                                                                                                    n_iter,
+		                                                                                                    k_split)
 
 		ta = np.mean(np.array(valaccs)).__str__() + "+-" + np.std(np.array(valaccs)).__str__()
 		auc_av = np.mean(np.array(vaucs)).__str__() + "+-" + np.std(np.array(vaucs)).__str__()
@@ -233,16 +237,66 @@ def main_one_datasrc(
 		name2label = {"neg": 0, "pos": 1}
 		dataroot = os.path.join(dataroot_, ele)
 		# modellist = [basic_SVM(), basic_SVM(PCA(n_components = 10)), basic_SVM(LDA(n_components = 1))]
-		modellist = [basic_SVM(PCA(n_components = 10)), basic_SVM(UMAP(n_components = 10)), ]
+		modellist = [basic_SVM(PCA(n_components = 10)),
+		             basic_SVM(UMAP(n_neighbors = 200,
+		                            # default 15, The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation.
+		                            n_components = 3,
+		                            # default 2, The dimension of the space to embed into.
+		                            metric = 'euclidean',
+		                            # default 'euclidean', The metric to use to compute distances in high dimensional space.
+		                            n_epochs = 1000,
+		                            # default None, The number of training epochs to be used in optimizing the low dimensional embedding. Larger values result in more accurate embeddings.
+		                            learning_rate = 1.0,
+		                            # default 1.0, The initial learning rate for the embedding optimization.
+		                            init = 'spectral',
+		                            # default 'spectral', How to initialize the low dimensional embedding. Options are: {'spectral', 'random', A numpy array of initial embedding positions}.
+		                            min_dist = 0.1,
+		                            # default 0.1, The effective minimum distance between embedded points.
+		                            spread = 1.0,
+		                            # default 1.0, The effective scale of embedded points. In combination with ``min_dist`` this determines how clustered/clumped the embedded points are.
+		                            low_memory = False,
+		                            # default False, For some datasets the nearest neighbor computation can consume a lot of memory. If you find that UMAP is failing due to memory constraints consider setting this option to True.
+		                            set_op_mix_ratio = 1.0,
+		                            # default 1.0, The value of this parameter should be between 0.0 and 1.0; a value of 1.0 will use a pure fuzzy union, while 0.0 will use a pure fuzzy intersection.
+		                            local_connectivity = 1,
+		                            # default 1, The local connectivity required -- i.e. the number of nearest neighbors that should be assumed to be connected at a local level.
+		                            repulsion_strength = 1.0,
+		                            # default 1.0, Weighting applied to negative samples in low dimensional embedding optimization.
+		                            negative_sample_rate = 5,
+		                            # default 5, Increasing this value will result in greater repulsive force being applied, greater optimization cost, but slightly more accuracy.
+		                            transform_queue_size = 4.0,
+		                            # default 4.0, Larger values will result in slower performance but more accurate nearest neighbor evaluation.
+		                            a = None,
+		                            # default None, More specific parameters controlling the embedding. If None these values are set automatically as determined by ``min_dist`` and ``spread``.
+		                            b = None,
+		                            # default None, More specific parameters controlling the embedding. If None these values are set automatically as determined by ``min_dist`` and ``spread``.
+		                            random_state = 42,
+		                            # default: None, If int, random_state is the seed used by the random number generator;
+		                            metric_kwds = None,
+		                            # default None) Arguments to pass on to the metric, such as the ``p`` value for Minkowski distance.
+		                            angular_rp_forest = False,
+		                            # default False, Whether to use an angular random projection forest to initialise the approximate nearest neighbor search.
+		                            target_n_neighbors = -1,
+		                            # default -1, The number of nearest neighbors to use to construct the target simplcial set. If set to -1 use the ``n_neighbors`` value.
+		                            # target_metric='categorical', # default 'categorical', The metric used to measure distance for a target array is using supervised dimension reduction. By default this is 'categorical' which will measure distance in terms of whether categories match or are different.
+		                            # target_metric_kwds=None, # dict, default None, Keyword argument to pass to the target metric when performing supervised dimension reduction. If None then no arguments are passed on.
+		                            # target_weight=0.5, # default 0.5, weighting factor between data topology and target topology.
+		                            transform_seed = 42,
+		                            # default 42, Random seed used for the stochastic aspects of the transform operation.
+		                            verbose = False,
+		                            # default False, Controls verbosity of logging.
+		                            unique = False,
+		                            # default False, Controls if the rows of your data should be uniqued before being embedded.
+		                            )), ]
 		if not os.path.isdir(dataroot):
 			continue
 		db_cfg = dict(  # 数据集设置
 			dataroot = dataroot,
 			backEnd = ".csv",
 			# backEnd = ".asc",
-			t_v_t = [0.8, 0.2, 0.0],
+			t_v_t = [0.6, 0.4, 0.0],
 			LoadCsvFile = readdatafunc,
-			k_split = 5,
+			k_split = 9,
 			transform = Process.process_series([  # 设置预处理流程
 				preprocess,
 				Process.sg_filter(),

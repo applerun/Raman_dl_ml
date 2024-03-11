@@ -15,7 +15,7 @@ projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_ID")
 sys.path.append(coderoot)
 from bacteria.code_sjh.Core.basic_functions import visdom_func as visdom_utils
-from bacteria.code_sjh.Core.RamanData import RamanDatasetCore
+from bacteria.code_sjh.Core.RamanData import RamanDatasetCore,get_dict_str
 from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 from bacteria.code_sjh.utils.RamanData.TensorFunctions import pytorchlize
 

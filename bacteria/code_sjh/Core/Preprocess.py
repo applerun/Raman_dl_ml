@@ -30,7 +30,7 @@ class ProcessorRootSeries(ProcessorRoot):
         super(ProcessorRootSeries, self).__init__()
 
         self.sequence = list(filter(lambda x: len(str(x)) > 0, sequence))
-
+        self.str = " --> ".join([str(x) for x in self.sequence])
     def __call__(self, y, x = None):
         for funcs in self.sequence:
             y = funcs(y, x)
@@ -39,8 +39,7 @@ class ProcessorRootSeries(ProcessorRoot):
         return y if x is None else (y, x)
 
     def __str__(self):
-        l = [str(x) for x in self.sequence]
-        return " --> ".join(l)
+        return self.str
 
     def __add__(self, other: ProcessorRoot):
         new_processor = ProcessorRootSeries([self, other])

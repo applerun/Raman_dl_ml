@@ -54,7 +54,10 @@ class basic_SVM():
 	def __init__(self,
 	             dim_reduction = None,
 	             reducted_n_components = None,
+	             SVC_kwargs = None
 	             ):
+		if SVC_kwargs is None:
+			SVC_kwargs = dict(gamma = 'auto', probability = True, kernel = 'rbf')
 		if dim_reduction is None:
 			self.__name__ = "svm"
 			self.dim_reduction = dim_reduction
@@ -71,9 +74,8 @@ class basic_SVM():
 				self.dim_reduction = dim_reduction(n_components = reducted_n_components)
 			else:
 				self.dim_reduction = dim_reduction
+		self.classifier = svm.SVC(**SVC_kwargs)
 
-		self.classifier = svm.SVC(C = 2, kernel = 'rbf', gamma = 10, decision_function_shape = 'ovr',
-		                          probability = True)
 
 	def fit(self,
 	        x_train,

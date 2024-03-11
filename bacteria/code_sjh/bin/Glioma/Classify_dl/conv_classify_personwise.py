@@ -295,7 +295,7 @@ def train_modellist(
 		if not os.path.isdir(recordsubdir):
 			os.makedirs(recordsubdir)
 		recordfile = recordsubdir + ".csv"  # 记录训练的配置和结果
-
+		json.dump(db_cfg, os.path.join(recorddir, "db_cfg.json"))
 		f = open(recordfile, "w", newline = "")
 		writer = csv.writer(f)
 		f.write(db_cfg.__str__() + "\n")

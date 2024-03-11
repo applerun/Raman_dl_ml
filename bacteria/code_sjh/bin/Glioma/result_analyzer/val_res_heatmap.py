@@ -177,7 +177,9 @@ def plot_s(ax: matplotlib.axes.Axes,
 def main_hatchwise(HeatData1 = None,
                    HeatData2 = None,
                    dst = None,
-                   skiprows = 1):  # 纹理热力图
+                   skiprows = 1,
+                   norm = colors.Normalize(0.5, 1, clip = True)
+                   ):  # 纹理热力图
 	if dst is not None and not os.path.isdir(dst):
 		os.makedirs(dst)
 	if HeatData1 is None:
@@ -195,8 +197,7 @@ def main_hatchwise(HeatData1 = None,
 	cmap = create_colormap_lightness((1, 0, 0))
 	# cmap = cmap.reversed()
 	cmap = create_colormap_bluered(white = (0.98, 0.98, 0.97))
-	norm = colors.Normalize(0.5, 1, clip = True)
-	norm = colors.Normalize(0, 1, clip = True)
+
 	wh12y = np.array([2, 0.8, 0, 0.2, 1, 0.05])
 	wh12y *= 2
 
@@ -225,7 +226,7 @@ def main_hatchwise(HeatData1 = None,
 	plotdata(HeatData1, HeatData2, ax, cmap, hatch_color, hatches, norm, *wh12y,
 	         colorbar_orientation = "vertical", ticksize = 25, count_1 = 3)
 	plt.savefig("legend_all.png" if dst is None else os.path.join(dst, "legend_all.png"))
-
+	print("data saved in:{}".format(dst))
 
 def main_colorwise():  # 颜色区分热力图
 	plt.rcParams['figure.figsize'] = (28, 10)
@@ -307,11 +308,11 @@ def main():
 		if not os.path.isdir(res_stat_dir): continue
 		for prefix in l_prefix:
 			merge_stat_files(res_stat_dir, os.path.join(res_stat_dir + prefix + ".csv"), prefix,
-			                 new_models = "pca_svm,AlexNet,umap_svm".split(","),new_rows = 2)
+			                 new_models = "pca_svm,AlexNet,umap_svm".split(","), new_rows = 2)
 	for split_strategy in "personwise,tissuewise".split(","):
 		main_hatchwise(os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_all.csv"),
 		               os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_GBM.csv"),
-		               os.path.join(split_strategy),skiprows = 2)
+		               os.path.join(split_strategy), skiprows = 2)
 
 
 if __name__ == '__main__':

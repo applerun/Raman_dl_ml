@@ -56,18 +56,24 @@ def train_classification_model(
 		test_db,
 		modelname = None,
 ):
-	train_data, train_label = [np.squeeze(x.numpy()) for x in train_db.Ramans], [x.item() for x in
-	                                                                             train_db.labels]
+	# train_data, train_label = [np.squeeze(x.numpy()) for x in train_db.Ramans], [x.item() for x in
+	#                                                                              train_db.labels]
+	train_data, train_label = [np.squeeze(x) for x in train_db.Ramans], [x for x in
+	                                                                     train_db.labels]
+
 	model.fit(train_data, train_label)
 
-	val_data, val_label = [np.squeeze(x.numpy()) for x in val_db.Ramans], [x.item() for x in
-	                                                                       val_db.labels]
+	# val_data, val_label = [np.squeeze(x.numpy()) for x in val_db.Ramans], [x.item() for x in
+	#                                                                        val_db.labels]
+	val_data, val_label = [np.squeeze(x) for x in val_db.Ramans], [x for x in
+	                                                               val_db.labels]
 	val_prob = model.predict_proba(val_data)
 	val_acc = model.score(val_data, val_label)
 	val_pred = model.predict(val_data)
 
-	test_data, test_label = [np.squeeze(x.numpy()) for x in test_db.Ramans], [x.item() for x in
-	                                                                          test_db.labels]
+	# test_data, test_label = [np.squeeze(x.numpy()) for x in test_db.Ramans], [x.item() for x in
+	#                                                                           test_db.labels]
+	test_data, test_label = [np.squeeze(x) for x in test_db.Ramans], [x for x in test_db.labels]
 	test_prob = model.predict_proba(test_data)
 	test_acc = model.score(test_data, test_label)
 	test_pred = model.predict(test_data)
@@ -225,7 +231,7 @@ def main_one_datasrc(
 		name2label = {"neg": 0, "pos": 1}
 		dataroot = os.path.join(dataroot_, ele)
 		# modellist = [basic_SVM(), basic_SVM(PCA(n_components = 10)), basic_SVM(LDA(n_components = 1))]
-		modellist = [basic_SVM(PCA(n_components = 3)),
+		modellist = [basic_SVM(PCA(n_components = 10)),
 		             basic_SVM(UMAP(n_neighbors = 200,
 		                            # default 15, The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation.
 		                            n_components = 3,
@@ -325,7 +331,7 @@ def main_onesrc(datasplit = "personwise",
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
 	main_one_datasrc(dataroot_dst, info_file,
-	                 raman = Raman_depth_gen(2, 2) if datasplit == "pointwise" else Raman_dirwise,
+	                 raman = Raman_depth_gen(3, 3) if datasplit == "pointwise" else Raman_dirwise,
 	                 record_info = os.path.basename(dataroot_dst) + "_" + datasplit,
 	                 )
 
@@ -345,7 +351,9 @@ if __name__ == '__main__':
 
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-		# for dir in ["data_GBM_labeled"]:
+		if dir == "data_GBM_labeled": continue
+	# for dir in ["data_GBM_labeled"]:
+
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(
 				("personwise", "failed")) or "indep" in dir:

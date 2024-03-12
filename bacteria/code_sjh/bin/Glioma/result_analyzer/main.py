@@ -11,25 +11,29 @@ from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 projectroot = getRootPath("Raman_dl_ml")
 
 
-def main_roc_stat():
-	res_root = os.path.join(projectroot, r"results\glioma\ml\svm_pca_umap_811_pointwise")
+def main_roc_stat(nets = None):
+	res_root = os.path.join(projectroot, r"results\glioma\ml\spectrum_wise")
 	# res_root = os.path.join(projectroot, r"results\glioma\ml\umap_bak\person_wise")
-	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "9fold91","ml")
+	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "spectrum_wise","ml")
 	if not os.path.isdir(res_Heatmap_root):
 		os.makedirs(res_Heatmap_root)
 	statfiles = []
 	for dirname in os.listdir(res_root):
 		if os.path.isfile(os.path.join(res_root, "models.txt")):
 			array = numpy.loadtxt(os.path.join(res_root, "models.txt"), dtype = "str", delimiter = ",", ndmin = 1)
-			nets = list(array)
+			nets_ = list(array)
+		elif nets is not None:
+			nets_ = nets
+		else:
+			nets_ = "pca_svm,umap_svm".split(",")
 		if not dirname.startswith("data"):
 			continue
 		if "dl" in res_root.split(os.sep):
 			mode = "test"
 		else:
 			mode = "val"
-		roc_plot.main(os.path.join(res_root, dirname), nets = nets, mode = mode)
-		dst_file = res_stat.main(os.path.join(res_root, dirname), nets = nets, mode = mode)
+		roc_plot.main(os.path.join(res_root, dirname), nets = nets_, mode = mode)
+		dst_file = res_stat.main(os.path.join(res_root, dirname), nets = nets_, mode = mode)
 		statfiles.append(dst_file)
 		shutil.copy(dst_file, os.path.join(res_Heatmap_root, os.path.basename(dst_file)))
 

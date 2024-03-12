@@ -58,7 +58,7 @@ def RecordRead_bi_clas(src,
 		sen, spe = cal_sen_spe_by_roc(fpr, tpr)
 		if abs(auc_ - auc) > 0.001:
 			warnings.warn("auc from macro_roc({}) and recordfile({}) are different"
-			              "dir :{}".format(aucs.mean(), auc, src))
+			              "dir :{}".format(auc_, auc, src))
 			auc = auc_
 
 

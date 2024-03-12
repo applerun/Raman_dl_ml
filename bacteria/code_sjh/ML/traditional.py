@@ -57,7 +57,7 @@ class basic_SVM():
 	             SVC_kwargs = None
 	             ):
 		if SVC_kwargs is None:
-			SVC_kwargs = dict(gamma = 'auto', probability = True, kernel = 'rbf')
+			SVC_kwargs = dict(gamma = 'auto', probability = True, kernel = 'rbf',class_weight = "balanced")
 		if dim_reduction is None:
 			self.__name__ = "svm"
 			self.dim_reduction = dim_reduction

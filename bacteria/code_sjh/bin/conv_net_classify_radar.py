@@ -400,7 +400,7 @@ class radarData(Raman):
 			RamanFiles = []
 			for name in self.name2label.keys():
 				files = glob.glob(os.path.join(self.root, name, "*" + self.dataEnd))
-				if self.ratio is not None:
+				if type(self.ratio) == dict:
 					if not name in self.ratio.keys():
 						ratio = 1.0
 					else:
@@ -408,7 +408,9 @@ class radarData(Raman):
 					if ratio < 1.0:
 						files = random.sample(files, int(ratio * len(files)))
 					elif ratio > 1.0:
-						pass  # TODO:过采样函数
+						import math
+						int_ratio = int(math.floor(ratio))
+						files = files * int_ratio + random.sample(files, int(ratio - int_ratio))
 
 				RamanFiles += files
 

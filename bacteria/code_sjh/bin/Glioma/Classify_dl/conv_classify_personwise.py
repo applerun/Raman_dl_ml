@@ -295,8 +295,8 @@ def train_modellist(
 			for k in range(k_split):
 				sfpath = sfname + str(n) + ".csv"
 
-				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, newfile = True if n > 0 else False)
-				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
+				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, class_resampling = "up",newfile = True if n > 0 else False)
+				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath,class_resampling = "up")
 
 				if db_cfg["t_v_t"][2] == 0 and test_db is None:
 					test_db = val_db

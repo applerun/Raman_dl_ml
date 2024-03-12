@@ -113,7 +113,6 @@ def train_modellist(
 		recorddir = os.path.join(projectroot, "results", "tissue_dl", recorddir)
 	if modellist is None:
 		modellist = [basic_SVM(), basic_SVM(PCA(n_components = 10)), basic_SVM(LDA(n_components = 1))]
-	if db_cfg["t_v_t"][2] > 0: warnings.warn("val_db is not needed for machine learning")
 
 	k_split = db_cfg["k_split"]
 
@@ -141,6 +140,9 @@ def train_modellist(
 				sfpath = sfname + str(n) + ".csv"
 				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath)
 				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
+				if db_cfg["t_v_t"][2] > 0 or test_db is not None: warnings.warn(
+					"val_db is not needed for machine learning")
+
 				if db_cfg["t_v_t"][2] == 0 and test_db is None:
 					test_db = val_db
 				elif test_db is None:

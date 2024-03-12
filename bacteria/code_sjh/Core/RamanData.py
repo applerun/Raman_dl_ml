@@ -44,12 +44,12 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 	             newfile = False,
 	             k_split: int = None,
 	             k: int = 0,
-	             ratio: dict = None,
+	             class_resampling: dict or str = None,
+	             balance = None,
 	             ):
 		"""
 
 		:param dataroot: 数据的根目录
-		:param resize: 光谱长度(未实装)
 		:param mode: "train":训练集 "val":验证集 "test":测试集
 		:param t_v_t:[float,float,float] 分割所有数据train-validation-test的比例
 		:param sfpath: 数据文件的名称，初始化时，会在数据根目录创建记录数据的csv文件，文件格式：label，*spectrum，如果已经有该记录文件
@@ -58,9 +58,14 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		:param LoadCsvFile:根据数据存储格式自定义的读取文件数据的函数
 		combined:生成器，第一个为光谱数据的header
 		:param backEnd:str 存储文件的后缀
-		:param supervised: 如果为无监督学习，将noising前的信号设置为label
+		:param unsupervised: 如果为无监督学习，将noising前的信号设置为label
 		:param noising: callable——input：1d spectrum output：noised 1d spectrum
-
+		:param newfile: 重新生成记录文件
+		:param k_split:int 使用k折交叉验证，None不使用
+		:param k: default = 0，第k次交叉验证，不使用交叉验证时无效
+		:param class_resampling:dict or str default = None,
+			dict(name = rate): 对每个标签名(name)数据进行重采样，rate > 1: 过采样,rate < 1：降采样 rate = 1: 不操作
+			str: 使用imblearn包进行自动随机采样，默认为升采样，若出现”down“ 或"under" 关键词则为降采样
 		"""
 
 		# assert mode in ["train", "val", "test"]
@@ -103,7 +108,7 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		self.RamanFiles = []
 		self.labels = []
 		self.Ramans = []
-		self.ratio = ratio
+		self.ratio = class_resampling
 		if self.LoadCsvFile is None:
 			self.LoadCsvFile = getRamanFromFile()
 
@@ -125,6 +130,9 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 			self.LoadCsv(sfpath)
 			self.split_data()
 			self.load_raman_data()
+		self.ratio = class_resampling
+		if type(self.ratio) == str:
+			self.class_auto_balance(class_resampling)
 
 	def LoadCsv(self,
 	            filename, ):
@@ -289,6 +297,26 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 			else:
 				print("unsupported mode:{}".format(mode))
 				raise Exception
+
+	def class_auto_balance(self,
+	                       type = "over"):
+		"""
+		对不平衡数据集进行升采样/降采样，使用imblearn库操作
+		type: default = "over"
+			"over" : 升采样
+			"under" : 降采样
+
+		"""
+
+		if "under" in type or "down" in type:
+			from imblearn.under_sampling import RandomUnderSampler
+			rus = RandomUnderSampler(random_state = 0)
+			self.Ramans, self.labels = rus.fit_resample(numpy.array(self.Ramans), numpy.array(self.labels))
+		else:
+			from imblearn.over_sampling import RandomOverSampler
+			ros = RandomOverSampler(random_state = 0)
+			self.Ramans, self.labels = ros.fit_resample(numpy.array(self.Ramans), numpy.array(self.labels))
+		self.RamanFiles = ["useless after class auto balance by up/down sampling"]
 
 	def __add__(self,
 	            other):

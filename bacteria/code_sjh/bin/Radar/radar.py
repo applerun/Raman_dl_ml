@@ -1,15 +1,16 @@
+import math
 import warnings
 
 from bacteria.code_sjh.utils.RamanData import Raman, projectroot
 from bacteria.code_sjh.models import AlexNet_Sun
-from bacteria.code_sjh.models.CNN.ResNet import ResNet18,ResNet34
+from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34
 from bacteria.code_sjh.utils.Validation.validation import evaluate, evaluate_labelwise
 from bacteria.code_sjh.utils.iterator import train
 from bacteria.code_sjh.Core.basic_functions.visdom_func import batch_plt
 from bacteria.code_sjh.utils.Classifier import copy_filewise_classify
 import torch, numpy, visdom
 import csv, os
-import glob,random
+import glob, random
 
 from torch import nn, optim
 from torch.utils.data import DataLoader
@@ -30,6 +31,7 @@ def radarfile2data(filename):
 				res = numpy.vstack((res, t))
 	x = numpy.linspace(0, 26, res.shape[-1])
 	return res, x
+
 
 class radarData(Raman):
 	def __init__(self,
@@ -58,18 +60,19 @@ class radarData(Raman):
 			kwargs["sfpath"] = "labels.txt"
 		super(radarData, self).__init__(*args, **kwargs)
 		return
+
 	def LoadCsv(self,
 	            filename, ):
 		header = ["label", "filepath"]
 		if os.path.exists(os.path.join(self.root, filename)) and self.new:
 			warnings.warn("old data file will be removed: {}".format(filename))
-			assert filename != "labels.txt","labels.txt is protected, please use another name."
+			assert filename != "labels.txt", "labels.txt is protected, please use another name."
 
 		if not os.path.exists(os.path.join(self.root, filename)) or self.new:
 			RamanFiles = []
 			for name in self.name2label.keys():
 				files = glob.glob(os.path.join(self.root, name, "*" + self.dataEnd))
-				if self.ratio is not None:
+				if type(self.ratio) == dict:
 					if not name in self.ratio.keys():
 						ratio = 1.0
 					else:
@@ -77,8 +80,8 @@ class radarData(Raman):
 					if ratio < 1.0:
 						files = random.sample(files, int(ratio * len(files)))
 					elif ratio > 1.0:
-						pass  # TODO:过采样函数
-
+						int_ratio = int(math.floor(ratio))
+						files = files * int_ratio + random.sample(files, int(ratio - int_ratio))
 				RamanFiles += files
 
 			if self.shuff:  # 打乱顺序
@@ -101,7 +104,7 @@ class radarData(Raman):
 			reader = csv.reader(f)
 			if not filename == "labels.txt":
 				for row in reader:
-					try: #尝试读取数据
+					try:  # 尝试读取数据
 						label = int(row[0])
 						spectrum = row[1]
 						self.labels.append(torch.tensor(label))
@@ -114,7 +117,7 @@ class radarData(Raman):
 						break
 			else:
 				l = list(reader)
-				self.RamanFiles,labelnames = l[0],l[2]
+				self.RamanFiles, labelnames = l[0], l[2]
 				for i in range(len(labelnames)):
 					if i == len(labelnames):
 						break
@@ -123,11 +126,13 @@ class radarData(Raman):
 						del labelnames[i]
 						if i == len(labelnames):
 							break
-					self.RamanFiles[i]=os.path.join(self.root,labelnames[i],self.RamanFiles[i])
+					self.RamanFiles[i] = os.path.join(self.root, labelnames[i], self.RamanFiles[i])
 					labelnames[i] = torch.tensor(self.name2label[labelnames[i]])
 				self.labels = labelnames
 		assert len(self.RamanFiles) == len(self.labels)
 		return self.RamanFiles, self.labels
+
+
 def AST_main(
 		net,
 		train_db,
@@ -295,7 +300,7 @@ def AST_main(
 
 if __name__ == '__main__':
 
-	dataroot = os.path.join(os.path.dirname(coderoot), "data", "radar","breath_ver1")
+	dataroot = os.path.join(os.path.dirname(coderoot), "data", "radar", "breath_ver1")
 	k_split = 10
 	datasetcfg = dict(
 		dataroot = dataroot,
@@ -322,14 +327,14 @@ if __name__ == '__main__':
 		device = device,
 		vis = vis,
 	)
-	for model in [AlexNet_Sun,ResNet18,ResNet34,]:
+	for model in [AlexNet_Sun, ResNet18, ResNet34, ]:
 		for k in range(k_split):  # k-fold cross validation
 			# train_db = raman(**datasetcfg, mode = "train", k = k, newfile = True if k == 0 else False)
 			# val_db = raman(**datasetcfg, mode = "val", k = k)
 			# test_db = raman(**datasetcfg, mode = "test", k = k)
-			train_db = raman(**datasetcfg,mode = "train", k = k,shuffle = False)
-			val_db = raman(**datasetcfg, mode = "val", k = k,shuffle = False)
-			test_db = raman(**datasetcfg, mode = "test",shuffle = False)
+			train_db = raman(**datasetcfg, mode = "train", k = k, shuffle = False)
+			val_db = raman(**datasetcfg, mode = "val", k = k, shuffle = False)
+			test_db = raman(**datasetcfg, mode = "test", shuffle = False)
 			sample_tensor, sample_label = train_db.__getitem__(1)
 			sample_tensor = torch.unsqueeze(sample_tensor, dim = 0)
 			b, t, be = AST_main(

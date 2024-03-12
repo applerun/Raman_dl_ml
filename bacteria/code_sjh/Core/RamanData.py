@@ -1,5 +1,7 @@
 import copy
 import os
+
+import torch
 from torch.utils.data import Dataset
 import csv
 import numpy
@@ -10,9 +12,9 @@ from bacteria.code_sjh.Core.basic_functions import visdom_func
 
 
 def get_dict_str(src: dict,
-                 prefix = "\t",
-                 intend = 1,
-                 skipkeys = True):
+				 prefix = "\t",
+				 intend = 1,
+				 skipkeys = True):
 	res = "{\n"
 	for k, v in src.items():
 		if type(v) == dict:
@@ -31,22 +33,22 @@ def get_dict_str(src: dict,
 
 class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 	def __init__(self,
-	             dataroot: str,
-	             mode = "train",
-	             t_v_t = None,
-	             sfpath = "Ramans.csv",
-	             shuffle = True,
-	             transform = None,
-	             LoadCsvFile = None,
-	             backEnd = ".csv",
-	             unsupervised: bool = False,
-	             noising = None,
-	             newfile = False,
-	             k_split: int = None,
-	             k: int = 0,
-	             class_resampling: dict or str = None,
-	             balance = None,
-	             ):
+				 dataroot: str,
+				 mode = "train",
+				 t_v_t = None,
+				 sfpath = "Ramans.csv",
+				 shuffle = True,
+				 transform = None,
+				 LoadCsvFile = None,
+				 backEnd = ".csv",
+				 unsupervised: bool = False,
+				 noising = None,
+				 newfile = False,
+				 k_split: int = None,
+				 k: int = 0,
+				 class_resampling: dict or str = None,
+				 balance = None,
+				 ):
 		"""
 
 		:param dataroot: 数据的根目录
@@ -135,7 +137,7 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 			self.class_auto_balance(class_resampling)
 
 	def LoadCsv(self,
-	            filename, ):
+				filename, ):
 		pass
 
 	def split_data(self):
@@ -151,7 +153,7 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		return
 
 	def shufflecsv(self,
-	               filename = None):
+				   filename = None):
 		if filename is None:
 			filename = self.sfpath
 		path = os.path.join(self.root, filename)
@@ -190,13 +192,15 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		for i in range(len(self.name2label)):
 			spectrum_each_label[i] = None
 		for i in range(self.__len__()):
-			raman, label = self.Ramans[i], self.labels[i]
+			raman, label = self[i]
 			if type(raman) == numpy.ndarray:
+				if type(label) == torch.Tensor:
+					label = label.item()
 				if spectrum_each_label[label] is None:
 					spectrum_each_label[label] = raman
 				else:
 					spectrum_each_label[label] = numpy.vstack(
-						(spectrum_each_label[label.item()],
+						(spectrum_each_label[label],
 						 raman), )
 			else:
 				raman = torch.unsqueeze(raman, dim = 0)
@@ -225,9 +229,9 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		return torch.tensor(self.xs)
 
 	def show_data_vis(self,
-	                  xs = None,
-	                  vis = None,
-	                  win = "data"):
+					  xs = None,
+					  vis = None,
+					  win = "data"):
 
 		label2name = self.label2name()
 		label2data = self.get_data_sorted_by_label()
@@ -249,14 +253,14 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 			for i in range(self.numclasses):
 				data = torch.squeeze(label2data[i])
 				vis.scatter(data,
-				            win = win,
-				            update = None if i == 0 else "append",
-				            name = self.label2name()[i],
-				            opts = dict(
-					            title = win,
-					            showlegend = True,
-				            )
-				            )
+							win = win,
+							update = None if i == 0 else "append",
+							name = self.label2name()[i],
+							opts = dict(
+								title = win,
+								showlegend = True,
+							)
+							)
 		return
 
 	def get_data_sorted_by_name(self):
@@ -267,10 +271,10 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		return name2data
 
 	def savedata(self,
-	             dir,
-	             mode = "file_wise",
-	             backend = ".csv",
-	             delimiter = ","):
+				 dir,
+				 mode = "file_wise",
+				 backend = ".csv",
+				 delimiter = ","):
 		"""
 
 		@param dir: 保存的文件夹路径（如没有则会被创建
@@ -298,16 +302,16 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 					path = os.path.join(name_dir, name + "-" + str(i) + backend)
 					# numpy.savetxt(path, data, delimiter = ",")
 					numpy.savetxt(path, numpy.vstack((self.xs, numpy.arange(len(self.xs)), data[i])).T,
-					              delimiter = delimiter,
-					              comments = "",
-					              header = "Wavelength,Column,Intensity")
+								  delimiter = delimiter,
+								  comments = "",
+								  header = "Wavelength,Column,Intensity")
 
 			else:
 				print("unsupported mode:{}".format(mode))
 				raise Exception
 
 	def class_auto_balance(self,
-	                       type = "over"):
+						   type = "over"):
 		"""
 		对不平衡数据集进行升采样/降采样，使用imblearn库操作
 		type: default = "over"
@@ -318,7 +322,8 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		self.Ramans = numpy.array(self.Ramans)
 		self.labels = numpy.array(self.labels)
 		oldshape = copy.deepcopy(self.Ramans.shape)
-		self.Ramans = numpy.reshape(self.Ramans, (oldshape[0], oldshape[1] * oldshape[2]))
+		if len(oldshape) > 2:
+			self.Ramans = numpy.reshape(self.Ramans, (oldshape[0], oldshape[1] * oldshape[2]))
 		if "under" in type or "down" in type:
 			from imblearn.under_sampling import RandomUnderSampler
 			rus = RandomUnderSampler(random_state = 0)
@@ -327,18 +332,19 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 			from imblearn.over_sampling import RandomOverSampler
 			ros = RandomOverSampler(random_state = 0)
 			self.Ramans, self.labels = ros.fit_resample(self.Ramans, self.labels)
-		if oldshape[1] > 1:
-			self.Ramans = numpy.reshape(self)
+		if len(oldshape) > 2:
+			self.Ramans = numpy.reshape(self.Ramans, oldshape)
+
 		self.RamanFiles = ["useless after class auto balance by up/down sampling"]
 
 	def __add__(self,
-	            other):
+				other):
 		if len(other) == 0:
 			return copy.deepcopy(self)
 		assert len(self.xs) == len(other.xs)
 		assert self.label2name().keys() == other.label2name().keys()
 		res = copy.deepcopy(self)
-		for i in len(other):
+		for i in range(len(other)):
 			if other.RamanFiles[i] in self.RamanFiles:
 				assert self.RamanFiles
 			res.labels = other.labels + self.labels
@@ -350,7 +356,7 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		return len(self.Ramans)
 
 	def __getitem__(self,
-	                item):
+					item):
 		assert item < len(self.Ramans), "{}/{}".format(item, len(self))
 
 		raman, label = self.Ramans[item], self.labels[item]

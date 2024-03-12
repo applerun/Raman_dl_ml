@@ -6,8 +6,10 @@ def pytorchlize(x: numpy.ndarray or torch.Tensor):
 	for i in range(3 - len(x.shape)):
 		if type(x) == numpy.ndarray:
 			x = numpy.expand_dims(x, axis = len(x.shape) - 1)
+			x = torch.tensor(x)
 		else:
 			x = torch.unsqueeze(x, dim = len(x.shape) - 1)
+
 	return x
 
 

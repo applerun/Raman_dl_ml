@@ -186,8 +186,8 @@ if __name__ == '__main__':
 	root = os.path.join(projectroot, "data", "脑胶质瘤")
 	datapath = os.path.join(getRootPath("Raman_dl_ml"), r"data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx")
 	# # for dirs in os.listdir(os.path.join(root, "unlabeled_data")):
-	shutil.rmtree((os.path.join(root, "labeled_data")))
-	for dirs in ["data_indep_unlabeled", "data_batch123_unlabeled"]:
+	shutil.rmtree((os.path.join(root,"labeled_data")))
+	for dirs in ["data_indep_unlabeled","data_batch123_unlabeled"]:
 		if not os.path.isdir(os.path.join(root, "unlabeled_data", dirs)):
 			continue
 		src = r"unlabeled_data\{}".format(dirs)
@@ -195,14 +195,11 @@ if __name__ == '__main__':
 		if os.path.isdir(os.path.join(root, dst)): continue
 		main(datapath, root, src = r"unlabeled_data\{}".format(dirs),
 		     dst = r"labeled_data\{}".format(dirs.replace("unlabeled", "labeled")))
-
 	shutil.copytree(os.path.join(root, "labeled_data", "data_indep_labeled"),
 	                os.path.join(root, "labeled_data", "data_all_labeled"))
 	copy2merge(os.path.join(root, "labeled_data", "data_batch123_labeled"),
 	           os.path.join(root, "labeled_data", "data_all_labeled"))
-
 	datapath = os.path.join(getRootPath("Raman_dl_ml"), r"data\脑胶质瘤\data_used\病例编号&分类结果2 - GBM.xlsx")
 	main(datapath, root, src = r"unlabeled_data\data_batch123_unlabeled",
-	     dst = r"labeled_data\data_GBM_labeled")
-
+		 dst = r"labeled_data\data_GBM_labeled")
 	strip_unknown(os.path.join(root, "labeled_data"))

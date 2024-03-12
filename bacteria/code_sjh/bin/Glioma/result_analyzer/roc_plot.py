@@ -21,8 +21,8 @@ color_all = [color1, color4]
 
 
 def cal_roc_macro(fpr: list,
-                  tpr: list,
-                  type = "macro"):
+				  tpr: list,
+				  type = "macro"):
 	"""
 
 	@param fpr: (l,x)
@@ -52,8 +52,8 @@ def cal_roc_macro(fpr: list,
 
 
 def rocRead_bi(src,
-               mode = "test",
-               pos_label = "pos"):
+			   mode = "test",
+			   pos_label = "pos"):
 	f"""
 	read： src/*/roc/{mode}_{pos_label}_roc.csv (二分类) or src/*/roc/{mode}_?_roc.csv (多分类) 
 	每个*对应的文件夹得到一个roc曲线（多分类的时候为平均roc）
@@ -113,18 +113,18 @@ def rocRead_bi(src,
 	fpr_macro, _, tpr_macro = cal_roc_macro(fprs, tprs)
 	auc_macro = auc(fpr_macro, tpr_macro)
 	numpy.savetxt(os.path.join(src, "roc_record.csv"), numpy.vstack((fpr_macro, tpr_macro)).T, delimiter = ",",
-	              header = "fpr,tpr,auc={}".format(auc_macro),
-	              comments = "")
+				  header = "fpr,tpr,auc={}".format(auc_macro),
+				  comments = "")
 	return fpr_macro, tpr_macro
 
 
 def plot_roc(fpr,
-             tpr,
-             title,
-             axes: plt.Axes = None,
-             show_auc = True,
-             color = color1,
-             name = None):
+			 tpr,
+			 title,
+			 axes: plt.Axes = None,
+			 show_auc = True,
+			 color = color1,
+			 name = None):
 	if axes is None:
 		fig, axes = plt.subplots(1)
 	if show_auc:
@@ -156,12 +156,12 @@ def plot_roc(fpr,
 
 
 def main_bi_class(dir,
-                  mode = "test",
-                  nets = None,
-                  molecules = None,
-                  positions = None,
-                  net2axes = None
-                  ):
+				  mode = "test",
+				  nets = None,
+				  molecules = None,
+				  positions = None,
+				  net2axes = None
+				  ):
 	if nets is None:
 		nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
 
@@ -181,8 +181,11 @@ def main_bi_class(dir,
 			continue
 		for i, net in enumerate(nets):
 			src = os.path.join(molecule_abs, "Record" + net)
-			roc = rocRead_bi(src, mode = mode)
-			net2molecule2roc[net][molecule] = roc
+			try:
+				roc = rocRead_bi(src, mode = mode)
+				net2molecule2roc[net][molecule] = roc
+			except:
+				net2molecule2roc[net][molecule] = None
 	for molecule in unfoundmolecule:
 		molecules.remove(molecule)
 	for net, molecule2roc in net2molecule2roc.items():
@@ -190,7 +193,7 @@ def main_bi_class(dir,
 		axes: numpy.ndarray
 		if net2axes is None:
 			fig, axes = plt.subplots(num_row, num_row, dpi = 600, figsize = (9.6, 10),
-			                         )
+									 )
 			# , constrained_layout = True
 			plt.subplots_adjust(wspace = 0.4, hspace = 0.6)
 		else:
@@ -199,17 +202,20 @@ def main_bi_class(dir,
 
 		axes = axes.flatten()
 		allidx = list(range(len(axes)))
-		for i, molecule in enumerate(molecules):
-			if positions is not None:
-				ax = axes[positions[i]]
-				allidx.remove(positions[i])
-			else:
-				ax = axes[i]
-				allidx.remove(i)
-			plot_roc(*molecule2roc[molecule], molecule, axes = ax, show_auc = True,
-			         name = "ROC",
-			         color = color4 if "GBM" in dir else color1)
+		for i_, molecule in enumerate(molecules):
 
+			if positions is not None:
+				i = positions[i_]
+			else:
+				i = i_
+			ax = axes[i]
+			try:
+				plot_roc(*molecule2roc[molecule], molecule, axes = ax, show_auc = True,
+						 name = "ROC",
+						 color = color4 if "GBM" in dir else color1)
+				allidx.remove(i)
+			except:
+				continue
 		if net2axes is None:
 			for i in allidx:
 				fig.delaxes(axes[i])
@@ -219,8 +225,8 @@ def main_bi_class(dir,
 
 
 def main(dirname,
-         nets = None,
-         mode = "test"):
+		 nets = None,
+		 mode = "test"):
 	if nets is None:
 		nets = ["Alexnet"]
 	# ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)"
@@ -241,4 +247,4 @@ if __name__ == '__main__':
 		if not dirname.startswith("data"):
 			continue
 		main(os.path.join(res_root, dirname), nets = ["svm", "pca_svm", "lda_svm"], mode = "val")
-	# main(os.path.join(res_root, dirname), nets = ["AlexNet"], mode = "test")
+# main(os.path.join(res_root, dirname), nets = ["AlexNet"], mode = "test")

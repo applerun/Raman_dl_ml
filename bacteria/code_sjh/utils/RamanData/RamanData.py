@@ -193,7 +193,7 @@ def Raman_depth_gen(max_depth, min_depth = None, warning = False):  # 生成一�
             也可通过参数 min_depth
             """
             super(Raman_t, self).__init__(*args, **kwargs)
-
+            self.sfpath = self.sfpath+"_depth_{}_to_{}".format(min_depth,max_depth)
         def LoadCsv(self,
                     filename, ):
             """

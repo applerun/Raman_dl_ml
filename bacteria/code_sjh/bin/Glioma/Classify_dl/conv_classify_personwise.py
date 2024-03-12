@@ -26,7 +26,7 @@ global loss
 projectroot = getRootPath("Raman_dl_ml")
 coderoot = getRootPath("code_sjh")
 logfile = os.path.join(projectroot, "log", "glioma", "DL_classification", os.path.basename(__file__),
-                       time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
+					   time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
 if not os.path.isdir(os.path.dirname(logfile)):
 	os.makedirs(os.path.dirname(logfile))
 with open(logfile, "w") as f:
@@ -176,7 +176,7 @@ def train_classification_net(
 					update = None if global_step <= epo_interv else "append", viz = vis
 				)
 				batch_plt(sample2acc_train, global_step, win = "val_acc_each_sample" + str(k),
-				          update = None if global_step <= epo_interv else "append", viz = vis)
+						  update = None if global_step <= epo_interv else "append", viz = vis)
 
 	net.load(save_dir)
 
@@ -185,14 +185,14 @@ def train_classification_net(
 	res_test = evaluate_all(net, test_loader, criteon, device)
 	res_val = evaluate_all(net, val_loader, criteon, device)
 	res = dict(train_acces = train_acces, val_acces = val_acces,  # 训练过程——正确率
-	           train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
-	           best_acc = best_acc, best_epoch = best_epoch,  # early-stopping位置
-	           res_test = res_test,  # 测试集所有指标：
-	           # acc：float正确率, loss:float,
-	           # label2roc:dict 各个label的ROC, label2auc:dict 各个label的AUC, confusion_matrix:np.ndarray 混淆矩阵
-	           res_val = res_val,  # 验证集所有指标
+			   train_losses = train_losses, val_losses = val_losses,  # 训练过程——损失函数
+			   best_acc = best_acc, best_epoch = best_epoch,  # early-stopping位置
+			   res_test = res_test,  # 测试集所有指标：
+			   # acc：float正确率, loss:float,
+			   # label2roc:dict 各个label的ROC, label2auc:dict 各个label的AUC, confusion_matrix:np.ndarray 混淆矩阵
+			   res_val = res_val,  # 验证集所有指标
 
-	           )
+			   )
 
 	label2data = val_db.get_data_sorted_by_label()
 	cams = {}
@@ -227,14 +227,14 @@ def train_classification_net(
 
 
 readdatafunc = getRamanFromFile(  # 定义读取数据的函数
-	wavelengthstart = 39, wavelengthend = 1810, delimeter = None,
-	dataname2idx = {"Wavelength": 2, "Intensity": 6}
+	wavelengthstart = 400, wavelengthend = 1810, delimeter = None,
+	dataname2idx = {"Wavelength": 0, "Intensity": 1}
 )
 
 
 def train_modellist(
 		dataroot,
-		db_cfg = None,
+		db_cfg ,
 		raman = RamanDatasetCore,
 		# 设置读取数据集的DataSet
 		# 设置k叠交叉验证的k值
@@ -251,23 +251,6 @@ def train_modellist(
 		recorddir = os.path.join(projectroot, "results", "tissue_dl", recorddir)
 	if modellist is None:
 		modellist = [AlexNet_Sun, ResNet18, ResNet34]
-	if db_cfg is None:
-		db_cfg = dict(  # 数据集设置
-			dataroot = dataroot,
-			backEnd = ".csv",
-			# backEnd = ".asc",
-			t_v_t = [0.8, 0.2, 0.0],
-			LoadCsvFile = readdatafunc,
-			k_split = 6,
-			transform = Process.process_series([  # 设置预处理流程
-				Process.interpolator(),
-				# Process.baseline_als(),
-				Process.bg_removal_niter_fit(),
-				# Process.bg_removal_niter_piecewisefit(),
-				Process.sg_filter(),
-				Process.norm_func(), ]
-			)
-		)
 	k_split = db_cfg["k_split"]
 	bestaccs, testaccs, bepochs, vaucs, taucs = [], [], [], [], []
 
@@ -292,7 +275,7 @@ def train_modellist(
 		os.makedirs(recorddir)
 	for model in modellist:
 		recordsubdir = os.path.join(recorddir,
-		                            "Record" + model.__name__)  # + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
+									"Record" + model.__name__)  # + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
 		if not os.path.isdir(recordsubdir):
 			os.makedirs(recordsubdir)
 		recordfile = recordsubdir + ".csv"  # 记录训练的配置和结果
@@ -301,9 +284,9 @@ def train_modellist(
 		writer = csv.writer(f)
 		f.write(db_cfg.__str__() + "\n")
 		f.write(train_cfg.__str__() + "\n")
-		with open(os.path.join(recordsubdir, "db_cfg.txt"),"w") as sf:
+		with open(os.path.join(recordsubdir, "db_cfg.txt"), "w") as sf:
 			sf.write(get_dict_str(db_cfg) + "\n")
-		with open(os.path.join(recordsubdir, "train_cfg.txt"),"w") as sf:
+		with open(os.path.join(recordsubdir, "train_cfg.txt"), "w") as sf:
 			sf.write(get_dict_str(train_cfg) + "\n")
 		writer.writerow(["n", "k", "best_acc", "test_acc", "best_epoch", "val_AUC", "test_AUC"])
 		conf_m_v = None
@@ -443,7 +426,7 @@ def main_indep_test():
 		recorddir = os.path.join(recordroot, ele)
 		path2labelfunc = path2func_generator(num2label)
 		train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
-		                path2labelfunc = path2labelfunc, test_db = test_db)
+						path2labelfunc = path2labelfunc, test_db = test_db)
 
 
 # 设置数据集分割
@@ -484,9 +467,9 @@ def main_one_datasrc(
 			dataroot = dataroot,
 			backEnd = ".csv",
 			# backEnd = ".asc",
-			t_v_t = [0.6, 0.2, 0.2],
+			t_v_t = [0.8, 0.1, 0.1],
 			LoadCsvFile = readdatafunc,
-			k_split = 5,
+			k_split = 9,
 			transform = Process.process_series([  # 设置预处理流程
 				preprocess,
 				Process.sg_filter(),
@@ -495,11 +478,11 @@ def main_one_datasrc(
 		recorddir = os.path.join(recordroot, ele)
 		path2labelfunc = path2func_generator(num2label)
 		train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
-		                path2labelfunc = path2labelfunc, sfname = "Raman_personwise_", n_iter = 1, )
+						path2labelfunc = path2labelfunc, sfname = "Raman_", n_iter = 1, )
 
 
 def main_onesrc(datasplit = "personwise",
-                dataroot_ = None):
+				dataroot_ = None):
 	from bacteria.code_sjh.bin.Glioma.data_handler.samplewise2personwise import rename_files_between
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 
@@ -526,8 +509,8 @@ def main_onesrc(datasplit = "personwise",
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
 	main_one_datasrc(dataroot_dst, info_file,
-	                 raman = Raman_depth_gen(2, 2) if datasplit == "pointwise" else Raman_dirwise,
-	                 record_info = os.path.basename(dataroot_dst) + "_" + datasplit)
+					 raman = Raman_depth_gen(2, 2) if datasplit == "pointwise" else Raman_dirwise,
+					 record_info = os.path.basename(dataroot_dst) + "_" + datasplit)
 
 
 # rename_files_between_undo(dataroot_dst, 3)
@@ -543,11 +526,11 @@ def main_onesrc(datasplit = "personwise",
 
 if __name__ == '__main__':
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
-	# for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-	for dir in ["data_GBM_labeled", "data"]:
+	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
+		# for dir in ["data_GBM_labeled", "data"]:
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
 			continue
-		main_onesrc(datasplit = "tissuewise", dataroot_ = dir_abs)
-		main_onesrc(datasplit = "personwise", dataroot_ = dir_abs)
+		# main_onesrc(datasplit = "tissuewise", dataroot_ = dir_abs)
+		# main_onesrc(datasplit = "personwise", dataroot_ = dir_abs)
 		main_onesrc(datasplit = "pointwise", dataroot_ = dir_abs)

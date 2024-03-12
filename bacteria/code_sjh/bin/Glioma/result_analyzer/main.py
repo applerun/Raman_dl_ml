@@ -12,9 +12,9 @@ projectroot = getRootPath("Raman_dl_ml")
 
 
 def main_roc_stat():
-	res_root = os.path.join(projectroot, r"results\glioma\ml\svm_pca_umap_811_pointwise")
-	# res_root = os.path.join(projectroot, r"results\glioma\ml\umap_bak\person_wise")
-	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "9fold91","ml")
+	# res_root = os.path.join(projectroot, r"results\glioma\ml\svm_pca_umap_pointwise")
+	res_root = os.path.join(projectroot, r"results\glioma\dl\811pointwise")
+	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "9fold91","dl")
 	if not os.path.isdir(res_Heatmap_root):
 		os.makedirs(res_Heatmap_root)
 	statfiles = []
@@ -22,10 +22,16 @@ def main_roc_stat():
 		if os.path.isfile(os.path.join(res_root, "models.txt")):
 			array = numpy.loadtxt(os.path.join(res_root, "models.txt"), dtype = "str", delimiter = ",", ndmin = 1)
 			nets = list(array)
+		else:
+			nets = ["AlexNet"]
 		if not dirname.startswith("data"):
 			continue
-		roc_plot.main(os.path.join(res_root, dirname), nets = nets, mode = "val")
-		dst_file = res_stat.main(os.path.join(res_root, dirname), nets = nets, mode = "val")
+		if "dl" in res_root.split(os.sep):
+			mode = "test"
+		else:
+			mode = "val"
+		roc_plot.main(os.path.join(res_root, dirname), nets = nets, mode = mode)
+		dst_file = res_stat.main(os.path.join(res_root, dirname), nets = nets, mode = mode)
 		statfiles.append(dst_file)
 		shutil.copy(dst_file, os.path.join(res_Heatmap_root, os.path.basename(dst_file)))
 
@@ -45,7 +51,7 @@ def main_Heatmap():
 		val_res_heatmap.main_hatchwise(os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_all.csv"),
 		                               os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_GBM.csv"),
 		                               os.path.join(res_Heatmap_root + "_plot_res", split_strategy), skiprows = 2,
-		                               norm = colors.Normalize(0.3, 1, clip = True))
+		                               norm = colors.Normalize(0.5, 1, clip = True))
 
 
 if __name__ == '__main__':

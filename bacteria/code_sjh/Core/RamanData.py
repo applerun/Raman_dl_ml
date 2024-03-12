@@ -1,9 +1,9 @@
+import copy
 import os
 from torch.utils.data import Dataset
 import csv
 import numpy
 import random
-import torch
 from bacteria.code_sjh.Core.basic_functions.data_functions import *
 from bacteria.code_sjh.Core.basic_functions.fileReader import *
 from bacteria.code_sjh.Core.basic_functions import visdom_func
@@ -191,16 +191,24 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 			spectrum_each_label[i] = None
 		for i in range(self.__len__()):
 			raman, label = self.Ramans[i], self.labels[i]
-			raman = torch.unsqueeze(raman, dim = 0)
-
-			if spectrum_each_label[label.item()] is None:
-				spectrum_each_label[label.item()] = raman
+			if type(raman) == numpy.ndarray:
+				if spectrum_each_label[label] is None:
+					spectrum_each_label[label] = raman
+				else:
+					spectrum_each_label[label] = numpy.vstack(
+						(spectrum_each_label[label.item()],
+						 raman), )
 			else:
-				spectrum_each_label[label.item()] = torch.cat(
-					(spectrum_each_label[label.item()],
-					 raman),
-					dim = 0
-				)
+				raman = torch.unsqueeze(raman, dim = 0)
+				if spectrum_each_label[label.item()] is None:
+					spectrum_each_label[label.item()] = raman
+				else:
+					spectrum_each_label[label.item()] = torch.cat(
+						(spectrum_each_label[label.item()],
+						 raman),
+						dim = 0
+					)
+
 		for k in spectrum_each_label.keys():
 			if spectrum_each_label[k] is None:
 				continue
@@ -307,15 +315,20 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 			"under" : 降采样
 
 		"""
-
+		self.Ramans = numpy.array(self.Ramans)
+		self.labels = numpy.array(self.labels)
+		oldshape = copy.deepcopy(self.Ramans.shape)
+		self.Ramans = numpy.reshape(self.Ramans, (oldshape[0], oldshape[1] * oldshape[2]))
 		if "under" in type or "down" in type:
 			from imblearn.under_sampling import RandomUnderSampler
 			rus = RandomUnderSampler(random_state = 0)
-			self.Ramans, self.labels = rus.fit_resample(numpy.array(self.Ramans), numpy.array(self.labels))
+			self.Ramans, self.labels = rus.fit_resample(self.Ramans, self.labels)
 		else:
 			from imblearn.over_sampling import RandomOverSampler
 			ros = RandomOverSampler(random_state = 0)
-			self.Ramans, self.labels = ros.fit_resample(numpy.array(self.Ramans), numpy.array(self.labels))
+			self.Ramans, self.labels = ros.fit_resample(self.Ramans, self.labels)
+		if oldshape[1] > 1:
+			self.Ramans = numpy.reshape(self)
 		self.RamanFiles = ["useless after class auto balance by up/down sampling"]
 
 	def __add__(self,
@@ -341,7 +354,8 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		assert item < len(self.Ramans), "{}/{}".format(item, len(self))
 
 		raman, label = self.Ramans[item], self.labels[item]
-
+		raman = numpy.expand_dims(raman, 0)
+		raman = torch.tensor(raman).to(torch.float32)
 		if self.unsupervised:  # label设置为noising前的光谱数据
 			label = raman.to(torch.float32)
 			if not self.noising == None and self.mode == "train":

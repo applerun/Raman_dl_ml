@@ -150,10 +150,10 @@ class Raman(RamanDatasetCore):
 			if self.transform is not None:
 				try:
 					R, X = self.transform(R[0], X)
-					R = numpy.expand_dims(R, 0)
+
 				except:
 					raise ValueError("data from {} cannot be transformed".format(file))
-			R = torch.tensor(R).to(torch.float32)
+
 			if self.xs is None:
 				self.xs = X
 
@@ -437,12 +437,10 @@ class Raman_dirwise(RamanDatasetCore):
 
 				if self.transform is not None:
 					R, X = self.transform(R[0], X)
-					R = numpy.expand_dims(R, 0)
 				if self.xs is None:
 					self.xs = X
 				# 数据预处理
 				assert R.shape[-1] == len(self.xs), "length:{} of the data from {} is invalid".format(R.shape[-1], file)
-				R = torch.tensor(R).to(torch.float32)
 				self.Ramans.append(R)
 				self.labels.append(label)
 				self.RamanFiles.append(os.path.join(*file.split(os.sep)[-3:]))

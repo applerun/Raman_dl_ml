@@ -134,16 +134,17 @@ def train_modellist(
 		conf_m_v = None
 		i = 0  # 实验进度计数
 		valaccs, vaucs = [], []
+		test_db_ = test_db
 		for n in range(n_iter):
 			for k in range(k_split):
 
 				sfpath = sfname + str(n) + ".csv"
 				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath)
 				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
-				if db_cfg["t_v_t"][2] > 0 or test_db is not None: warnings.warn(
+				if db_cfg["t_v_t"][2] > 0 or test_db_ is not None: warnings.warn(
 					"val_db is not needed for machine learning")
 
-				if db_cfg["t_v_t"][2] == 0 and test_db is None:
+				if db_cfg["t_v_t"][2] == 0 and test_db_ is None:
 					test_db = val_db
 				elif test_db is None:
 					test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)

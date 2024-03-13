@@ -11,10 +11,11 @@ from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 projectroot = getRootPath("Raman_dl_ml")
 
 
-def main_roc_stat(nets = None):
-	res_root = os.path.join(projectroot, r"results\glioma\ml\spectrum_wise")
+def main_roc_stat(nets = None, dl = True):
+	res_root_up = "dl" if dl else "ml"
+	res_root = os.path.join(projectroot, r"results\glioma\{}\811_pointwise_upsampling".format(res_root_up))
 	# res_root = os.path.join(projectroot, r"results\glioma\ml\umap_bak\person_wise")
-	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "spectrum_wise","ml")
+	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "upsampling", res_root_up)
 	if not os.path.isdir(res_Heatmap_root):
 		os.makedirs(res_Heatmap_root)
 	statfiles = []
@@ -25,10 +26,13 @@ def main_roc_stat(nets = None):
 		elif nets is not None:
 			nets_ = nets
 		else:
-			nets_ = "pca_svm,umap_svm".split(",")
+			if dl:
+				nets_ = ["AlexNet"]
+			else:
+				nets_ = "pca_svm,umap_svm".split(",")
 		if not dirname.startswith("data"):
 			continue
-		if "dl" in res_root.split(os.sep):
+		if dl:
 			mode = "test"
 		else:
 			mode = "val"
@@ -40,22 +44,26 @@ def main_roc_stat(nets = None):
 
 def main_Heatmap():
 	from matplotlib import colors
-	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318","9fold91")
+	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", "upsampling", "merge")
 	l_prefix = "res_stat-data_all,res_stat-data_GBM,res_stat-data_batch123".split(",")
-	for res_stat_dir in os.listdir(res_Heatmap_root):
-		res_stat_dir = os.path.join(res_Heatmap_root, res_stat_dir)
-		if not os.path.isdir(res_stat_dir) or not res_stat_dir.endswith("wise"): continue
-		for prefix in l_prefix:
-			val_res_heatmap.merge_stat_files(res_stat_dir, os.path.join(res_stat_dir + prefix + ".csv"), prefix,
-			                                 new_models = "pca_svm,AlexNet,umap_svm".split(","), new_rows = 2)
+	for prefix in l_prefix:
+		val_res_heatmap.merge_stat_files(res_Heatmap_root, res_Heatmap_root + "_" + prefix + ".csv", prefix,
+										 new_models = "pca_svm,AlexNet,umap_svm".split(","), new_rows = 2)
+	# for res_stat_dir in os.listdir(res_Heatmap_root):
+	# 	res_stat_dir = os.path.join(res_Heatmap_root, res_stat_dir)
+	# 	if not os.path.isdir(res_stat_dir) or not res_stat_dir.endswith("wise"): continue
+	# 	for prefix in l_prefix:
+	# 		val_res_heatmap.merge_stat_files(res_stat_dir, os.path.join(res_stat_dir + prefix + ".csv"), prefix,
+	# 										 new_models = "pca_svm,AlexNet,umap_svm".split(","), new_rows = 2)
 	# for split_strategy in "person_wise,tissue_wise,point_wise".split(","):
-	for split_strategy in ["dl+ml_pointwise"]:
-		val_res_heatmap.main_hatchwise(os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_batch123.csv"),
-		                               os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_GBM.csv"),
-		                               os.path.join(res_Heatmap_root + "_plot_res", split_strategy), skiprows = 2,
-		                               norm = colors.Normalize(0.5, 1, clip = True))
+	# for split_strategy in ["point_wise"]:
+	val_res_heatmap.main_hatchwise(os.path.join(res_Heatmap_root + "_res_stat-data_batch123.csv"),
+								   os.path.join(res_Heatmap_root + "_res_stat-data_GBM.csv"),
+								   os.path.join(res_Heatmap_root + "_plot_res"), skiprows = 2,
+								   norm = colors.Normalize(0.5, 1, clip = True))
 
 
 if __name__ == '__main__':
-	main_roc_stat()
-	# main_Heatmap()
+	# main_roc_stat(dl = True)
+	# main_roc_stat(dl = False)
+	main_Heatmap()

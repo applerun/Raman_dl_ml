@@ -18,7 +18,7 @@ from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 projectroot = getRootPath("Raman_dl_ml")
 coderoot = getRootPath("code_sjh")
 logfile = os.path.join(projectroot, "log", "glioma", "ML_classification", os.path.basename(__file__),
-                       time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
+					   time.strftime("%Y-%m-%d-%H_%M_%S") + ".txt")
 # @pysnooper.snoop(logfile, prefix = "--*--")
 if not os.path.isdir(os.path.dirname(logfile)):
 	os.makedirs(os.path.dirname(logfile))
@@ -32,8 +32,8 @@ readdatafunc = getRamanFromFile(
 
 
 def evaluate_all_by_score(Y_pred,
-                          Y_probe,
-                          Y_true):
+						  Y_probe,
+						  Y_true):
 	acc = accuracy_score(Y_true, Y_probe)
 	num_classes = len(Y_probe[0])
 	label2auc = {}
@@ -59,24 +59,24 @@ def train_classification_model(
 	# train_data, train_label = [np.squeeze(x.numpy()) for x in train_db.Ramans], [x.item() for x in
 	#                                                                              train_db.labels]
 	train_data, train_label = [np.squeeze(x) for x in train_db.Ramans], [x for x in
-	                                                                     train_db.labels]
+																		 train_db.labels]
 
 	model.fit(train_data, train_label)
 
 	# val_data, val_label = [np.squeeze(x.numpy()) for x in val_db.Ramans], [x.item() for x in
 	#                                                                        val_db.labels]
 	val_data, val_label = [np.squeeze(x) for x in val_db.Ramans], [x for x in
-	                                                               val_db.labels]
+																   val_db.labels]
 	val_prob = model.predict_proba(val_data)
 	val_acc = model.score(val_data, val_label)
 	val_pred = model.predict(val_data)
 
 	# test_data, test_label = [np.squeeze(x.numpy()) for x in test_db.Ramans], [x.item() for x in
 	#                                                                           test_db.labels]
-	test_data, test_label = [np.squeeze(x) for x in test_db.Ramans], [x for x in test_db.labels]
-	test_prob = model.predict_proba(test_data)
-	test_acc = model.score(test_data, test_label)
-	test_pred = model.predict(test_data)
+	# test_data, test_label = [np.squeeze(x) for x in test_db.Ramans], [x for x in test_db.labels]
+	# test_prob = model.predict_proba(test_data)
+	# test_acc = model.score(test_data, test_label)
+	# test_pred = model.predict(test_data)
 
 	label2auc = {}
 	label2roc = {}
@@ -124,9 +124,10 @@ def train_modellist(
 
 	if not os.path.isdir(recorddir):
 		os.makedirs(recorddir)
-	for model in modellist:
+	for n_m, model in enumerate(modellist):
+		print("model:{}, {}/{}".format(model, n_m, len(modellist)))
 		recordsubdir = os.path.join(recorddir,
-		                            "Record" + model.__name__)  # + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
+									"Record" + model.__name__)  # + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
 		if not os.path.isdir(recordsubdir):
 			os.makedirs(recordsubdir)
 		recordfile = recordsubdir + ".csv"  # 记录训练的配置和结果
@@ -140,20 +141,20 @@ def train_modellist(
 		conf_m_v = None
 		i = 0  # 实验进度计数
 		valaccs, vaucs = [], []
-		test_db_ = test_db
+		# test_db_ = test_db
 		for n in range(n_iter):
 			for k in range(k_split):
 
 				sfpath = sfname + str(n) + ".csv"
-				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath)
+				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, class_resampling = None)
 				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath)
-				if db_cfg["t_v_t"][2] > 0 or test_db_ is not None: warnings.warn(
-					"val_db is not needed for machine learning")
-
-				if db_cfg["t_v_t"][2] == 0 and test_db_ is None:
-					test_db = val_db
-				elif test_db is None:
-					test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
+				if db_cfg["t_v_t"][2] > 0 or test_db is not None: warnings.warn(
+					"test_db is not needed for machine learning:{}".format(db_cfg["t_v_t"][2]))
+				#
+				# if db_cfg["t_v_t"][2] == 0 and test_db is None:
+				# 	test_db = val_db
+				# elif test_db is None:
+				# 	test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
 
 				l = data_leak_check_by_filename((train_db, val_db))
 				if len(l) > 0:
@@ -186,9 +187,9 @@ def train_modellist(
 		heatmap(conf_m_v, os.path.join(recordsubdir, "val_confusion_matrix.png"))
 		# train_db.shufflecsv()
 		assert len(valaccs) == len(vaucs) == n_iter * k_split, "valaccs:{}\n,vaucs:{}\n,n*k = {}*{}".format(valaccs,
-		                                                                                                    vaucs,
-		                                                                                                    n_iter,
-		                                                                                                    k_split)
+																											vaucs,
+																											n_iter,
+																											k_split)
 
 		ta = np.mean(np.array(valaccs)).__str__() + "+-" + np.std(np.array(valaccs)).__str__()
 		auc_av = np.mean(np.array(vaucs)).__str__() + "+-" + np.std(np.array(vaucs)).__str__()
@@ -232,57 +233,16 @@ def main_one_datasrc(
 		dataroot = os.path.join(dataroot_, ele)
 		# modellist = [basic_SVM(), basic_SVM(PCA(n_components = 10)), basic_SVM(LDA(n_components = 1))]
 		modellist = [basic_SVM(PCA(n_components = 10)),
-		             basic_SVM(UMAP(n_neighbors = 200,
-		                            # default 15, The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation.
-		                            n_components = 3,
-		                            n_jobs = 1,
-		                            # default 2, The dimension of the space to embed into.
-		                            metric = 'euclidean',
-		                            # default 'euclidean', The metric to use to compute distances in high dimensional space.
-		                            n_epochs = 1000,
-		                            # default None, The number of training epochs to be used in optimizing the low dimensional embedding. Larger values result in more accurate embeddings.
-		                            learning_rate = 1.0,
-		                            # default 1.0, The initial learning rate for the embedding optimization.
-		                            init = 'spectral',
-		                            # default 'spectral', How to initialize the low dimensional embedding. Options are: {'spectral', 'random', A numpy array of initial embedding positions}.
-		                            min_dist = 0.1,
-		                            # default 0.1, The effective minimum distance between embedded points.
-		                            spread = 1.0,
-		                            # default 1.0, The effective scale of embedded points. In combination with ``min_dist`` this determines how clustered/clumped the embedded points are.
-		                            low_memory = False,
-		                            # default False, For some datasets the nearest neighbor computation can consume a lot of memory. If you find that UMAP is failing due to memory constraints consider setting this option to True.
-		                            set_op_mix_ratio = 1.0,
-		                            # default 1.0, The value of this parameter should be between 0.0 and 1.0; a value of 1.0 will use a pure fuzzy union, while 0.0 will use a pure fuzzy intersection.
-		                            local_connectivity = 1,
-		                            # default 1, The local connectivity required -- i.e. the number of nearest neighbors that should be assumed to be connected at a local level.
-		                            repulsion_strength = 1.0,
-		                            # default 1.0, Weighting applied to negative samples in low dimensional embedding optimization.
-		                            negative_sample_rate = 5,
-		                            # default 5, Increasing this value will result in greater repulsive force being applied, greater optimization cost, but slightly more accuracy.
-		                            transform_queue_size = 4.0,
-		                            # default 4.0, Larger values will result in slower performance but more accurate nearest neighbor evaluation.
-		                            a = None,
-		                            # default None, More specific parameters controlling the embedding. If None these values are set automatically as determined by ``min_dist`` and ``spread``.
-		                            b = None,
-		                            # default None, More specific parameters controlling the embedding. If None these values are set automatically as determined by ``min_dist`` and ``spread``.
-		                            random_state = 42,
-		                            # default: None, If int, random_state is the seed used by the random number generator;
-		                            metric_kwds = None,
-		                            # default None) Arguments to pass on to the metric, such as the ``p`` value for Minkowski distance.
-		                            angular_rp_forest = False,
-		                            # default False, Whether to use an angular random projection forest to initialise the approximate nearest neighbor search.
-		                            target_n_neighbors = -1,
-		                            # default -1, The number of nearest neighbors to use to construct the target simplcial set. If set to -1 use the ``n_neighbors`` value.
-		                            # target_metric='categorical', # default 'categorical', The metric used to measure distance for a target array is using supervised dimension reduction. By default this is 'categorical' which will measure distance in terms of whether categories match or are different.
-		                            # target_metric_kwds=None, # dict, default None, Keyword argument to pass to the target metric when performing supervised dimension reduction. If None then no arguments are passed on.
-		                            # target_weight=0.5, # default 0.5, weighting factor between data topology and target topology.
-		                            transform_seed = 42,
-		                            # default 42, Random seed used for the stochastic aspects of the transform operation.
-		                            verbose = False,
-		                            # default False, Controls verbosity of logging.
-		                            unique = False,
-		                            # default False, Controls if the rows of your data should be uniqued before being embedded.
-		                            )), ]
+					 basic_SVM(UMAP(n_neighbors = 200,
+									# default 15, The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation.
+									n_components = 3,
+									# default 2, The dimension of the space to embed into.
+									# n_jobs = 1,
+									n_epochs = 1000,
+									# default None, The number of training epochs to be used in optimizing the low dimensional embedding. Larger values result in more accurate embeddings.
+									# random_state = 42,
+									# default: None, If int, random_state is the seed used by the random number generator;
+									)), ]
 		if not os.path.isdir(dataroot):
 			continue
 		db_cfg = dict(  # 数据集设置
@@ -297,15 +257,16 @@ def main_one_datasrc(
 				Process.sg_filter(),
 				Process.norm_func(), ]
 			))
+		print(ele)
 		recorddir = os.path.join(recordroot, ele)
 		path2labelfunc = path2func_generator(num2label)
 		train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
-		                path2labelfunc = path2labelfunc,
-		                sfname = "Raman_{}_".format("personwise" if personwise else "tissuewise"), n_iter = 1, )
+						path2labelfunc = path2labelfunc,
+						sfname = "Raman_{}_".format("personwise" if personwise else "tissuewise"), n_iter = 1, )
 
 
 def main_onesrc(datasplit = "personwise",
-                dataroot_ = None):
+				dataroot_ = None):
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 	if dataroot_ is None:
 		dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_all_labeled")
@@ -331,9 +292,9 @@ def main_onesrc(datasplit = "personwise",
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
 	main_one_datasrc(dataroot_dst, info_file,
-	                 raman = Raman_depth_gen(3, 3) if datasplit == "pointwise" else Raman_dirwise,
-	                 record_info = os.path.basename(dataroot_dst) + "_" + datasplit,
-	                 )
+					 raman = Raman_depth_gen(2, 2) if datasplit == "pointwise" else Raman_dirwise,
+					 record_info = os.path.basename(dataroot_dst) + "_" + datasplit,
+					 )
 
 
 # rename_files_between_undo(dataroot_dst, 3)
@@ -351,8 +312,8 @@ if __name__ == '__main__':
 
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-		if dir == "data_GBM_labeled": continue
-	# for dir in ["data_GBM_labeled"]:
+		# if dir == "data_GBM_labeled": continue
+		# for dir in ["data_GBM_labeled"]:
 
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(

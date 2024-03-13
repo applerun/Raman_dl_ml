@@ -459,8 +459,8 @@ def main_one_datasrc(
 			num2label[k] = num2ele2label[k][ele]
 		name2label = {"neg": 0, "pos": 1}
 		dataroot = os.path.join(dataroot_, ele)
-		# modellist = [AlexNet_Sun, ResNet18, ResNet34]
-		modellist = [AlexNet_Sun]
+		modellist = [ResNet18, ResNet34]
+		# modellist = [AlexNet_Sun]
 		if not os.path.isdir(dataroot):
 			continue
 		db_cfg = dict(  # 数据集设置
@@ -526,8 +526,9 @@ def main_onesrc(datasplit = "personwise",
 
 if __name__ == '__main__':
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
-	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-		# for dir in ["data_GBM_labeled", "data"]:
+	# for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
+	for dir in ["data_GBM_labeled"]:
+
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
 			continue

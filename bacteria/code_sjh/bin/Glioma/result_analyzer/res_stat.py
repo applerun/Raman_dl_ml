@@ -8,22 +8,26 @@ import csv
 
 
 def round_str(res: str,
-              split = "±"):
+			  split = "±"):
 	res = [str(round(float(x), 4)) for x in res]
 	res = res[0] + split + res[1]
 	return res
-def cal_sen_spe_by_roc(fpr:numpy.ndarray,tpr:numpy.ndarray,):
+
+
+def cal_sen_spe_by_roc(fpr: numpy.ndarray, tpr: numpy.ndarray, ):
 	sens = tpr
-	spes = 1-fpr
-	sen_plus_spe:numpy.ndarray = sens+spes
+	spes = 1 - fpr
+	sen_plus_spe: numpy.ndarray = sens + spes
 	idx = numpy.argmax(sen_plus_spe)
-	sen,spe =sens[idx],spes[idx]
-	return sen,spe
+	sen, spe = sens[idx], spes[idx]
+	return sen, spe
+
 
 def RecordRead_bi_clas(src,
-                       mode = "test",
-                       round_digits = 4,
-                       skiprows = 1):
+					   mode = "test",
+					   round_digits = 4,
+					   skiprows = 1,
+					   cal_conf_from_auc = False):
 	pd = pandas.read_csv(src + ".csv", skiprows = skiprows, encoding = "GBK")
 	ns = pd["n"]
 	ind = list(ns).index("mean")
@@ -33,7 +37,7 @@ def RecordRead_bi_clas(src,
 	accs = numpy.array(pd[mode + "_acc"][:ind], dtype = float)
 	if abs(accs.mean() - acc) > 0.001:
 		warnings.warn("acc from record_av({}) and recordfile({}) are different"
-		              "dir :{}".format(accs.mean(), acc, src))
+					  "dir :{}".format(accs.mean(), acc, src))
 		acc = accs.mean()
 	# acc = round_str(acc)
 	auc, auc_std = pd[mode + "_AUC"][ind].split("+-")
@@ -42,7 +46,7 @@ def RecordRead_bi_clas(src,
 	# auc = round_str(auc)
 	if abs(aucs.mean() - auc) > 0.001:
 		warnings.warn("auc from record_av({}) and recordfile({}) are different"
-		              "dir :{}".format(aucs.mean(), auc, src))
+					  "dir :{}".format(aucs.mean(), auc, src))
 		auc = aucs.mean()
 	cm = np.loadtxt(os.path.join(src, mode + "_confusion_matrix.csv"), delimiter = ",")
 	(a, b), (c, d) = cm
@@ -53,14 +57,14 @@ def RecordRead_bi_clas(src,
 		with open(os.path.join(src, "roc_record.csv")) as f:
 			auc_ = f.readlines().__iter__().__next__().strip().split("=")[1]
 			auc_ = float(auc_)
-		roc = numpy.loadtxt(os.path.join(src, "roc_record.csv"), delimiter = ",", skiprows = 1)
-		fpr, tpr = roc.T
-		sen, spe = cal_sen_spe_by_roc(fpr, tpr)
-		if abs(auc_ - auc) > 0.001:
-			warnings.warn("auc from macro_roc({}) and recordfile({}) are different"
-			              "dir :{}".format(auc_, auc, src))
-			auc = auc_
-
+		if cal_conf_from_auc:
+			roc = numpy.loadtxt(os.path.join(src, "roc_record.csv"), delimiter = ",", skiprows = 1)
+			fpr, tpr = roc.T
+			sen, spe = cal_sen_spe_by_roc(fpr, tpr)
+			if abs(auc_ - auc) > 0.001:
+				warnings.warn("auc from macro_roc({}) and recordfile({}) are different"
+							  "dir :{}".format(auc_, auc, src))
+				auc = auc_
 
 	acc = round(acc, round_digits)
 	acc_std = round(float(acc_std), round_digits)
@@ -73,18 +77,16 @@ def RecordRead_bi_clas(src,
 	acc_f = acc
 	if abs(acc_ - acc_f) > 0.01:
 		warnings.warn("acc from conf_m({}) and recordfile({}) are different"
-		              "dir :{}".format(acc_, acc, src))
+					  "dir :{}".format(acc_, acc, src))
 
 	return dict(acc = acc, acc_std = acc_std, auc = auc, auc_std = auc_std, sen = sen, spe = spe)
 
 
-
-
 def main_bi_class(dir,
-                  dst,
-                  mode = "test",
-                  nets = None,
-                  molecules = None):
+				  dst,
+				  mode = "test",
+				  nets = None,
+				  molecules = None):
 	if nets is None:
 		nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
 	if not os.path.isabs(dst):
@@ -126,8 +128,8 @@ def main_bi_class(dir,
 
 
 def main(dirname = "2022-11-10-17_57_55_dirwise",
-         nets = None,
-         mode = "test"):
+		 nets = None,
+		 mode = "test"):
 	if nets is None:
 		if os.path.isfile(os.path.join(dirname, "models.txt")):
 			nets = list(numpy.loadtxt(os.path.join(dirname, "models.txt"), delimiter = ","))

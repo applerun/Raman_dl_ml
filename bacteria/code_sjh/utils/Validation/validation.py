@@ -116,7 +116,7 @@ def grad_cam(convnet,
 	h2.remove()
 
 	# cam_map
-	cam = numpy.zeros(fmap.shape[::2], dtype = numpy.float)  # [b,f_l]
+	cam = numpy.zeros(fmap.shape[::2], dtype = float)  # [b,f_l]
 	ws = numpy.mean(grad_val, axis = (2))  # [b,c]
 	bsz = ws.shape[0]
 	chs = ws.shape[1]

@@ -1,4 +1,5 @@
 import copy
+import shutil
 import warnings
 import matplotlib.pyplot as plt
 import numpy
@@ -11,7 +12,7 @@ from bacteria.code_sjh.Core.basic_functions.mpl_func import spectrum_vis_mpl
 
 import matplotlib as mpl
 
-mpl.rcParams["font.family"] = "FangSong"  # 设置字体
+mpl.rcParams["font.family"] = 'Arial'  # 设置字体
 
 mpl.rcParams["axes.unicode_minus"] = False  # 正常显示负号
 color1 = numpy.array([254, 194, 67, 150]) / 255
@@ -133,25 +134,26 @@ def plot_roc(fpr,
 		if len(name) > 0:
 			name = name + " "
 		auc_res = auc(fpr, tpr)
-		name = name + "(AUC={:.3f})".format(round(auc_res, 4))
+		name = name + "(AUC = {:.3f})".format(round(auc_res, 4))
 
 	if name is None:
 		axes.plot(fpr, tpr, color = color)
 	else:
 		axes.plot(fpr, tpr, color = color, label = name)
-		axes.legend(loc = "lower right", fontsize = 12, frameon = False)
+		axes.legend(loc = "lower right", fontsize = 10, frameon = False)
 	for s in axes.spines:
 		axes.spines[s].set_color(numpy.array([100, 100, 100]) / 255)
 	axes.set_xlim(-0.005, 1)
 	axes.set_ylim(0, 1.01)
-	xfontdict = dict(fontsize = 15, fontstyle = "normal", fontweight = 800)
+	xfontdict = dict(fontsize = 15, fontstyle = "normal", fontweight = 400)
 	yfontdict = dict(fontsize = 15, fontstyle = "normal", fontweight = 400)
 	axes.set_xlabel("1 - Specificity", fontdict = xfontdict)
 	axes.set_ylabel("Sensitivity", fontdict = yfontdict)
 	# tickfontdict = dict(fontsize = 5, fontstyle = "normal", fontweight = 400)
 	axes.tick_params(labelsize = 10)
 	# axes.set_yticks(fontdict = tickfontdict)
-	axes.set_title(title)
+	title_fontdict = dict(fontsize = 18, fontstyle = "normal", fontweight = 450)
+	axes.set_title(title, fontdict = title_fontdict)
 	return axes
 
 
@@ -160,8 +162,21 @@ def main_bi_class(dir,
 				  nets = None,
 				  molecules = None,
 				  positions = None,
-				  net2axes = None
+				  net2axes = None,
+				  sv_dir = None,
+				  titles = None,
 				  ):
+	"""
+
+	@param dir: src dir
+	@param mode:
+	@param nets:
+	@param molecules:
+	@param positions:
+	@param net2axes:
+	@param sv_dir: 将图片另存为某文件夹
+	@return:
+	"""
 	if nets is None:
 		nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
 
@@ -172,6 +187,14 @@ def main_bi_class(dir,
 		molecules = os.listdir(dir)
 	else:
 		molecules = copy.deepcopy(molecules)
+	if len(molecules) == len(positions):
+		molecules2positions = dict(zip(molecules, positions))
+	else:
+		molecules2positions = None
+	if titles is not None and len(titles) == len(positions):
+		positions2titles = dict(zip(positions, titles))
+	else:
+		positions2titles = None
 	net2molecule2roc = {net: {} for net in nets}
 	unfoundmolecule = []
 	for molecule in molecules:
@@ -203,14 +226,17 @@ def main_bi_class(dir,
 		axes = axes.flatten()
 		allidx = list(range(len(axes)))
 		for i_, molecule in enumerate(molecules):
-
-			if positions is not None:
+			if molecules2positions is not None:
+				i = molecules2positions[molecule]
+			elif positions is not None:
 				i = positions[i_]
 			else:
 				i = i_
 			ax = axes[i]
+			ax.text(-0.25, 1.15, chr(i_ + 65), transform = ax.transAxes, fontsize = 15, fontweight = "bold")
 			try:
-				plot_roc(*molecule2roc[molecule], molecule, axes = ax, show_auc = True,
+				title = molecule if positions2titles is None else positions2titles[i]
+				plot_roc(*molecule2roc[molecule], title, axes = ax, show_auc = True,
 						 name = "ROC",
 						 color = color4 if "GBM" in dir else color1)
 				allidx.remove(i)
@@ -219,20 +245,31 @@ def main_bi_class(dir,
 		if net2axes is None:
 			for i in allidx:
 				fig.delaxes(axes[i])
-			fig.savefig(os.path.join(dir, net + "_roc.png"))
-			plt.close(fig)
+		fig.savefig(os.path.join(dir, net + "_roc.png"))
+		if sv_dir is not None:
+			short_dir_base = os.path.basename(dir).split("_")
+			short_dir_base = "_".join(short_dir_base[:min(len(short_dir_base), 3)])
+			if not os.path.isdir(os.path.join(sv_dir, short_dir_base)):
+				os.makedirs(os.path.join(sv_dir, short_dir_base))
+			shutil.copy(os.path.join(dir, net + "_roc.png"), os.path.join(sv_dir, short_dir_base, net + "_roc.png"))
+		plt.close(fig)
 	return net2molecule2roc
 
 
 def main(dirname,
 		 nets = None,
-		 mode = "test"):
+		 mode = "test", sv_dir = None):
 	if nets is None:
 		nets = ["Alexnet"]
+	if sv_dir is not None:
+		if not os.path.isdir(sv_dir):
+			os.makedirs(sv_dir)
 	# ms = "IDH(M-1)@1p-19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7(+ 1)@10(- 1)@A(缺-1)@B(缺-1)"
 	ms = "IDH(M-1)@1p19q(缺-1)@M(甲基化-1)@T(突变-1)@E(扩增-1)@7+-10-@AB(共缺-1)"
 	resultdir = dirname
-	main_bi_class(resultdir, nets = nets, molecules = ms.split("@"), positions = [0, 1, 3, 4, 5, 6, 7], mode = mode)
+	titles = "IDH@1p/19q@MGMT@TERT@EGFR@Chromosome 7/10@CDKN2A/B".split("@")
+	main_bi_class(resultdir, nets = nets, molecules = ms.split("@"), positions = [0, 1, 3, 4, 5, 6, 7], mode = mode,
+				  sv_dir = sv_dir, titles = titles)
 
 
 if __name__ == '__main__':

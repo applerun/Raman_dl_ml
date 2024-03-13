@@ -234,7 +234,7 @@ readdatafunc = getRamanFromFile(  # 定义读取数据的函数
 
 def train_modellist(
 		dataroot,
-		db_cfg ,
+		db_cfg,
 		raman = RamanDatasetCore,
 		# 设置读取数据集的DataSet
 		# 设置k叠交叉验证的k值
@@ -295,8 +295,9 @@ def train_modellist(
 			for k in range(k_split):
 				sfpath = sfname + str(n) + ".csv"
 
-				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, class_resampling = "up",newfile = True if n > 0 else False)
-				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath,class_resampling = "up")
+				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, class_resampling = "up",
+								 newfile = True if n > 0 else False)
+				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath, class_resampling = "up")
 
 				if db_cfg["t_v_t"][2] == 0 and test_db is None:
 					test_db = val_db
@@ -381,7 +382,8 @@ def train_modellist(
 
 def main_indep_test():
 	from bacteria.code_sjh.utils import Process
-
+	# modellist = [AlexNet_Sun, ResNet18, ResNet34]
+	modellist = [AlexNet_Sun]
 	info_file = r"D:\myPrograms\pythonProject\Raman_dl_ml\bacteria\data\脑胶质瘤\data_used\病例编号&分类结果2.xlsx"
 	num2ele2label = get_infos(info_file)
 	eles = list(num2ele2label.values().__iter__().__next__().keys())
@@ -407,7 +409,7 @@ def main_indep_test():
 		name2label = {"neg": 0, "pos": 1}
 		dataroot = os.path.join(dataroot_, ele)
 		dataroot_test = os.path.join(dataroot_test_, ele)
-		modellist = [AlexNet_Sun, ResNet18, ResNet34]
+
 		db_cfg = dict(  # 数据集设置
 			dataroot = dataroot_test,
 			backEnd = ".csv",
@@ -436,6 +438,8 @@ def main_one_datasrc(
 		raman = Raman_dirwise,
 		record_info = None,
 ):
+	# modellist = [AlexNet_Sun, ResNet18, ResNet34]
+	modellist = [AlexNet_Sun]
 	num2ele2label = get_infos(info_file)
 	eles = list(num2ele2label.values().__iter__().__next__().keys())
 	print("using device:", device.__str__())
@@ -459,8 +463,6 @@ def main_one_datasrc(
 			num2label[k] = num2ele2label[k][ele]
 		name2label = {"neg": 0, "pos": 1}
 		dataroot = os.path.join(dataroot_, ele)
-		modellist = [ResNet18, ResNet34]
-		# modellist = [AlexNet_Sun]
 		if not os.path.isdir(dataroot):
 			continue
 		db_cfg = dict(  # 数据集设置
@@ -488,7 +490,7 @@ def main_onesrc(datasplit = "personwise",
 
 	# dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_batch123_labeled")
 	if dataroot_ is None:
-		dataroot_ = os.path.join(glioma_data_root, "labeled_data\data_all_labeled")
+		dataroot_ = os.path.join(glioma_data_root, r"labeled_data\data_all_labeled")
 	personwise = datasplit == "personwise"
 	if personwise:
 		dataroot_dst = dataroot_ + "_renamed_for_personwise"
@@ -507,7 +509,7 @@ def main_onesrc(datasplit = "personwise",
 	else:
 		dataroot_dst = dataroot_
 
-	info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx")
+	info_file = os.path.join(projectroot, "data", "脑胶质瘤", r"data_used\病例编号&分类结果2.xlsx")
 	main_one_datasrc(dataroot_dst, info_file,
 					 raman = Raman_depth_gen(2, 2) if datasplit == "pointwise" else Raman_dirwise,
 					 record_info = os.path.basename(dataroot_dst) + "_" + datasplit)
@@ -526,8 +528,10 @@ def main_onesrc(datasplit = "personwise",
 
 if __name__ == '__main__':
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
-	# for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-	for dir in ["data_GBM_labeled"]:
+	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
+		if dir == "data_GBM_labeled":
+			continue
+		# for dir in ["data_GBM_labeled"]:
 
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):

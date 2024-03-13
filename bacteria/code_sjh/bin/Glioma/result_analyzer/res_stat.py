@@ -27,7 +27,7 @@ def RecordRead_bi_clas(src,
 					   mode = "test",
 					   round_digits = 4,
 					   skiprows = 1,
-					   cal_conf_from_auc = False):
+					   cal_conf_from_auc = True):
 	pd = pandas.read_csv(src + ".csv", skiprows = skiprows, encoding = "GBK")
 	ns = pd["n"]
 	ind = list(ns).index("mean")
@@ -86,7 +86,7 @@ def main_bi_class(dir,
 				  dst,
 				  mode = "test",
 				  nets = None,
-				  molecules = None):
+				  molecules = None, cal_conf_from_auc = True):
 	if nets is None:
 		nets = ["Alexnet_Sun", "Resnet18", "Resnet34"]
 	if not os.path.isabs(dst):
@@ -117,7 +117,7 @@ def main_bi_class(dir,
 		row = [molecule] + [0] * 4 * len(nets)
 		for i, net in enumerate(nets):
 			src = os.path.join(molecule_abs, "Record" + net)
-			res = RecordRead_bi_clas(src, mode, skiprows = skiprows)
+			res = RecordRead_bi_clas(src, mode, skiprows = skiprows, cal_conf_from_auc = cal_conf_from_auc)
 			row[i + 1] = res["sen"]
 			row[i + 1 + len(nets)] = res["spe"]
 			row[i + 1 + len(nets) * 2] = res["acc"]
@@ -129,7 +129,7 @@ def main_bi_class(dir,
 
 def main(dirname = "2022-11-10-17_57_55_dirwise",
 		 nets = None,
-		 mode = "test"):
+		 mode = "test",cal_conf_from_auc = True):
 	if nets is None:
 		if os.path.isfile(os.path.join(dirname, "models.txt")):
 			nets = list(numpy.loadtxt(os.path.join(dirname, "models.txt"), delimiter = ","))
@@ -140,7 +140,8 @@ def main(dirname = "2022-11-10-17_57_55_dirwise",
 	resultdir = dirname
 	dirname = os.path.basename(dirname)
 	dst_file = os.path.join(resultdir, "res_stat-" + dirname + ".csv")
-	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"), mode = mode)
+	main_bi_class(resultdir, dst_file, nets = nets, molecules = ms.split("@"), mode = mode,
+				  cal_conf_from_auc = cal_conf_from_auc)
 	return dst_file
 
 

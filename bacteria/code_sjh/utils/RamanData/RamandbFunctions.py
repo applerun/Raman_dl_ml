@@ -8,7 +8,7 @@ from matplotlib.colors import to_rgba_array, to_rgba
 
 
 def save_csv_file_info(Raman: RamanDatasetCore,
-                       dst):
+					   dst):
 	"""
 	TODO:根据Raman类型在dst处生成对应的信息文件
 	@param Raman:
@@ -32,6 +32,11 @@ def data_leak_check_by_filename(dbs):
 	"""
 	输入一系列RamanDatasetCore的子集，返回同时在至少两个db中存在的文件
 	"""
+	dbs = list(dbs)
+	for db in dbs:
+		if db.RamanFiles[0] == "useless after class auto balance by up/down sampling":
+			dbs.remove(db)
+
 	if len(dbs) is 2:
 		file_list1 = dbs[0].RamanFiles
 		file_list2 = dbs[1].RamanFiles
@@ -39,23 +44,23 @@ def data_leak_check_by_filename(dbs):
 	else:
 		leaked_data_file = []
 		for i in range(len(dbs)):
-			for j in range(i+1, len(dbs)):
+			for j in range(i + 1, len(dbs)):
 				leaked_data_file += data_leak_check_by_filename([dbs[i], dbs[j]])
 	return leaked_data_file
 
 
 def db_plot(db: RamanDatasetCore,
-            # svdir = os.path.join(project_root, "Sample_results", "Sample_bad_signal", "plot"),
-            newX = None,
-            # 是否要插值
-            pltsave_in_one = False,
-            # 是否保存所有处理后结果在一张图中
-            dir_wise = False,
-            # True :每个tissue 单独画图，labelwise ：每个label单独画图
-            axes: plt.Axes or list = None,
-            bias = 0,
-            min_bias_interv = 0,
-            ):
+			# svdir = os.path.join(project_root, "Sample_results", "Sample_bad_signal", "plot"),
+			newX = None,
+			# 是否要插值
+			pltsave_in_one = False,
+			# 是否保存所有处理后结果在一张图中
+			dir_wise = False,
+			# True :每个tissue 单独画图，labelwise ：每个label单独画图
+			axes: plt.Axes or list = None,
+			bias = 0,
+			min_bias_interv = 0,
+			):
 	"""
 	database数据可视化
 	@param db: 数据库，RamanDatasetCore
@@ -91,19 +96,19 @@ def db_plot(db: RamanDatasetCore,
 		if pltsave_in_one:
 			c = mcolors.XKCD_COLORS[colors.pop()]
 			mpl_func.spectrum_vis_mpl(tissue_data, db.xs if newX is None else newX, name = name, ax = ax,
-			                          bias = bias,
-			                          title = "processed",
-			                          line_color = to_rgba(c, 1), shadow_color = to_rgba(c, 0.6)
-			                          )
+									  bias = bias,
+									  title = "processed",
+									  line_color = to_rgba(c, 1), shadow_color = to_rgba(c, 0.6)
+									  )
 			bias += max(tissue_data.max(), min_bias_interv)
 		else:
 			fig, ax = plt.subplots(1, 1) if axes is None else axes.pop()
 
 			mpl_func.spectrum_vis_mpl(tissue_data, db.xs if newX is None else newX, name = name, ax = ax,
-			                          bias = bias,
-			                          title = "processed",
-			                          line_color = to_rgba(c, 1), shadow_color = to_rgba(c, 0.6)
-			                          )
+									  bias = bias,
+									  title = "processed",
+									  line_color = to_rgba(c, 1), shadow_color = to_rgba(c, 0.6)
+									  )
 			bias += max(tissue_data.max(), min_bias_interv)
 			figs.append(fig)
 			plt.close(fig)

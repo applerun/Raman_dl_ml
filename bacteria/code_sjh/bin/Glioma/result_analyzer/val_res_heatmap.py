@@ -10,8 +10,8 @@ from matplotlib.colors import ListedColormap
 
 
 def create_colormap_lightness(color: tuple,
-                              sample = 512,
-                              white = (1, 1, 1)):
+							  sample = 512,
+							  white = (1, 1, 1)):
 	"""
 
 
@@ -29,10 +29,10 @@ def create_colormap_lightness(color: tuple,
 
 
 def create_colormap_bluered(red = (1, 0, 0),
-                            blue = (0, 0, 1),
-                            sample_red = 256,
-                            sample_blue = 256,
-                            white = (1, 1, 1)):
+							blue = (0, 0, 1),
+							sample_red = 256,
+							sample_blue = 256,
+							white = (1, 1, 1)):
 	sample = sample_red
 	xs = np.linspace(0, 1, sample)
 	color_red = np.array(red)
@@ -49,19 +49,19 @@ def create_colormap_bluered(red = (1, 0, 0),
 
 
 def legend_show(ax,
-                color,
-                hatches,
-                hatch_color,
-                pos = (0, 0),
-                width = 0.8,
-                height = 0.3,
-                interval_y = 0.2):
+				color,
+				hatches,
+				hatch_color,
+				pos = (0, 0),
+				width = 0.8,
+				height = 0.3,
+				interval_y = 0.2):
 	len_data = len(hatches)
 	for i in range(len_data):
 		hatch = hatches[i]
 		ax.bar(x = pos[0], height = height, bottom = pos[1] + i * (height + interval_y), width = width, color = color,
-		       hatch = hatch,
-		       edgecolor = hatch_color)
+			   hatch = hatch,
+			   edgecolor = hatch_color)
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.spines['bottom'].set_visible(False)
@@ -72,22 +72,22 @@ def legend_show(ax,
 
 
 def plotdata(HeatData1,
-             HeatData2,
-             ax: matplotlib.axes.Axes,
-             cmap = "Reds",
-             hatch_color: str or tuple = "orange",
-             hatchs = None,
-             norm = colors.Normalize(0.5, 1, clip = True),
-             width = 0.8,
-             height = 0.5,
-             interval_x = 0,
-             interval_1 = 0.2,
-             interval_2 = 0.6,
-             interval_y = 0.05,
-             colorbar_orientation = "vertical",
-             count_1 = 3,
-             ticksize = 20
-             ):
+			 HeatData2,
+			 ax: matplotlib.axes.Axes,
+			 cmap = "Reds",
+			 hatch_color: str or tuple = "orange",
+			 hatchs = None,
+			 norm = colors.Normalize(0.5, 1, clip = True),
+			 width = 0.8,
+			 height = 0.5,
+			 interval_x = 0,
+			 interval_1 = 0.2,
+			 interval_2 = 0.6,
+			 interval_y = 0.05,
+			 colorbar_orientation = "vertical",
+			 count_1 = 3,
+			 ticksize = 20
+			 ):
 	if hatchs is None:
 		hatchs = ['//', '..', r"\\", '|', '-', '+', 'x', 'o', 'O', '.', '*']
 	lenx = HeatData2.shape[1]
@@ -101,12 +101,12 @@ def plotdata(HeatData1,
 		mapper = cm.ScalarMappable(norm = norm, cmap = cmaps[x_index % (len(cmaps))])
 		data_s = HeatData1[:, x_index] if x_index < lenx else HeatData2[:, x_index - lenx]
 		x_pos = (width + interval_x) * x_index \
-		        + x_index // count_1 * interval_1 \
-		        + x_index // lenx * interval_2 \
+				+ x_index // count_1 * interval_1 \
+				+ x_index // lenx * interval_2 \
 			# + x_index // (2 * count_1) * interval_1
 		hatch = hatchs[x_index % 3]
 		plot_s(ax, data_s, hatch, x_pos, width, height, mapper = mapper, hatch_color = hatch_color,
-		       interval_y = interval_y)
+			   interval_y = interval_y)
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.spines['bottom'].set_visible(False)
@@ -114,23 +114,24 @@ def plotdata(HeatData1,
 	ax.axis("off")
 	ax.set_xticks([])
 	ax.set_yticks([])
-	fig = ax.figure
+
 	if len(cmaps) == 1:
-		colorbars(cmaps, fig, norm = norm, colorbar_orientation = colorbar_orientation, ticksize = ticksize)
+		colorbars(cmaps, ax, norm = norm, colorbar_orientation = colorbar_orientation, ticksize = ticksize)
+	fig = ax.figure
 	return fig
 
 
 def colorbars(cmaps,
-              fig = None,
-              norm = colors.Normalize(0.5, 1, clip = True),
-              colorbar_orientation = "vertical",
-              ticksize = 20):
-	if fig is None:
+			  plot_ax:matplotlib.axes.Axes = None,
+			  norm = colors.Normalize(0.5, 1, clip = True),
+			  colorbar_orientation = "vertical",
+			  ticksize = 20):
+	if plot_ax is None:
 		try:
 			fig_, axes = plt.subplots(1, len(cmaps), width_ratios = [0.1] * len(cmaps), squeeze = False)
 		except AttributeError:
 			fig_, axes = plt.subplots(1, len(cmaps), gridspec_kw = dict(width_ratios = [0.1] * len(cmaps)),
-			                          squeeze = False)
+									  squeeze = False)
 		axes = axes.flatten()
 		for ax in axes:
 			ax.spines['top'].set_visible(False)
@@ -141,45 +142,45 @@ def colorbars(cmaps,
 			ax.set_xticks([])
 			ax.set_yticks([])
 	else:
-		fig_ = fig
+		fig_ = plot_ax.figure
 	for i in range(len(cmaps) - 1, -1, -1):
 		c = cmaps[i]
 		mapper = cm.ScalarMappable(norm = norm, cmap = c)
-		cb = fig_.colorbar(mapper, ax = axes[i], orientation = colorbar_orientation) if fig is None else fig.colorbar(
-			mapper, orientation = colorbar_orientation)
+		cb = fig_.colorbar(mapper, ax = axes[i], orientation = colorbar_orientation) if plot_ax is None \
+			else fig_.colorbar(mapper, ax = plot_ax, orientation = colorbar_orientation)
 		cb.ax.tick_params(labelsize = ticksize)
 	return fig_
 
 
 def plot_s(ax: matplotlib.axes.Axes,
-           data,
-           hatch,
-           pos,
-           width,
-           height,
-           mapper: cm.ScalarMappable = None,
-           hatch_color = "black",
-           interval_y = 0,
-           color = None):
+		   data,
+		   hatch,
+		   pos,
+		   width,
+		   height,
+		   mapper: cm.ScalarMappable = None,
+		   hatch_color = "black",
+		   interval_y = 0,
+		   color = None):
 	assert mapper is not None or color is not None
 	for i in range(len(data)):
 		value = data[-1 - i]
 		color_ = mapper.to_rgba(value) if color is None else color
 		# color = plt.cm.viridis(norm(value))
 		ax.bar(x = pos, height = height, bottom = i * (height + interval_y), width = width, color = color_,
-		       hatch = hatch,
-		       edgecolor = hatch_color)
+			   hatch = hatch,
+			   edgecolor = hatch_color)
 		ax.bar(x = pos, height = height, bottom = i * (height + interval_y), width = width, color = (0, 0, 0, 0),
-		       edgecolor = color_)
+			   edgecolor = color_)
 	return
 
 
 def main_hatchwise(HeatData1 = None,
-                   HeatData2 = None,
-                   dst = None,
-                   skiprows = 1,
-                   norm = colors.Normalize(0.5, 1, clip = True)
-                   ):  # 纹理热力图
+				   HeatData2 = None,
+				   dst = None,
+				   skiprows = 1,
+				   norm = colors.Normalize(0.5, 1, clip = True)
+				   ):  # 纹理热力图
 	if dst is not None and not os.path.isdir(dst):
 		os.makedirs(dst)
 	if HeatData1 is None:
@@ -209,24 +210,25 @@ def main_hatchwise(HeatData1 = None,
 	HeatData2_ml = np.delete(HeatData2, list(range(1, HeatData2.shape[1], 3)), axis = 1)
 	fig, ax = plt.subplots(figsize = (12, 9))
 	plotdata(HeatData1_dl, HeatData2_dl, ax, cmap, hatch_color, hatches, norm, *wh12y,
-	         colorbar_orientation = "vertical", ticksize = 25, count_1 = 1)
+			 colorbar_orientation = "vertical", ticksize = 25, count_1 = 1)
 	# plt.savefig("fig.png")
 	# fig, ax = plt.subplots()
 	# legend_show(ax, "red", hatches, "orange",pos = (0,0.8*10))
 	legend_show(ax, (0, 0, 0, 0), hatches[::-1], hatch_color,
-	            pos = (0, 0.8 * 10), interval_y = 0.05)
+				pos = (0, 0.8 * 10), interval_y = 0.05)
 	plt.savefig("legend_dl.png" if dst is None else os.path.join(dst, "legend_dl.png"))
 	colorbars([cmap], norm = norm)
 	plt.savefig("legend_colorbar_dl.png" if dst is None else os.path.join(dst, "legend_colorbar_dl.png"))
 	fig, ax = plt.subplots(figsize = (24, 9))
 	plotdata(HeatData1_ml, HeatData2_ml, ax, cmap, hatch_color, hatches, norm, *wh12y,
-	         colorbar_orientation = "vertical", ticksize = 25, count_1 = 2)
+			 colorbar_orientation = "vertical", ticksize = 25, count_1 = 2)
 	plt.savefig("legend_ml.png" if dst is None else os.path.join(dst, "legend_ml.png"))
 	fig, ax = plt.subplots(figsize = (36, 9))
 	plotdata(HeatData1, HeatData2, ax, cmap, hatch_color, hatches, norm, *wh12y,
-	         colorbar_orientation = "vertical", ticksize = 25, count_1 = 3)
+			 colorbar_orientation = "vertical", ticksize = 25, count_1 = 3)
 	plt.savefig("legend_all.png" if dst is None else os.path.join(dst, "legend_all.png"))
 	print("data saved in:{}".format(dst))
+
 
 def main_colorwise():  # 颜色区分热力图
 	plt.rcParams['figure.figsize'] = (28, 10)
@@ -245,11 +247,11 @@ def main_colorwise():  # 颜色区分热力图
 
 
 def getheatdata(dir,
-                prefix,
-                backend = ".csv",
-                skiprows = 2,
-                skipcolumns = 1,
-                ):
+				prefix,
+				backend = ".csv",
+				skiprows = 2,
+				skipcolumns = 1,
+				):
 	confm2model2digit = None
 	for stat_file in os.listdir(dir):
 		if not (stat_file.startswith(prefix) and stat_file.endswith(backend)):
@@ -276,13 +278,13 @@ def getheatdata(dir,
 
 
 def merge_stat_files(src_dir,
-                     dst_f,
-                     prefix,
-                     backend = ".csv",
-                     skiprows = 2,
-                     skipcolumns = 1,
-                     new_models = None,
-                     new_rows = 1):
+					 dst_f,
+					 prefix,
+					 backend = ".csv",
+					 skiprows = 2,
+					 skipcolumns = 1,
+					 new_models = None,
+					 new_rows = 1):
 	confm2model2digit = getheatdata(src_dir, prefix, backend, skiprows, skipcolumns)
 	confms = list(confm2model2digit)
 	if new_models is None:
@@ -308,11 +310,11 @@ def main():
 		if not os.path.isdir(res_stat_dir): continue
 		for prefix in l_prefix:
 			merge_stat_files(res_stat_dir, os.path.join(res_stat_dir + prefix + ".csv"), prefix,
-			                 new_models = "pca_svm,AlexNet,umap_svm".split(","), new_rows = 2)
+							 new_models = "pca_svm,AlexNet,umap_svm".split(","), new_rows = 2)
 	for split_strategy in "personwise,tissuewise".split(","):
 		main_hatchwise(os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_all.csv"),
-		               os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_GBM.csv"),
-		               os.path.join(split_strategy), skiprows = 2)
+					   os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_GBM.csv"),
+					   os.path.join(split_strategy), skiprows = 2)
 
 
 if __name__ == '__main__':

@@ -58,15 +58,16 @@ def train_classification_model(
 ):
 	# train_data, train_label = [np.squeeze(x.numpy()) for x in train_db.Ramans], [x.item() for x in
 	#                                                                              train_db.labels]
-	train_data, train_label = [np.squeeze(x) for x in train_db.Ramans], [x for x in
-																		 train_db.labels]
+	if len(train_db) < len(val_db) * 2:
+		warnings.warn("the ratio of train_db{} vs val_db{} is low, please recheck data split or function usage".format(
+			len(train_db), len(val_db)))
 
+	train_data, train_label = [np.squeeze(x) for x in train_db.Ramans], [x for x in train_db.labels]
 	model.fit(train_data, train_label)
 
 	# val_data, val_label = [np.squeeze(x.numpy()) for x in val_db.Ramans], [x.item() for x in
 	#                                                                        val_db.labels]
-	val_data, val_label = [np.squeeze(x) for x in val_db.Ramans], [x for x in
-																   val_db.labels]
+	val_data, val_label = [np.squeeze(x) for x in val_db.Ramans], [x for x in val_db.labels]
 	val_prob = model.predict_proba(val_data)
 	val_acc = model.score(val_data, val_label)
 	val_pred = model.predict(val_data)
@@ -172,7 +173,7 @@ def train_modellist(
 				vaucs.append(auc_m)
 				writer.writerow([n, k, val_acc, auc_m])
 				i += 1
-				print(i, "/", 1 * k_split)
+				print(i, "/", n * k_split)
 
 				if not os.path.isdir(pltdir):
 					os.makedirs(pltdir)

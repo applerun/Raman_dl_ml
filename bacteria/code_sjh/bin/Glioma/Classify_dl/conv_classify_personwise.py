@@ -227,13 +227,12 @@ def train_classification_net(
 
 
 readdatafunc = getRamanFromFile(  # 定义读取数据的函数
-	wavelengthstart = 400, wavelengthend = 1810, delimeter = None,
+	wavelengthstart = 200, wavelengthend = 1850, delimeter = None,
 	dataname2idx = {"Wavelength": 0, "Intensity": 1}
 )
 
 
 def train_modellist(
-		dataroot,
 		db_cfg,
 		raman = RamanDatasetCore,
 		# 设置读取数据集的DataSet
@@ -251,8 +250,10 @@ def train_modellist(
 		recorddir = os.path.join(projectroot, "results", "tissue_dl", recorddir)
 	if modellist is None:
 		modellist = [AlexNet_Sun, ResNet18, ResNet34]
+
 	k_split = db_cfg["k_split"]
-	bestaccs, testaccs, bepochs, vaucs, taucs = [], [], [], [], []
+
+
 
 	# readdatafunc = getRamanFromFile(wavelengthstart = 400,wavelengthend = 1800,delimeter = delimeter,dataname2idx = dataformat)
 
@@ -261,7 +262,7 @@ def train_modellist(
 		batchsz = 100,
 		vis = vis,
 		lr = 0.001,
-		epochs = 300,
+		epochs = 200,
 		verbose = False,
 	)
 	# config = dict(dataroot = os.path.join(projectroot, "data", "data_AST"), backEnd = backend, t_v_t = tvt, LoadCsvFile = getRamanFromFile(wavelengthstart = 0, wavelengthend = 1800, delimeter = delimeter,
@@ -273,6 +274,11 @@ def train_modellist(
 
 	if not os.path.isdir(recorddir):
 		os.makedirs(recorddir)
+	with open(os.path.join(recorddir, "db_cfg.txt"), "w") as sf:
+		sf.write(get_dict_str(db_cfg) + "\n")
+	with open(os.path.join(recorddir, "train_cfg.txt"), "w") as sf:
+		sf.write(get_dict_str(train_cfg) + "\n")
+
 	for model in modellist:
 		recordsubdir = os.path.join(recorddir,
 									"Record" + model.__name__)  # + time.asctime().replace(":", "-").replace(" ", "_"))  # 每个模型一个文件夹保存结果
@@ -284,31 +290,27 @@ def train_modellist(
 		writer = csv.writer(f)
 		f.write(db_cfg.__str__() + "\n")
 		f.write(train_cfg.__str__() + "\n")
-		with open(os.path.join(recordsubdir, "db_cfg.txt"), "w") as sf:
-			sf.write(get_dict_str(db_cfg) + "\n")
-		with open(os.path.join(recordsubdir, "train_cfg.txt"), "w") as sf:
-			sf.write(get_dict_str(train_cfg) + "\n")
+
 		writer.writerow(["n", "k", "best_acc", "test_acc", "best_epoch", "val_AUC", "test_AUC"])
+		bestaccs, testaccs, bepochs, vaucs, taucs = [], [], [], [], []
 		conf_m_v = None
 		conf_m_t = None
 		for n in range(n_iter):
 			for k in range(k_split):
 				sfpath = sfname + str(n) + ".csv"
 
-				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath, class_resampling = "up",
-								 newfile = True if n > 0 else False)
-				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath, class_resampling = "up")
-
-				if db_cfg["t_v_t"][2] == 0 and test_db is None:
-					test_db = val_db
-				elif test_db is None:
+				train_db = raman(**db_cfg, mode = "train", k = k, sfpath = sfpath,
+								 newfile = False)
+				val_db = raman(**db_cfg, mode = "val", k = k, sfpath = sfpath, )
+				if test_db is None:
 					test_db = raman(**db_cfg, mode = "test", k = k, sfpath = sfpath)
-
+				if len(test_db) == 0:
+					test_db = val_db
 				l = data_leak_check_by_filename((train_db, val_db, test_db))
 				if len(l) > 0:
 					warnings.warn("data leak warning:{} \n {}".format(len(l) / len(val_db), l))
 
-				train_db.show_data_vis()
+				# train_db.show_data_vis()
 				# __________________label_______________________
 				# label_RamanData(train_db, path2labelfunc, name2label)
 				# label_RamanData(val_db, path2labelfunc, name2label)
@@ -416,18 +418,18 @@ def main_indep_test():
 			# backEnd = ".asc",
 			t_v_t = [0.8, 0.2, 0.0],
 			LoadCsvFile = readdatafunc,
-			k_split = 6,
+			k_split = 5,
 			transform = Process.process_series([  # 设置预处理流程
-				# Process.interpolator(),
+				# Process.interpolator(400, 1800, 512),
 				preprocess,
-				Process.sg_filter(),
+				Process.sg_filter(window_length = 11),
 				Process.norm_func(), ]
 			))
 		test_db = Raman_dirwise(**db_cfg)
 		db_cfg["dataroot"] = dataroot
 		recorddir = os.path.join(recordroot, ele)
 		path2labelfunc = path2func_generator(num2label)
-		train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
+		train_modellist(db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
 						path2labelfunc = path2labelfunc, test_db = test_db)
 
 
@@ -437,7 +439,11 @@ def main_one_datasrc(
 		info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx"),
 		raman = Raman_dirwise,
 		record_info = None,
+		db_cfg = None,
+		record_root_basename = None,
 ):
+	if db_cfg is None:
+		db_cfg = {}
 	# modellist = [AlexNet_Sun, ResNet18, ResNet34]
 	modellist = [AlexNet_Sun]
 	num2ele2label = get_infos(info_file)
@@ -447,17 +453,14 @@ def main_one_datasrc(
 		record_info = ""
 	if len(record_info) > 0:
 		record_info = record_info + "_"
+
 	recordroot = os.path.join(projectroot, "results", "glioma", "dl")
+	if record_root_basename is not None:
+		recordroot = os.path.join(recordroot, record_root_basename)
 	recordroot = os.path.join(recordroot, record_info + time.strftime("%Y-%m-%d-%H_%M_%S"))
 	#   # TODO:根据数据存储方式选择合适的读取策略（Raman/Raman_dirwise)
 
-	paras = [(e, pre) for e in eles for pre in [
-		# Process.baseline_als(),
-		Process.bg_removal_niter_fit(),
-		# Process.bg_removal_niter_piecewisefit(),
-	]]
-
-	for ele, preprocess in paras:
+	for ele in eles:
 		num2label = {}
 		for k in num2ele2label.keys():
 			num2label[k] = num2ele2label[k][ele]
@@ -465,26 +468,16 @@ def main_one_datasrc(
 		dataroot = os.path.join(dataroot_, ele)
 		if not os.path.isdir(dataroot):
 			continue
-		db_cfg = dict(  # 数据集设置
-			dataroot = dataroot,
-			backEnd = ".csv",
-			# backEnd = ".asc",
-			t_v_t = [0.8, 0.1, 0.1],
-			LoadCsvFile = readdatafunc,
-			k_split = 9,
-			transform = Process.process_series([  # 设置预处理流程
-				preprocess,
-				Process.sg_filter(),
-				Process.norm_func(), ]
-			))
+
+		db_cfg["dataroot"] = dataroot
 		recorddir = os.path.join(recordroot, ele)
 		path2labelfunc = path2func_generator(num2label)
-		train_modellist(dataroot, db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
+		train_modellist(db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
 						path2labelfunc = path2labelfunc, sfname = "Raman_", n_iter = 1, )
 
 
 def main_onesrc(datasplit = "personwise",
-				dataroot_ = None):
+				dataroot_ = None, db_cfg = None, record_root_basename = None):
 	from bacteria.code_sjh.bin.Glioma.data_handler.samplewise2personwise import rename_files_between
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
 
@@ -510,9 +503,11 @@ def main_onesrc(datasplit = "personwise",
 		dataroot_dst = dataroot_
 
 	info_file = os.path.join(projectroot, "data", "脑胶质瘤", r"data_used\病例编号&分类结果2.xlsx")
+
 	main_one_datasrc(dataroot_dst, info_file,
 					 raman = Raman_depth_gen(2, 2) if datasplit == "pointwise" else Raman_dirwise,
-					 record_info = os.path.basename(dataroot_dst) + "_" + datasplit)
+					 record_info = os.path.basename(dataroot_dst) + "_" + datasplit, db_cfg = db_cfg,
+					 record_root_basename = record_root_basename)
 
 
 # rename_files_between_undo(dataroot_dst, 3)
@@ -525,17 +520,47 @@ def main_onesrc(datasplit = "personwise",
 # finally:
 # 	rename_files_between_undo(dataroot_dst, 3)
 
-
+# def main()
 if __name__ == '__main__':
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
+
+	preprocess_liu = Process.process_series([  # 文章预处理流程
+		# Process.interpolator(400, 1800, 256),
+		Process.bg_removal_niter_fit(),
+		Process.sg_filter(window_length = 11),
+		Process.norm_func(), ]
+	)
+	preprocess_bals = Process.process_series([  # 优化的预处理流程
+		Process.interpolator(400, 1800, 512),
+		Process.baseline_als(),
+		Process.sg_filter(window_length = 21),
+		Process.norm_func(), ]
+	)
+
+	db_cfg = dict(  # 数据集设置
+		backEnd = ".csv",
+		# backEnd = ".asc",
+		t_v_t = [0.6, 0.2, 0.2],
+		LoadCsvFile = readdatafunc,
+		k_split = 8,
+		transform = preprocess_liu,
+		class_resampling = "over",
+	)
+
+	datasplit = "pointwise"
+
+	record_root_basename = f"{db_cfg['k_split']}fold_{int(sum(db_cfg['t_v_t'][:2]) * 10)}{int(db_cfg['t_v_t'][2] * 10)}_{datasplit}_{'nore' if db_cfg['class_resampling'] is None else db_cfg['class_resampling']}sampling_brnf"
+
 	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
 		if dir == "data_GBM_labeled":
 			continue
 		# for dir in ["data_GBM_labeled"]:
 
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
-		if not os.path.isdir(dir_abs) or not dir.startswith("data") or dir.endswith(("personwise", "failed")):
+		if not os.path.isdir(dir_abs) or not dir.startswith("data") or "indep" in dir or \
+				dir.endswith(("personwise", "failed")):
 			continue
-		# main_onesrc(datasplit = "tissuewise", dataroot_ = dir_abs)
-		# main_onesrc(datasplit = "personwise", dataroot_ = dir_abs)
-		main_onesrc(datasplit = "pointwise", dataroot_ = dir_abs)
+		main_onesrc(datasplit = datasplit, dataroot_ = dir_abs, db_cfg = db_cfg,
+					record_root_basename = record_root_basename)
+# main_onesrc(datasplit = "personwise", dataroot_ = dir_abs)
+# main_onesrc(datasplit = "pointwise", dataroot_ = dir_abs)

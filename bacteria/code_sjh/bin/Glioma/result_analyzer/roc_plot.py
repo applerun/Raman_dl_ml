@@ -79,6 +79,7 @@ def rocRead_bi(src,
 		for f in os.listdir(rocfile_dir):
 			if f.endswith(".csv") and f.startswith(mode):
 				rocfiles.append(f)
+		# 2分类时取pos label的 ROC ，多分类取平均roc
 		if len(rocfiles) == 0:
 			warnings.warn("roc file not found in {}".format(rocfile_dir))
 			continue
@@ -111,12 +112,12 @@ def rocRead_bi(src,
 			f, _, t = cal_roc_macro(f_all, t_all)
 		fprs.append(f)
 		tprs.append(t)
-	fpr_macro, _, tpr_macro = cal_roc_macro(fprs, tprs)
+	fpr_macro, tpr_all, tpr_macro = cal_roc_macro(fprs, tprs)
 	auc_macro = auc(fpr_macro, tpr_macro)
-	numpy.savetxt(os.path.join(src, "roc_record.csv"), numpy.vstack((fpr_macro, tpr_macro)).T, delimiter = ",",
+	numpy.savetxt(os.path.join(src, "roc_record.csv"), numpy.vstack((fpr_macro, tpr_macro, tpr_all)).T, delimiter = ",",
 				  header = "fpr,tpr,auc={}".format(auc_macro),
 				  comments = "")
-	return fpr_macro, tpr_macro
+	return fpr_macro, tpr_all, tpr_macro
 
 
 def plot_roc(fpr,
@@ -133,13 +134,23 @@ def plot_roc(fpr,
 			name = ""
 		if len(name) > 0:
 			name = name + " "
-		auc_res = auc(fpr, tpr)
+		auc_res = auc(fpr, numpy.mean(tpr, axis = 0) if len(list(tpr.shape)) == 2 else tpr)
 		name = name + "(AUC = {:.3f})".format(round(auc_res, 4))
 
 	if name is None:
-		axes.plot(fpr, tpr, color = color)
+		if len(list(tpr.shape)) == 2:
+			color_shadow = copy.deepcopy(color)
+			color_shadow[3] = color_shadow[3] * 0.4
+			spectrum_vis_mpl(tpr, fpr, ax = axes, line_color = color, shadow_color = color_shadow)
+		else:
+			axes.plot(fpr, tpr, color = color)
 	else:
-		axes.plot(fpr, tpr, color = color, label = name)
+		if len(list(tpr.shape)) == 2:
+			color_shadow = copy.deepcopy(color)
+			color_shadow[3] = color_shadow[3] * 0.4
+			spectrum_vis_mpl(tpr, fpr, ax = axes, name = name, line_color = color, shadow_color = color_shadow)
+		else:
+			axes.plot(fpr, tpr, color = color, label = name)
 		axes.legend(loc = "lower right", fontsize = 10, frameon = False)
 	for s in axes.spines:
 		axes.spines[s].set_color(numpy.array([100, 100, 100]) / 255)
@@ -165,6 +176,7 @@ def main_bi_class(dir,
 				  net2axes = None,
 				  sv_dir = None,
 				  titles = None,
+				  shadow = True
 				  ):
 	"""
 
@@ -205,8 +217,9 @@ def main_bi_class(dir,
 		for i, net in enumerate(nets):
 			src = os.path.join(molecule_abs, "Record" + net)
 			try:
-				roc = rocRead_bi(src, mode = mode)
-				net2molecule2roc[net][molecule] = roc
+
+				fpr, tpr_a, tpr_m = rocRead_bi(src, mode = mode)
+				net2molecule2roc[net][molecule] = (fpr, tpr_a) if shadow else (fpr, tpr_m)
 			except:
 				net2molecule2roc[net][molecule] = None
 	for molecule in unfoundmolecule:
@@ -233,7 +246,7 @@ def main_bi_class(dir,
 			else:
 				i = i_
 			ax = axes[i]
-			ax.text(-0.25, 1.15, chr(i_ + 65), transform = ax.transAxes, fontsize = 15, fontweight = "bold")
+			ax.text(-0.25, 1.15, chr(i_ + 97), transform = ax.transAxes, fontsize = 15, fontweight = "bold")
 			try:
 				title = molecule if positions2titles is None else positions2titles[i]
 				plot_roc(*molecule2roc[molecule], title, axes = ax, show_auc = True,

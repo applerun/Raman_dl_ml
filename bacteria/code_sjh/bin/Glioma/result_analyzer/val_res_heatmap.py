@@ -175,8 +175,8 @@ def plot_s(ax: matplotlib.axes.Axes,
 	return
 
 
-def main_hatchwise(HeatData1 = None,
-				   HeatData2 = None,
+def main_hatchwise(HeatData1:str or numpy.ndarray = None,
+				   HeatData2:str or numpy.ndarray = None,
 				   dst = None,
 				   skiprows = 1,
 				   norm = colors.Normalize(0.5, 1, clip = True)

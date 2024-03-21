@@ -17,7 +17,7 @@ def round_str(res: str,
 def cal_sen_spe_by_roc(fpr: numpy.ndarray, tpr: numpy.ndarray, ):
 	sens = tpr
 	spes = 1 - fpr
-	sen_plus_spe: numpy.ndarray = sens + spes
+	sen_plus_spe: numpy.ndarray = numpy.power(sens,0.5) + numpy.power(spes,0.5)
 	idx = numpy.argmax(sen_plus_spe)
 	sen, spe = sens[idx], spes[idx]
 	return sen, spe
@@ -59,7 +59,7 @@ def RecordRead_bi_clas(src,
 			auc_ = float(auc_)
 		if cal_conf_from_auc:
 			roc = numpy.loadtxt(os.path.join(src, "roc_record.csv"), delimiter = ",", skiprows = 1)
-			fpr, tpr = roc.T
+			fpr, tpr = roc[:, :2].T
 			sen, spe = cal_sen_spe_by_roc(fpr, tpr)
 			if abs(auc_ - auc) > 0.001:
 				warnings.warn("auc from macro_roc({}) and recordfile({}) are different"
@@ -129,7 +129,7 @@ def main_bi_class(dir,
 
 def main(dirname = "2022-11-10-17_57_55_dirwise",
 		 nets = None,
-		 mode = "test",cal_conf_from_auc = True):
+		 mode = "test", cal_conf_from_auc = True):
 	if nets is None:
 		if os.path.isfile(os.path.join(dirname, "models.txt")):
 			nets = list(numpy.loadtxt(os.path.join(dirname, "models.txt"), delimiter = ","))

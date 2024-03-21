@@ -131,11 +131,11 @@ def plt_res(pltdir,
 	label2name = val_db.label2name()
 	if mode == "dl":
 		plt_loss_acc(pltdir, res, informations)
-		plt_res_val(pltdir, res["res_test"], label2name, informations = "test")
+
 		plt_cam(pltdir, res["val_cam"], val_db, "val")
 		plt_cam(pltdir, res["test_cam"], test_db, "val")
 	plt_res_val(pltdir, res["res_val"], label2name, informations = "val")
-
+	plt_res_val(pltdir, res["res_test"], label2name, informations = "test")
 
 def heatmap(matrix,
             path):

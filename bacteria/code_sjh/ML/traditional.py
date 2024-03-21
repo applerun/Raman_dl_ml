@@ -1,3 +1,4 @@
+import sklearn.base
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.decomposition import PCA
 from sklearn import svm
@@ -25,63 +26,57 @@ def preprocess_LDA(x_train,
 	return x_train, y_train, x_test, y_test
 
 
+
+
+def gen_reduction_estimator(model = PCA,model_name = "pca", *args,
+							**kwargs):
+	class C:
+		def __init__(self):
+			self.model_name = model_name
+			self.estimator = model(*args, **kwargs)
+
+	return C
+
+PCA_shen = gen_reduction_estimator(PCA)
+LDA_shen = gen_reduction_estimator(LDA)
 name2dim_reduction = {
-	"lda": LDA,
-	"PCA": PCA,
+	"lda": LDA_shen,
+	"pca": PCA_shen,
 }
 keys = list(name2dim_reduction.values())
 values = list(name2dim_reduction.keys())
 dim_reduction2name = dict(zip(keys, values))
 
 
-class PCA(PCA):
-	def __init__(self,
-				 *args,
-				 **kwargs):
-		self.__name__ = "pca"
-		super().__init__(*args, **kwargs)
-
-
-class LDA(LDA):
-	def __init__(self,
-				 *args,
-				 **kwargs):
-		self.__name__ = "lda"
-		super().__init__(*args, **kwargs)
-
-
 class basic_SVM():
 	def __init__(self,
 				 dim_reduction = None,
-				 reducted_n_components = None,
 				 SVC_kwargs = None
 				 ):
 		if SVC_kwargs is None:
 			SVC_kwargs = dict(gamma = 'auto', probability = True, kernel = 'rbf')
 		if dim_reduction is None:
-			self.__name__ = "svm"
-			self.dim_reduction = dim_reduction
+			self.model_name = "svm"
+			self.dim_reduction_estimator = None
 		elif type(dim_reduction) is str:
-			self.__name__ = dim_reduction + "_svm"
-			dim_reduction = name2dim_reduction[dim_reduction]
+			self.model_name = dim_reduction + "_svm"
+			self.dim_reduction = name2dim_reduction[dim_reduction]()
 		elif dim_reduction in list(dim_reduction2name.keys()):
-			self.__name__ = dim_reduction2name[dim_reduction] + "_svm"
-		else:
-			self.__name__ = dim_reduction.__name__ + "_svm"
+			self.model_name = dim_reduction2name[dim_reduction] + "_svm"
+			self.dim_reduction = dim_reduction()
+		elif type(dim_reduction) is type:
+			self.dim_reduction = dim_reduction()
+			self.model_name = self.dim_reduction.model_name + "_svm"
 
-		if dim_reduction is not None:
-			if type(dim_reduction) is type:
-				self.dim_reduction = dim_reduction(n_components = reducted_n_components)
-			else:
-				self.dim_reduction = dim_reduction
+		self.dim_reduction_estimator = self.dim_reduction.estimator
 		self.classifier = svm.SVC(**SVC_kwargs)
 
 	def fit(self,
 			x_train,
 			y_train):
-		if self.dim_reduction is not None:
-			self.dim_reduction.fit(x_train, y_train)
-			x_train_ = self.dim_reduction.transform(x_train)
+		if self.dim_reduction_estimator is not None:
+			self.dim_reduction_estimator.fit(x_train, y_train)
+			x_train_ = self.dim_reduction_estimator.transform(x_train)
 		else:
 			x_train_ = x_train
 		self.classifier.fit(x_train_, y_train)
@@ -89,16 +84,16 @@ class basic_SVM():
 	def predict_proba(self,
 					  x_val,
 					  ):
-		x_val_ = self.dim_reduction.transform(x_val) if self.dim_reduction is not None else x_val
+		x_val_ = self.dim_reduction_estimator.transform(x_val) if self.dim_reduction_estimator is not None else x_val
 		return self.classifier.predict_proba(x_val_)
 
 	def score(self,
 			  x_val,
 			  y_val):
-		x_val_ = self.dim_reduction.transform(x_val) if self.dim_reduction is not None else x_val
+		x_val_ = self.dim_reduction_estimator.transform(x_val) if self.dim_reduction_estimator is not None else x_val
 		return self.classifier.score(x_val_, y_val)
 
 	def predict(self,
 				x_val):
-		x_val_ = self.dim_reduction.transform(x_val) if self.dim_reduction is not None else x_val
+		x_val_ = self.dim_reduction_estimator.transform(x_val) if self.dim_reduction_estimator is not None else x_val
 		return self.classifier.predict(x_val_)

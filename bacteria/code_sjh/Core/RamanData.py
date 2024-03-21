@@ -110,10 +110,9 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 		self.RamanFiles = []
 		self.labels = []
 		self.Ramans = []
-		self.ratio = class_resampling
+		self.ratio = class_resampling if self.mode != "test" else None
 		if self.LoadCsvFile is None:
 			self.LoadCsvFile = getRamanFromFile()
-
 		for name in sorted(os.listdir(dataroot)):
 			if not os.path.isdir(os.path.join(dataroot, name)):
 				continue
@@ -133,7 +132,7 @@ class RamanDatasetCore(Dataset):  # 增加了一些基础的DataSet功能
 			self.split_data()
 			self.load_raman_data()
 		self.ratio = class_resampling
-		if type(self.ratio) == str:
+		if type(self.ratio) == str :
 			self.class_auto_balance(class_resampling)
 
 	def LoadCsv(self,

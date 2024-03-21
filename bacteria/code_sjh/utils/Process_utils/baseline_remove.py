@@ -10,7 +10,7 @@ from scipy import sparse
 from scipy.sparse.linalg import spsolve
 from bacteria.code_sjh.Core.Preprocess import *
 
-__all__ = ["baseline_als", "bg_removal_niter_fit", "bg_removal_niter_piecewisefit", "bg_removal_unfitted_area"]
+__all__ = ["baseline_als", "bg_removal_niter_fit", "bg_removal_niter_piecewisefit", "bg_removal_unfitted_area","airALS"]
 
 
 # baseline_remove
@@ -58,7 +58,7 @@ class airALS(ProcessorFunction):
             if dt < sum(0.001 * abs(y)):
                 break
             w = self.p * (y > z) + (1 - self.p) * (y < z)
-            w = w * i * numpy.exp(numpy.abs(d) / dt)
+            w = w * i * numpy.exp(numpy.abs(d) / dt) # 相比BALS添加了这一步运算
 
             y = d  # subtract the background 'z' from the original data 'y'
         return y if x is None else (y, x)
@@ -100,7 +100,7 @@ class bg_removal_niter_fit(ProcessorFunction):
 
 
 class bg_removal_niter_piecewisefit(ProcessorFunction):
-    def __init__(self, num_iter = 10, degree = 4, x_seg = None, n_segments = 5,
+    def __init__(self, num_iter = 100, degree = 4, x_seg = None, n_segments = 5,
                  ):
         """
 

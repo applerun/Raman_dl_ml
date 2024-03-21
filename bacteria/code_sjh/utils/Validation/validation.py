@@ -70,7 +70,25 @@ def evaluate_all(model,
 	res = dict(acc = acc, loss = loss, label2roc = label2roc, label2auc = label2auc, confusion_matrix = conf_m)
 	return res
 
-
+def evaluate_all_ml(model,val_db):
+	val_data, val_label = [numpy.squeeze(x) for x in val_db.Ramans], [x for x in val_db.labels]
+	val_prob = model.predict_proba(val_data)
+	val_acc = model.score(val_data, val_label)
+	val_pred = model.predict(val_data)
+	label2auc = {}
+	label2roc = {}
+	conf_m_val = confusion_matrix(val_label, model.predict(val_data))
+	for i in range(val_db.num_classes()):
+		label_true = numpy.equal(val_label, i).astype(int)
+		score = val_prob[:, i]
+		# label2auc[i] = auc(frp, tpr)
+		frp, tpr, thresholds = roc_curve(label_true, score)
+		label2roc[i] = (frp, tpr, thresholds)
+		label2auc[i] = auc(frp, tpr)
+	res_val = dict(
+		acc = val_acc, label2roc = label2roc, label2auc = label2auc, confusion_matrix = conf_m_val
+	)
+	return res_val
 def grad_cam(convnet,
              inumpyut,
              label = None,

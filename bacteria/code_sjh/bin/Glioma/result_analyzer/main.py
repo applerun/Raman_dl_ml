@@ -11,14 +11,15 @@ from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 projectroot = getRootPath("Raman_dl_ml")
 
 
-def main_roc_stat(res_dir_base = "811_pointwise_upsampling",nets = None, dl = True):
+def main_roc_stat(res_dir_base = "811_pointwise_upsampling", nets = None, dl = True, cal_conf_from_auc = True):
 	res_root_up = "dl" if dl else "ml"
 
 	res_root = os.path.join(projectroot, r"results\glioma\{}\{}".format(res_root_up, res_dir_base))
 	# res_root = os.path.join(projectroot, r"results\glioma\ml\umap_bak\person_wise")
-	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", res_dir_base, "merge")
+	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240321", res_dir_base, "merge")
 	if not os.path.isdir(res_Heatmap_root):
 		os.makedirs(res_Heatmap_root)
+	mode = "test"
 	statfiles = []
 	for dirname in os.listdir(res_root):
 		if os.path.isfile(os.path.join(res_root, "models.txt")):
@@ -33,20 +34,19 @@ def main_roc_stat(res_dir_base = "811_pointwise_upsampling",nets = None, dl = Tr
 				nets_ = "pca_svm,umap_svm".split(",")
 		if not dirname.startswith("data"):
 			continue
-		if dl:
-			mode = "test"
-		else:
-			mode = "val"
+
 		roc_plot.main(os.path.join(res_root, dirname), nets = nets_, mode = mode,
 					  sv_dir = os.path.join(res_Heatmap_root, "roc"))
-		dst_file = res_stat.main(os.path.join(res_root, dirname), nets = nets_, mode = mode,cal_conf_from_auc = True)
+		dst_file = res_stat.main(os.path.join(res_root, dirname), nets = nets_, mode = mode,
+								 cal_conf_from_auc = cal_conf_from_auc)
 		statfiles.append(dst_file)
 		shutil.copy(dst_file, os.path.join(res_Heatmap_root, os.path.basename(dst_file)))
 	print("static result saved in {}".format(res_Heatmap_root))
 
-def main_Heatmap(dataroot =  "811_pointwise_upsampling"):
+
+def main_Heatmap(dataroot = "811_pointwise_upsampling"):
 	from matplotlib import colors
-	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318",dataroot, "merge")
+	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318", dataroot, "merge")
 	l_prefix = "res_stat-data_all,res_stat-data_GBM,res_stat-data_batch123".split(",")
 	for prefix in l_prefix:
 		val_res_heatmap.merge_stat_files(res_Heatmap_root, res_Heatmap_root + "_" + prefix + ".csv", prefix,
@@ -66,7 +66,9 @@ def main_Heatmap(dataroot =  "811_pointwise_upsampling"):
 
 
 if __name__ == '__main__':
-	for data in ["811_pointwise_upsampling_new"]:
-		main_roc_stat(data,dl = True)
-		main_roc_stat(data,dl = False)
-		main_Heatmap(data)
+	# data = "811_pointwise_upsampling_new"
+	data = "8fold_82_pointwise_oversampling_brnf"
+	# data = "tissuewise"
+	main_roc_stat(data, dl = True, cal_conf_from_auc = True)
+# main_roc_stat(data,dl = False)
+# main_Heatmap(data)

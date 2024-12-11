@@ -3,7 +3,7 @@ import os, time, csv
 import numpy as np
 from bacteria.code_sjh.utils.RamanData import Raman, projectroot, Raman_dirwise
 from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
-from bacteria.code_sjh.utils import Process
+from bacteria.code_sjh.utils.Process_utils import Process
 from sklearn.metrics import roc_curve, confusion_matrix, roc_auc_score
 import seaborn
 import matplotlib.pyplot as plt
@@ -241,8 +241,8 @@ if __name__ == '__main__':
     for database in ["all_data", "all_data_down_sampling", "old_data"]:
         dataroot = os.path.join(projectroot, "data", "tissue", database)
         for baselineRemoveFunc in [Process.baseline_als(),
-                                   Process.bg_removal_niter_fit(num_iter = 30, degree = 5),
-                                   Process.bg_removal_niter_piecewisefit(), ]:
+								   Process.bg_removal_niter_fit(num_iter = 30, degree = 5),
+								   Process.bg_removal_niter_piecewisefit(), ]:
             transform = Process.process_series([  # 设置预处理流程
                 Process.interpolator(),
                 baselineRemoveFunc,

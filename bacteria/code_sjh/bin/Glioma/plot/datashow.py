@@ -1,12 +1,11 @@
 import matplotlib.pyplot as plt
-import torch
-import sys, os
-from bacteria.code_sjh.utils.RamanData import Raman_dirwise, Raman
+import os
+from bacteria.code_sjh.utils.RamanData import Raman_dirwise
 from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 from bacteria.code_sjh.Core.basic_functions.mpl_func import spectrum_vis_mpl
 from bacteria.code_sjh.Core.RamanData import RamanDatasetCore
-from bacteria.code_sjh.utils import Process
+from bacteria.code_sjh.utils.Process_utils import Process
 from pylab import mpl
 
 mpl.rcParams["font.sans-serif"] = ["SimHei"]
@@ -14,7 +13,6 @@ mpl.rcParams["axes.unicode_minus"] = False
 projectroot = getRootPath("bacteria")
 readdatafunc = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
                                 dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
-import numpy as np
 
 
 # 设置中文显示字体
@@ -43,7 +41,7 @@ if __name__ == '__main__':
                        LoadCsvFile = readdatafunc,
                        transform = Process.process_series([
                            Process.bg_removal_niter_fit(),
-                           Process.interpolator(np.linspace(400, 1800, 512)),
+                           # Process.interpolator(np.linspace(400, 1800, 512)),
                            Process.sg_filter(),
                            Process.norm_func()
                        ]),

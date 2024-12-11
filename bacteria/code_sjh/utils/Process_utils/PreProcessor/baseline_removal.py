@@ -1,14 +1,8 @@
-import glob
-import copy
-
-import numpy
 import numpy as np
 import pwlf
-import torch
-import visdom
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
-from bacteria.code_sjh.Core.Preprocess import *
+from bacteria.code_sjh.utils.Process_utils.Core import *
 
 __all__ = ["baseline_als", "bg_removal_niter_fit", "bg_removal_niter_piecewisefit", "bg_removal_unfitted_area","airALS"]
 
@@ -16,6 +10,13 @@ __all__ = ["baseline_als", "bg_removal_niter_fit", "bg_removal_niter_piecewisefi
 # baseline_remove
 class baseline_als(ProcessorFunction):
     def __init__(self, lam = 100000, p = 0.01, niter = 10):
+        """
+        非对称最小二乘法
+        参考文献：https://eigenvector.com/wp-content/uploads/2020/01/WhittakerSmoother.pdf
+        @param lam: \lambda
+        @param p: 惩罚系数
+        @param niter: 迭代次数
+        """
         super(baseline_als, self).__init__("baseline_als(lam={},p={}，niter={}".format(lam, p, niter))
         self.p = p
         self.niter = niter
@@ -37,6 +38,13 @@ class baseline_als(ProcessorFunction):
 
 class airALS(ProcessorFunction):
     def __init__(self, lam = 1e5, p = 0.01, niter = 10):
+        """
+        一种给改进的非对称最小二乘法（个人感觉提升不大）
+        参考文献：https://doi.org/10.1038/srep39891
+        @param lam: \lamdba
+        @param p: 惩罚系数
+        @param niter: 迭代次数
+        """
         super(airALS, self).__init__("airALS(lam={},p={},niter={})".format(lam, p, niter))
         self.lam = lam
         self.p = p
@@ -69,9 +77,11 @@ class bg_removal_niter_fit(ProcessorFunction):
                  ):
 
         """
+        多项式迭代拟合法（终止条件为循环次数）
         参考文章：Advances in real-time fiber-optic Raman spectroscopy
     for early cancer diagnosis: Pushing the frontier into clinical
     endoscopic applications
+        链接：https://onlinelibrary.wiley.com/doi/full/10.1002/tbio.202000018
         """
         super(bg_removal_niter_fit, self).__init__(
             "bg_removal_niter_fit(niter={},degree={})".format(niter, degree))
@@ -103,11 +113,11 @@ class bg_removal_niter_piecewisefit(ProcessorFunction):
     def __init__(self, num_iter = 100, degree = 4, x_seg = None, n_segments = 5,
                  ):
         """
-
-        @param num_iter: 10
-        @param degree: 4
-        @param x_seg: None
-        @param n_segments:  5
+        分段多项式迭代拟合法
+        @param num_iter: 迭代次数
+        @param degree: 拟合阶数
+        @param x_seg: 分段横坐标（每段边界位置）
+        @param n_segments:  分段数量（默认每段长度一样）
         """
 
         self.num_iter = num_iter
@@ -140,12 +150,7 @@ class bg_removal_niter_piecewisefit(ProcessorFunction):
         return res if x is None else (res, x)
 
 
-def bg_removal_unfitted_area():
-    # TODO:将unfiited area设置为循环停止的判断句
-    def func(num_iter):
-        return
 
-    return func
 
 
 if __name__ == '__main__':

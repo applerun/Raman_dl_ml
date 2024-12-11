@@ -1,6 +1,5 @@
-import numpy as np
-
-from bacteria.code_sjh.utils import Process, RamanData
+from bacteria.code_sjh.utils import RamanData
+from bacteria.code_sjh.utils.Process_utils import Process
 from bacteria.code_sjh.Core.basic_functions.mpl_func import spectrum_vis_mpl
 from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 
@@ -35,9 +34,8 @@ if __name__ == '__main__':
         ))
     from bacteria.code_sjh.utils.RamanData import Raman_dirwise
     from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
-    from scipy import interpolate
 
-    readdatafunc = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
+	readdatafunc = getRamanFromFile(wavelengthstart = 390, wavelengthend = 1810,
                                     dataname2idx = {"Wavelength": 0, "Column": 2, "Intensity": 1}, )
 
     from pylab import mpl

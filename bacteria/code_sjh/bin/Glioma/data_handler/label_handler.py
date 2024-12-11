@@ -2,10 +2,8 @@ import glob
 import os.path
 import shutil
 import warnings
-import numpy
 from bacteria.code_sjh.utils.RamanData import RamanDatasetCore, Raman_dirwise, Raman, Raman_depth_gen
 from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
-from bacteria.code_sjh.utils import Process
 import pandas
 import torch
 
@@ -102,7 +100,6 @@ def main(info_file: str,
 	if root is None:
 		root = os.path.join(projectroot, "data", "脑胶质瘤")
 	data_root = os.path.join(root, src)
-	from scipy import interpolate
 
 	readdatafunc = getRamanFromFile(  # 定义读取数据的函数
 		wavelengthstart = 39, wavelengthend = 1810, delimeter = None,

@@ -481,7 +481,7 @@ def main(
 if __name__ == '__main__':
 	startVisdomServer()  # python -m visdom.server    启动visdom本地服务器
 	vis = visdom.Visdom()  # visdom对象
-	from bacteria.code_sjh.utils import Process
+	from bacteria.code_sjh.utils.Process_utils import Process
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # 设置运算设备
 	print("using device:", device.__str__())

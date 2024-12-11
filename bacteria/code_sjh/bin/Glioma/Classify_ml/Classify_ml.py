@@ -1,10 +1,7 @@
-import copy
-import json
 import shutil
 import warnings
 import csv
 
-import sklearn.decomposition
 import umap
 from sklearn.metrics import accuracy_score
 
@@ -15,7 +12,7 @@ from bacteria.code_sjh.Core.basic_functions.mpl_func import *
 from bacteria.code_sjh.ML import gen_reduction_estimator, basic_SVM, PCA
 from bacteria.code_sjh.bin.Glioma.Classify_dl.record_func import plt_res, npsv, heatmap
 from bacteria.code_sjh.bin.Glioma.data_handler.label_handler import get_infos, path2func_generator
-from bacteria.code_sjh.utils import Process
+from bacteria.code_sjh.utils.Process_utils import Process
 from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
 
@@ -212,7 +209,6 @@ def main_one_datasrc(
 		info_file = os.path.join(projectroot, "data", "脑胶质瘤", "data_used\病例编号&分类结果2.xlsx"),
 		raman = Raman_dirwise,
 		record_info = None,
-		personwise = True,
 		db_cfg = None,
 		record_root_basename = None,
 ):
@@ -263,7 +259,7 @@ def main_one_datasrc(
 		path2labelfunc = path2func_generator(num2label)
 		train_modellist(db_cfg = db_cfg, raman = raman, modellist = modellist, recorddir = recorddir,
 						path2labelfunc = path2labelfunc,
-						sfname = "Raman_{}_".format("personwise" if personwise else "tissuewise"), n_iter = 1, )
+						sfname = "Raman_", n_iter = 1, )
 
 
 def main_onesrc(datasplit = "personwise",
@@ -325,24 +321,25 @@ if __name__ == '__main__':
 		Process.sg_filter(window_length = 21),
 		Process.norm_func(), ]
 	)
-
+	token2preprocess = dict(brnf = preprocess_liu,bals = preprocess_bals)
+	ptoken = "brnf"
 	db_cfg = dict(  # 数据集设置
 		backEnd = ".csv",
 		# backEnd = ".asc",
 		t_v_t = [0.6, 0.2, 0.2],
 		LoadCsvFile = readdatafunc,
-		k_split = 8,
-		transform = preprocess_liu,
-		class_resampling = "over",
+		k_split = 5,
+		transform = token2preprocess[ptoken],
+		class_resampling = None,
 	)
 
-	datasplit = "pointwise"
+	datasplit = "tissuewise"
 
-	record_root_basename = f"{db_cfg['k_split']}fold_{int(sum(db_cfg['t_v_t'][:2]) * 10)}{int(db_cfg['t_v_t'][2] * 10)}_{datasplit}_{'nore' if db_cfg['class_resampling'] is None else db_cfg['class_resampling']}sampling_brnf"
+	record_root_basename = f"{db_cfg['k_split']}fold_{int(sum(db_cfg['t_v_t'][:2]) * 10)}{int(db_cfg['t_v_t'][2] * 10)}_{datasplit}_{'nore' if db_cfg['class_resampling'] is None else db_cfg['class_resampling']}sampling_{ptoken}"
 
 	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-		if dir == "data_GBM_labeled": continue
-		# for dir in ["data_GBM_labeled"]:
+		# if dir == "data_GBM_labeled": continue
+	# for dir in ["data_GBM_labeled"]:
 
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or "indep" in dir or \

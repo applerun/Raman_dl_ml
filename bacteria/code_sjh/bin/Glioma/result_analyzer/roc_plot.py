@@ -258,13 +258,13 @@ def main_bi_class(dir,
 		if net2axes is None:
 			for i in allidx:
 				fig.delaxes(axes[i])
-		fig.savefig(os.path.join(dir, net + "_roc.png"))
+		fig.savefig(os.path.join(dir, net + "_roc.tif"))
 		if sv_dir is not None:
 			short_dir_base = os.path.basename(dir).split("_")
 			short_dir_base = "_".join(short_dir_base[:min(len(short_dir_base), 3)])
 			if not os.path.isdir(os.path.join(sv_dir, short_dir_base)):
 				os.makedirs(os.path.join(sv_dir, short_dir_base))
-			shutil.copy(os.path.join(dir, net + "_roc.png"), os.path.join(sv_dir, short_dir_base, net + "_roc.png"))
+			shutil.copy(os.path.join(dir, net + "_roc.tif"), os.path.join(sv_dir, short_dir_base, net + "_roc.tif"))
 		plt.close(fig)
 	return net2molecule2roc
 

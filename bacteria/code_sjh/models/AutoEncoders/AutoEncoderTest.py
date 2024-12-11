@@ -14,9 +14,10 @@ dataroot = os.path.join(os.path.split(projectroot)[0], "data", "data_AST")
 sys.path.append(coderoot)
 
 from bacteria.code_sjh.models.Criteons.CrossEntropy import BCE
-from bacteria.code_sjh.utils import iterator, Process
+from bacteria.code_sjh.utils import iterator
+from bacteria.code_sjh.utils.Process_utils import Process
 from bacteria.code_sjh.Core.basic_functions import visdom_func
-from bacteria.code_sjh.utils.Process import noising_func_generator
+from bacteria.code_sjh.utils.Process_utils.Process import noising_func_generator
 from AutoEncoder import *
 from VAE import *
 
@@ -37,10 +38,10 @@ def main_test(batchsz = 16,
 
     tvt = [0.8, 0.2, 0]
     series = [Process.baseline_als(lam = 100000, p = 0.01, niter = 10),
-              Process.sg_filter(window_length = 11, polyorder = 3),
-              Process.norm_func(a = 0, b = 1),
-              lambda x: x[0:524]
-              ]
+			  Process.sg_filter(window_length = 11, polyorder = 3),
+			  Process.norm_func(a = 0, b = 1),
+			  lambda x: x[0:524]
+			  ]
     noising_func = noising_func_generator(0.05)
     # noising_func = None
     process = Process.process_series(series)
@@ -180,10 +181,10 @@ def VAE_test(batchsz = 16, numworkers = 0, epochs = 1000, lr = 0.0005, modelname
     tvt = [0.8, 0.2, 0]
 
     series = [Process.baseline_als(lam = 100000, p = 0.01, niter = 10),
-              Process.sg_filter(window_length = 11, polyorder = 3),
-              Process.norm_func(a = 0, b = 1),
-              lambda x: x[0:517]
-              ]
+			  Process.sg_filter(window_length = 11, polyorder = 3),
+			  Process.norm_func(a = 0, b = 1),
+			  lambda x: x[0:517]
+			  ]
 
     # prepare for training
     # noising_func = noising_func_generator(0.05)
@@ -272,10 +273,10 @@ def mae_test(savefilemode = "combined",
              save_mdlfile = os.path.join(coderoot, "checkpoints_encoder.mdl")
              ):
     series = [Process.baseline_als(lam = 100000, p = 0.01, niter = 10),
-              Process.sg_filter(window_length = 11, polyorder = 3),
-              Process.norm_func(a = 0, b = 1),
-              lambda x: x[0:524]
-              ]
+			  Process.sg_filter(window_length = 11, polyorder = 3),
+			  Process.norm_func(a = 0, b = 1),
+			  lambda x: x[0:524]
+			  ]
     print("series")
     tvt = [0.8, 0.2, 0]
     process = Process.process_series(series)

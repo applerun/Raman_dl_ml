@@ -134,13 +134,11 @@ def report_dirwise_classify(dataset: Raman_dirwise,  # raman_dir -> root/class/d
 
 
 if __name__ == '__main__':
-    import numpy as np
-    from torch.utils.data import DataLoader
     from bacteria.code_sjh.Core.basic_functions.fileReader import getRamanFromFile
-    from bacteria.code_sjh.utils import Process
-    from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
-    from scipy import interpolate
-    readdatafunc = getRamanFromFile(  # 定义读取数据的函数
+	from bacteria.code_sjh.utils.Process_utils import Process
+	from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
+
+	readdatafunc = getRamanFromFile(  # 定义读取数据的函数
         wavelengthstart = 39, wavelengthend = 1810, delimeter = None,
         dataname2idx = {"Wavelength": 0, "Intensity": 1}
     )

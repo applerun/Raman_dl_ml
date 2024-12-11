@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.signal
 from bacteria.code_sjh.utils.RamanData import Raman_dirwise
-from bacteria.code_sjh.utils import Process
+from bacteria.code_sjh.utils.Process_utils import Process
 
 
 def msc(X: np.ndarray, Au: np.ndarray):

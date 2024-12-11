@@ -7,7 +7,7 @@ from torch import optim
 from bacteria.code_sjh.models.CNN.AlexNet import AlexNet_Sun
 from bacteria.code_sjh.models.CNN.ResNet import ResNet18, ResNet34
 from bacteria.code_sjh.utils.Validation.validation import *
-from bacteria.code_sjh.utils.RamanData import getRamanFromFile, Raman_depth_gen, data_leak_check_by_filename, \
+from bacteria.code_sjh.utils.RamanData import Raman_depth_gen, data_leak_check_by_filename, \
 	get_dict_str
 from bacteria.code_sjh.Core.basic_functions.visdom_func import *
 from bacteria.code_sjh.Core.basic_functions.mpl_func import *
@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 
 from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 import pysnooper
-from bacteria.code_sjh.utils import Process
+from bacteria.code_sjh.utils.Process_utils import Process
 
 torch.backends.cudnn.benchmark = True
 
@@ -510,16 +510,6 @@ def main_onesrc(datasplit = "personwise",
 					 record_root_basename = record_root_basename)
 
 
-# rename_files_between_undo(dataroot_dst, 3)
-
-
-# try:
-# 	main_one_datasrc(dataroot_dst, info_file)
-# except:
-# 	print("failed")
-# finally:
-# 	rename_files_between_undo(dataroot_dst, 3)
-
 # def main()
 if __name__ == '__main__':
 	glioma_data_root = os.path.join(projectroot, "data", "脑胶质瘤")
@@ -536,25 +526,26 @@ if __name__ == '__main__':
 		Process.sg_filter(window_length = 21),
 		Process.norm_func(), ]
 	)
-
+	token2preprocess = dict(brnf = preprocess_liu,bals = preprocess_bals)
+	ptoken = "bals"
 	db_cfg = dict(  # 数据集设置
 		backEnd = ".csv",
 		# backEnd = ".asc",
 		t_v_t = [0.6, 0.2, 0.2],
 		LoadCsvFile = readdatafunc,
 		k_split = 8,
-		transform = preprocess_liu,
+		transform = token2preprocess[ptoken],
 		class_resampling = "over",
 	)
 
 	datasplit = "pointwise"
 
-	record_root_basename = f"{db_cfg['k_split']}fold_{int(sum(db_cfg['t_v_t'][:2]) * 10)}{int(db_cfg['t_v_t'][2] * 10)}_{datasplit}_{'nore' if db_cfg['class_resampling'] is None else db_cfg['class_resampling']}sampling_brnf"
+	record_root_basename = f"{db_cfg['k_split']}fold_{int(sum(db_cfg['t_v_t'][:2]) * 10)}{int(db_cfg['t_v_t'][2] * 10)}_{datasplit}_{'nore' if db_cfg['class_resampling'] is None else db_cfg['class_resampling']}sampling_{ptoken}"
 
 	for dir in os.listdir(os.path.join(glioma_data_root, "labeled_data")):
-		if dir == "data_GBM_labeled":
-			continue
-		# for dir in ["data_GBM_labeled"]:
+		# if dir == "data_GBM_labeled":
+		# 	continue
+	# for dir in ["data_GBM_labeled"]:
 
 		dir_abs = os.path.join(glioma_data_root, "labeled_data", dir)
 		if not os.path.isdir(dir_abs) or not dir.startswith("data") or "indep" in dir or \

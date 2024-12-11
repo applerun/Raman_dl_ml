@@ -1,5 +1,6 @@
 import csv
 import os
+import warnings
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
@@ -122,7 +123,7 @@ def plotdata(HeatData1,
 
 
 def colorbars(cmaps,
-			  plot_ax:matplotlib.axes.Axes = None,
+			  plot_ax: matplotlib.axes.Axes = None,
 			  norm = colors.Normalize(0.5, 1, clip = True),
 			  colorbar_orientation = "vertical",
 			  ticksize = 20):
@@ -175,8 +176,8 @@ def plot_s(ax: matplotlib.axes.Axes,
 	return
 
 
-def main_hatchwise(HeatData1:str or numpy.ndarray = None,
-				   HeatData2:str or numpy.ndarray = None,
+def main_hatchwise(HeatData1: str or numpy.ndarray = None,
+				   HeatData2: str or numpy.ndarray = None,
 				   dst = None,
 				   skiprows = 1,
 				   norm = colors.Normalize(0.5, 1, clip = True)
@@ -292,8 +293,17 @@ def merge_stat_files(src_dir,
 	res = [None] * (len(confms) * len(new_models))
 	for x1, confm in enumerate(confms):
 		for x2, model in enumerate(new_models):
-			digit = list(confm2model2digit[confm][model])
+			try:
+				digit = list(confm2model2digit[confm][model])
+			except KeyError:
+				digit = [-1]
+				warnings.warn("missing performance of model: {}".format(model))
 			res[x1 * len(new_models) + x2] = [confm, model][:new_rows] + digit
+	len_x = [len(x) for x in res]
+	lane_max = max(len_x)
+	for i, l in enumerate(len_x):
+		if l < lane_max:
+			res[i] = res[i] + [-1] * (lane_max - l)
 	res = numpy.array(res).T
 	numpy.savetxt(dst_f, res, fmt = "%s", delimiter = ",")
 
@@ -303,7 +313,7 @@ def main():
 
 	projectroot = getRootPath("Raman_dl_ml")
 	res_Heatmap_root = os.path.join(projectroot, "results", "glioma", "Heatmap", "20240318")
-	l_prefix = "res_stat-data_all,res_stat-data_GBM,res_stat-data_batch123".split(",")
+	l_prefix = "res_stat-data_all,res_stat-data_batch123,res_stat-data_GBM".split(",")
 
 	for res_stat_dir in os.listdir(res_Heatmap_root):
 		res_stat_dir = os.path.join(res_Heatmap_root, res_stat_dir)
@@ -312,7 +322,7 @@ def main():
 			merge_stat_files(res_stat_dir, os.path.join(res_stat_dir + prefix + ".csv"), prefix,
 							 new_models = "pca_svm,AlexNet,umap_svm".split(","), new_rows = 2)
 	for split_strategy in "personwise,tissuewise".split(","):
-		main_hatchwise(os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_all.csv"),
+		main_hatchwise(os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_batch123.csv"),
 					   os.path.join(res_Heatmap_root, split_strategy + "res_stat-data_GBM.csv"),
 					   os.path.join(split_strategy), skiprows = 2)
 

@@ -3,15 +3,15 @@
 """
 import os.path
 import numpy
-from bacteria.code_sjh.utils import Process
 from bacteria.code_sjh.Core.basic_functions import fileReader
 from bacteria.code_sjh.utils.RamanData import Raman, Raman_dirwise
-from bacteria.code_sjh.utils.Process_utils import baseline_remove
+from bacteria.code_sjh.utils.Process_utils import Process
+from bacteria.code_sjh.utils.Process_utils.PreProcessor import baseline_removal
 from bacteria.code_sjh.Core.basic_functions import mpl_func
 from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.colors import to_rgba_array, to_rgba
+from matplotlib.colors import to_rgba
 
 colors = list(mcolors.XKCD_COLORS.keys())
 

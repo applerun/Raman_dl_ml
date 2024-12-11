@@ -4,16 +4,15 @@
 
 import os.path
 import numpy
-import torch
-from bacteria.code_sjh.utils import Process
 from bacteria.code_sjh.Core.basic_functions import fileReader
 from bacteria.code_sjh.utils.RamanData import Raman, Raman_dirwise
-from bacteria.code_sjh.utils.Process_utils import baseline_remove
+from bacteria.code_sjh.utils.Process_utils import Process
+from bacteria.code_sjh.utils.Process_utils.PreProcessor import baseline_removal
 from bacteria.code_sjh.Core.basic_functions import mpl_func
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.colors import to_rgba_array, to_rgba
+from matplotlib.colors import to_rgba
 
 colors = list(mcolors.XKCD_COLORS.keys())
 
@@ -74,7 +73,7 @@ def plot_process(svdir = os.path.join(project_root, "Sample_results", "Sample_ba
     newX = numpy.linspace(450, 1800, pointnum) if newX else None
     series = [
         # baseline_remove.baseline_als(lam = lam, p = p, niter = niter),
-        baseline_remove.airALS(lam = lam,p = p,niter = niter),
+        baseline_removal.airALS(lam = lam, p = p, niter = niter),
         Process.interpolator(newX) if newX is not None else Process.none_func,
         Process.sg_filter(window_length = windor_length, poly_order = poly_order),
         Process.area_norm_func(),

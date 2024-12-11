@@ -11,7 +11,7 @@ from bacteria.code_sjh.utils.iterator import train
 from bacteria.code_sjh.bin.Glioma.data_handler.label_handler import get_infos, path2func_generator
 from torch.utils.data import DataLoader
 
-from bacteria.code_sjh.utils import Process
+from bacteria.code_sjh.utils.Process_utils import Process
 from bacteria.code_sjh.bin.Glioma.Classify_dl.record_func import plt_res, npsv, heatmap
 
 from bacteria.code_sjh.Core.basic_functions.path_func import getRootPath

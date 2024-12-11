@@ -11,9 +11,9 @@ from scipy.signal import savgol_filter
 from scipy import interpolate
 
 try:
-    from Process_utils.baseline_remove import *
+    from bacteria.code_sjh.utils.Process_utils.PreProcessor.baseline_removal import *
 except:
-    from bacteria.code_sjh.utils.Process_utils.baseline_remove import *
+    from bacteria.code_sjh.utils.Process_utils.PreProcessor.baseline_removal import *
 coderoot = os.path.split(os.path.split(__file__)[0])[0]
 projectroot = os.path.split(coderoot)[0]
 dataroot = os.path.join(projectroot, "data", "data_ID")
